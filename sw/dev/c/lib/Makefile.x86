@@ -1,0 +1,35 @@
+NKX_C_ROOT = /home/nyalry/nakan/dev/hobby/game-console/sw/dev/c
+
+SRCS_HW = nkx_hw.cpp
+OBJS_HW = $(addsuffix .o,$(basename $(SRCS_HW)))
+
+SRCS_UTIL = nkx_image.cpp
+OBJS_UTIL = $(addsuffix .o,$(basename $(SRCS_UTIL)))
+
+# CXX = /home/nyalry/nakan/work/study/riscv/gcc/build32/bin/riscv32-unknown-elf-g++
+CXX = g++
+
+CFLAGS = -I$(NKX_C_ROOT)/include
+CFLAGS += -O2
+CFLAGS += -DBUILD_FOR_SIMULATOR
+LDFLAGS =
+LIBS =
+
+vpath %.cpp $(NKX_C_ROOT)/src/nkx/hw
+vpath %.cpp $(NKX_C_ROOT)/src/nkx/util
+
+.PHONY: all clean
+
+all: libnkxhw-x86.a libnkxutil-x86.a
+
+libnkxhw-x86.a: $(OBJS_HW)
+	$(AR) r $@ $^
+
+libnkxutil-x86.a: $(OBJS_UTIL)
+	$(AR) r $@ $^
+
+%.o: %.cpp
+	$(CXX) -c $(CFLAGS) -o $@ $<
+
+clean:
+	rm -f $(OBJS_HW) $(OBJS_UTIL) libnkxhw-x86.a libnkxutil-x86.a

@@ -30,3 +30,15 @@
 *.exe
 *.out
 *.app
+
+# Temporary files
+*.i
+*.ll
+*.bc
+*.dis
+*.map
+*.log
+
+# Python
+*.pyc
+venv*/
