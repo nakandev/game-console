@@ -13,5 +13,8 @@ class GameObject {
   // destroy();
 };
 
+__attribute__((noinline)) void srand(int32_t seed);
+__attribute__((noinline)) int32_t rand();
+
 }; /* namespace nkx*/
 

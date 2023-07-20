@@ -42,3 +42,4 @@
 # Python
 *.pyc
 venv*/
+_study/

@@ -22,6 +22,7 @@ typedef enum {
   OPTYPE_CL,
   OPTYPE_CS,
   OPTYPE_CA,
+  OPTYPE_CB2,  // c.andi, c.ori, ...
   OPTYPE_CB,
   OPTYPE_CJ,
 } OpType;
@@ -59,6 +60,9 @@ enum {
   FUNCT3_XORI  = 4,
   FUNCT3_ORI   = 6,
   FUNCT3_ANDI  = 7,
+  FUNCT3_SLLI  = 1,
+  FUNCT3_SRLI  = 5,  // imm[11:5]=0000000
+  FUNCT3_SRAI  = 5,  // imm[11:5]=0100000
   FUNCT3_ADD  = 0,
   FUNCT3_SUB  = 0,  // func7=1
   FUNCT3_SLL  = 1,
@@ -197,6 +201,7 @@ public:
   void decodeTypeCL(uint32_t bytes, Instruction& instr);
   void decodeTypeCS(uint32_t bytes, Instruction& instr);
   void decodeTypeCA(uint32_t bytes, Instruction& instr);
+  void decodeTypeCB2(uint32_t bytes, Instruction& instr);
   void decodeTypeCB(uint32_t bytes, Instruction& instr);
   void decodeTypeCJ(uint32_t bytes, Instruction& instr);
   void executeTypeR(Instruction& instr, RegisterSet& regs, Memory& memory);
@@ -214,6 +219,7 @@ public:
   void executeTypeCL(Instruction& instr, RegisterSet& regs, Memory& memory);
   void executeTypeCS(Instruction& instr, RegisterSet& regs, Memory& memory);
   void executeTypeCA(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void executeTypeCB2(Instruction& instr, RegisterSet& regs, Memory& memory);
   void executeTypeCB(Instruction& instr, RegisterSet& regs, Memory& memory);
   void executeTypeCJ(Instruction& instr, RegisterSet& regs, Memory& memory);
   void printInstrInfo(const Instruction& instr, const RegisterSet& regs, const Memory& memory);

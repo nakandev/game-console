@@ -2,6 +2,7 @@
 #include <memory.h>
 #include <cpu.h>
 #include <ppu.h>
+#include <apu.h>
 #include <fmt/core.h>
 
 IO::IO(Memory& memory)
@@ -21,6 +22,10 @@ void IO::setPpu(Ppu& ppu)
 {
   this->ppu = &ppu;
 }
+void IO::setApu(Apu& apu)
+{
+  this->apu = &apu;
+}
 
 void IO::pressPadButton(uint8_t button)
 {
@@ -28,7 +33,6 @@ void IO::pressPadButton(uint8_t button)
   uint32_t status = memory.read(addr, 4);
   status |= 1u << button;
   memory.write(addr, 4, status);
-  fmt::print("pad: {:08x}\n", status);
 }
 
 void IO::releasePadButton(uint8_t button)
@@ -47,7 +51,6 @@ void IO::requestExtInt(uint8_t intno)
     cpu->requestInterruption();
   }
   clearExtIntStatus(intno);
-  // memory.write(addr, 4, status);
 }
 
 void IO::setExtIntStatus(uint8_t intno)

@@ -222,6 +222,22 @@ InstrRV32IManipulator::executeTypeI(Instruction& instr, RegisterSet& regs, Memor
     } else
     if (instr.funct3 == FUNCT3_ANDI) {
       regs.gpr[instr.dst].val.s = regs.gpr[instr.src1].val.s & instr.imm.s;
+    } else
+    if (instr.funct3 == FUNCT3_SLLI) {
+      int8_t imm = instr.imm.s & 0x1F;
+      regs.gpr[instr.dst].val.s = regs.gpr[instr.src1].val.s << imm;
+    } else
+    if (instr.funct3 == FUNCT3_SRLI) {
+      int8_t imm = instr.imm.s & 0x1F;
+      int8_t mode = instr.imm.s >> 5;
+      if (mode == 0b0000000) {
+        regs.gpr[instr.dst].val.u = regs.gpr[instr.src1].val.u >> imm;
+      } else
+      if (mode == 0b0100000) {
+        regs.gpr[instr.dst].val.s = regs.gpr[instr.src1].val.s >> imm;
+      }
+    } else
+    {
     }
   } else
   if (instr.opcode == OPCODE_JALR) {
@@ -312,7 +328,6 @@ InstrRV32IManipulator::executeTypeS(Instruction& instr, RegisterSet& regs, Memor
     else if (instr.funct3 == FUNCT3_SH) size = 2;
     else if (instr.funct3 == FUNCT3_SW) size = 4;
     uint32_t addr = regs.gpr[instr.src1].val.u + instr.imm.s;
-    if (addr & 0xf000'0000u) fmt::print("pc={:08x} w={:08x}\n", regs.pc.val.u, addr);
     memory.write(addr, size, regs.gpr[instr.src2].val.s);
   }
 }
@@ -463,9 +478,13 @@ void InstrRV32IManipulator::printInstrInfo(const Instruction& instr, const Regis
   if (instr.size == 4) {
     if (instr.type == OPTYPE_R) {
       type = "TypeR";
+      info = fmt::format("dst:{:08x} = src1:{:08x} # src2:{:08x}",
+        regs.gpr[instr.dst].val.u, regs.gpr[instr.src1].val.u, regs.gpr[instr.src2].val.u);
     } else
     if (instr.type == OPTYPE_I) {
       type = "TypeI";
+      info = fmt::format("dst:{:08x} = src1:{:08x} # imm:{:08x}",
+        regs.gpr[instr.dst].val.u, regs.gpr[instr.src1].val.u, instr.imm.u);
     } else
     if (instr.type == OPTYPE_S) {
       type = "TypeS";

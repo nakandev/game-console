@@ -1,6 +1,8 @@
 #pragma once
 #include <cstdint>
 
+#define arraysizeof(x) (sizeof(x)/sizeof(x[0]))
+
 extern int debugLevel;
 
 typedef union {

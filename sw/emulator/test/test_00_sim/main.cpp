@@ -2,10 +2,12 @@
 #include <chrono>
 #include <thread>
 
-int main()
+int main(int argc, char* argv[])
 {
-  // string path = "/home/nyalry/nakan/dev/hobby/game-console/sw/dev/c/test/trial_01_hello/trial_01_hello";
   string path = "/home/nyalry/nakan/dev/hobby/game-console/sw/dev/c/test/trial_02_tileram/trial_02_tileram";
+  if (argc == 2) {
+    path = string(argv[1]);
+  }
   auto board = Board();
 
   debugLevel = 1;

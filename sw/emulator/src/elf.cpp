@@ -50,7 +50,7 @@ void Elf::load(const string& path)
 
 void Elf::allocMemory(Memory& memory)
 {
-  memory.initMinimumSections();
+  // memory.initMinimumSections();
 
   uint8_t* buffer = data.data();
   auto& program = memory.section("program");

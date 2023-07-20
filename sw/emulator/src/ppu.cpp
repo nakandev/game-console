@@ -3,95 +3,35 @@
 #include <io.h>
 #include <fmt/core.h>
 
-enum {
-  HWPALETTE_COLORNUM = 256,
-  HWTILE_W = 8,
-  HWTILE_H = 8,
-  HWBG_TILENUM = 64 * 64,  // 4096
-  HW_TILEMAP_W = 512,
-  HW_TILEMAP_H = 512,
-  HW_TILEMAP_XTILE = 64,
-  HW_TILEMAP_YTILE = 64,
-  // HWREG_VRAM_BASEADDR      = 0x0400'0000,
-  // HWREG_TILERAM_BASEADDR   = 0x0600'0000,
-  HWREG_VRAM_BASEADDR      = 0x0,
-  HWREG_TILERAM_BASEADDR   = 0x0,
-  HWREG_PALETTE_BASEADDR   = HWREG_TILERAM_BASEADDR + 0x0000'0000,
-  HWREG_PALETTE0_ADDR    = HWREG_PALETTE_BASEADDR + 0x0000,
-  HWREG_PALETTE1_ADDR    = HWREG_PALETTE_BASEADDR + 0x0400,
-  HWREG_TILE_BASEADDR      = HWREG_TILERAM_BASEADDR + 0x0010'0000,
-  HWREG_TILE0_ADDR    = HWREG_TILE_BASEADDR + 0x00000000,
-  HWREG_TILE1_ADDR    = HWREG_TILE_BASEADDR + 0x00010000,
-  HWREG_TILEMAP_BASEADDR   = HWREG_TILERAM_BASEADDR + 0x0020'0000,
-  HWREG_TILEMAP0_ADDR      = HWREG_TILEMAP_BASEADDR + 0x0000,
-  HWREG_TILEMAP1_ADDR      = HWREG_TILEMAP_BASEADDR + 0x1000,
-  HWREG_BG_BASEADDR        = HWREG_TILERAM_BASEADDR + 0x0030'0000,
-  HWREG_BG0_ADDR      = HWREG_BG_BASEADDR + 0x0000,
-  HWREG_BG1_ADDR      = HWREG_BG_BASEADDR + 0x0100,
-  HWREG_BG2_ADDR      = HWREG_BG_BASEADDR + 0x0200,
-  HWREG_BG3_ADDR      = HWREG_BG_BASEADDR + 0x0300,
-};
-typedef union HwColor {
-  uint32_t data;
-  struct {
-    uint8_t a;
-    uint8_t b;
-    uint8_t g;
-    uint8_t r;
-  };
-  void merge(const HwColor& dst){
-    uint8_t a = dst.a;
-    this->r = (uint8_t)(((uint16_t)this->r * (255 - a) + (uint16_t)dst.r * a) / 256);
-    this->g = (uint8_t)(((uint16_t)this->g * (255 - a) + (uint16_t)dst.g * a) / 256);
-    this->b = (uint8_t)(((uint16_t)this->b * (255 - a) + (uint16_t)dst.b * a) / 256);
-  }
-} HwColor;
-typedef union HwPalette {
-  uint32_t data[HWPALETTE_COLORNUM];
-  HwColor color[HWPALETTE_COLORNUM];
-} HwPalette;
-struct HwTile {
-  uint8_t data[HWTILE_H][HWTILE_W];  // paletteIdx
-};
-struct HwTilemap {
-  uint16_t tileIdx[HWBG_TILENUM];
-};
-struct HwBG {
-  uint8_t paletteNo;
-  uint8_t tileNo;
-  uint8_t tilemapNo;
-  uint8_t __padding;
-  uint16_t x;
-  uint16_t y;
-};
-
 Ppu::Ppu(Memory& memory)
   : _currentLineNo(),
-    lineBufferBg0(),
-    lineBufferBg1(),
-    lineBufferBg2(),
-    lineBufferBg3(),
+    lineBufferBg(),
     lineBufferSp(),
     screenBuffer(),
+    ppuSprite(),
     memory(memory),
     scanline()
 {
-  lineBufferBg0.resize(320);
-  lineBufferBg1.resize(320);
-  lineBufferBg2.resize(320);
-  lineBufferBg3.resize(320);
-  lineBufferSp.resize(320);
-  screenBuffer.resize(320 * 240);
+  lineBufferBg.resize(4);
+  for (auto& buffer: lineBufferBg)
+    buffer.resize(HW_SCREEN_W);
+  lineBufferSp.resize(4);
+  for (auto& buffer: lineBufferSp)
+    buffer.resize(HW_SCREEN_W);
+  screenBuffer.resize(HW_SCREEN_W * HW_SCREEN_H);
+  ppuSprite.resize(HW_SPRITE_NUM);
 }
 
 Ppu::~Ppu()
 {
-  lineBufferBg0.clear();
-  lineBufferBg1.clear();
-  lineBufferBg2.clear();
-  lineBufferBg3.clear();
+  for (auto& buffer: lineBufferBg)
+    buffer.clear();
+  for (auto& buffer: lineBufferSp)
+    buffer.clear();
+  lineBufferBg.clear();
   lineBufferSp.clear();
   screenBuffer.clear();
+  ppuSprite.clear();
 }
 
 int Ppu::currentLineNo()
@@ -99,88 +39,176 @@ int Ppu::currentLineNo()
   return _currentLineNo;
 }
 
+static const int widthTable[] = {8, 16, 32, 64};
+static const int heightTable[] = {8, 16, 32, 64};
+static int preparePpuSprite(HwTileRam& tileram, vector<PpuSprite>& ppusp, int y)
+{
+  int spriteNum = 0;
+  for (int i=0; i<HW_SPRITE_NUM; i++) {
+    HwSprite& sp = tileram.sp[0].sprite[i];
+    if (!sp.flag.enable) continue;
+    int16_t w = widthTable[sp.tileSize];
+    int16_t h = heightTable[sp.tileSize];
+    int16_t beginX = sp.x;
+    int16_t beginY = sp.y;
+    int16_t endX = sp.x + w - 1;
+    int16_t endY = sp.y + h - 1;
+    if (sp.flag.affineEnable) {
+      beginX -= w / 2;
+      beginY -= h / 2;
+      endX += w / 2;
+      endY += h / 2;
+    }
+    if (y < beginY || endY < y) continue;
+    ppusp[spriteNum].hwsp = sp;
+    ppusp[spriteNum].beginY = beginY;
+    ppusp[spriteNum].endY   = endY;
+    ppusp[spriteNum].beginX = beginX;
+    ppusp[spriteNum].endX   = endX;
+    ppusp[spriteNum].idx = i;
+    spriteNum++;
+  }
+  return spriteNum;
+}
+
+static bool color_merge(HwColor& src, const HwColor& dst){
+  uint8_t a = dst.a;
+  if (a == 0) return false;
+  if (a == 255) {
+    src.data = dst.data;
+    return true;
+  } else {
+    src.r = (uint8_t)(((uint16_t)src.r * (255 - a) + (uint16_t)dst.r * a) / 256);
+    src.g = (uint8_t)(((uint16_t)src.g * (255 - a) + (uint16_t)dst.g * a) / 256);
+    src.b = (uint8_t)(((uint16_t)src.b * (255 - a) + (uint16_t)dst.b * a) / 256);
+    src.a = (src.a + dst.a) / 2;
+    return false;
+  }
+}
+
+static void drawLineBG(HwTileRam& tileram, HwBG& bg, int x, int y, vector<uint32_t>& buffer)
+{
+  uint8_t tilemapNo = bg.tilemapNo;
+  uint8_t tileNo = bg.tileNo;
+  uint8_t paletteNo = bg.paletteNo;
+  int32_t x0 = x - bg.x;
+  int32_t y0 = y - bg.y;
+  if (bg.flag.affineEnable) {
+    HwMatrix2d B = bg.affineInv;  // B = inv(A)
+    int32_t x00 = x0 - B.x;
+    int32_t y00 = y0 - B.y;
+    // float div = B.a/256. * B.d/256. - B.b/256. * B.c/256.;
+    // x0 = (x00 * +B.d/256. + y00 * -B.b/256.) / div + B.x;
+    // y0 = (x00 * -B.c/256. + y00 * +B.a/256.) / div + B.y;
+    x0 = (x00 * B.a/256. + y00 * B.b/256.) + B.x;
+    y0 = (x00 * B.c/256. + y00 * B.d/256.) + B.y;
+    if (x0 < 0 || x0 >= 512) return;
+    if (y0 < 0 || y0 >= 512) return;
+  }
+  uint32_t tx0 = ((uint32_t)x0) % HW_TILEMAP_W;
+  uint32_t ty0 = ((uint32_t)y0) % HW_TILEMAP_H;
+  uint16_t offset = (tx0 / HWTILE_W) + (ty0 / HWTILE_H) * HW_TILEMAP_XTILE;
+  uint16_t tileIdx = tileram.tilemap[tilemapNo].tileIdx[offset];
+  uint8_t paletteIdx = tileram.tile[tileNo][tileIdx].data[ty0 % HWTILE_H][tx0 % HWTILE_W];
+  buffer[x] = tileram.palette[paletteNo].color[paletteIdx].data;
+}
+
+static void drawLineSprite(HwTileRam& tileram, PpuSprite& ppusp, int x, int y, vector<uint32_t>& buffer)
+{
+  HwSprite& sp = ppusp.hwsp;
+  uint8_t tileNo = sp.tileNo;
+  int32_t x0 = x - sp.x;
+  int32_t y0 = y - sp.y;
+  if (sp.flag.affineEnable) {
+    HwMatrix2d B = sp.affineInv;  // B = inv(A)
+    int32_t x00 = x0 - B.x;
+    int32_t y00 = y0 - B.y;
+    // float div = B.a/256. * B.d/256. - B.b/256. * B.c/256.;
+    // x0 = (x00 * +B.d/256. + y00 * -B.b/256.) / div + B.x;
+    // y0 = (x00 * -B.c/256. + y00 * +B.a/256.) / div + B.y;
+    x0 = (x00 * B.a/256. + y00 * B.b/256.) + B.x;
+    y0 = (x00 * B.c/256. + y00 * B.d/256.) + B.y;
+    if (x0 < 0 || x0 >= widthTable[sp.tileSize]) return;
+    if (y0 < 0 || y0 >= heightTable[sp.tileSize]) return;
+  }
+  uint8_t offset = (x0 / HWTILE_W) + (y0 / HWTILE_H) * (widthTable[sp.tileSize] / HWTILE_W);
+  uint8_t tileIdx = sp.tileIdx + offset;
+  uint8_t paletteNo = sp.paletteNo;
+  uint32_t tilex = ((uint32_t)x0) % HW_TILEMAP_W % HWTILE_W;
+  uint32_t tiley = ((uint32_t)y0) % HW_TILEMAP_H % HWTILE_H;
+  uint8_t paletteIdx = tileram.tile[tileNo][tileIdx].data[tiley][tilex];
+  HwColor spColor = tileram.palette[paletteNo].color[paletteIdx];
+  HwColor bufColor = {.data = buffer[x]};
+  color_merge(bufColor, spColor);
+  buffer[x] = bufColor.data;
+}
+
+static void sortLayerIndex(int layers[4])
+{
+  int idxs[4] = {0, 1, 2, 3};
+  int t;
+  for (int i=3; i>=0; i--) {
+    for (int j=0; j<i; j++) {
+      if (layers[j] > layers[j+1]) {
+        t = layers[j]; layers[j] = layers[j+1]; layers[j+1] = t;
+        t = idxs[j]; idxs[j] = idxs[j+1]; idxs[j+1] = t;
+      }
+    }
+  }
+}
+
 void Ppu::drawLine(int y)
 {
-  // const uint8_t* vram = memory.section("vram").buffer();
-  const uint8_t* tileram = memory.section("tile").buffer();
-  HwPalette* palette[1] = {(HwPalette*)(tileram + HWREG_PALETTE0_ADDR)};
-  HwTile* tile[] = {(HwTile*)(tileram + HWREG_TILE0_ADDR)};
-  HwTilemap* tilemap[1] = {(HwTilemap*)(tileram + HWREG_TILEMAP0_ADDR)};
-  HwBG* bg[4] = {
-    (HwBG*)(tileram + HWREG_BG0_ADDR),
-    (HwBG*)(tileram + HWREG_BG1_ADDR),
-    (HwBG*)(tileram + HWREG_BG2_ADDR),
-    (HwBG*)(tileram + HWREG_BG3_ADDR),
-  };
-  uint8_t tilemapNo = bg[0]->tilemapNo;
-  uint8_t tileNo = bg[0]->tileNo;
-  uint8_t paletteNo = bg[0]->paletteNo;
-  int yy[4];
-  for (int i=0; i<4; i++) {
-    yy[i] = ((uint32_t)(y - bg[i]->y)) % HW_TILEMAP_H;
+  HwTileRam& tileram = *(HwTileRam*)memory.section("tile").buffer();
+  int spnum = preparePpuSprite(tileram, ppuSprite, y);
+  for (auto& buf: lineBufferBg) {
+    std::fill(buf.begin(), buf.end(), 0);
   }
-  for (int x=0; x<320; x++) {
-    HwColor finalColor;
-    HwColor bgColor[4];
+  for (auto& buf: lineBufferSp) {
+    std::fill(buf.begin(), buf.end(), 0);
+  }
+  int layers[4];
+  for (int i=0; i<4; i++) layers[i] = tileram.bg[i].flag.layer;
+  sortLayerIndex(layers);
+  for (int x=0; x<HW_SCREEN_W; x++) {
     for (int i=0; i<4; i++) {
-      int x0 = ((uint32_t)(x - bg[0]->x)) % HW_TILEMAP_W;
-      uint16_t tileIdx = tilemap[tilemapNo]->tileIdx[(x0/8) + (yy[i]/8)*HW_TILEMAP_XTILE];
-      uint8_t paletteIdx = tile[tileNo][tileIdx].data[yy[i]%8][x0%8];
-      bgColor[i] = palette[paletteNo]->color[paletteIdx];
+      uint8_t layer = layers[i];
+      drawLineBG(tileram, tileram.bg[layer], x, y, lineBufferBg[layer]);
     }
-    finalColor.data = bgColor[0].data;
-    for (int i=1; i<4; i++) {
-      finalColor.merge(bgColor[i]);
+  }
+  for (int x=0; x<HW_SCREEN_W; x++) {
+    HwSP& hwsp = tileram.sp[0];
+    for (int si=0; si<spnum; si++) {
+      auto& ppusp = ppuSprite[si];
+      uint8_t layer = ppusp.hwsp.flag.layer;
+      if (x < ppusp.beginX || ppusp.endX < x) continue;
+      drawLineSprite(tileram, ppusp, x, y, lineBufferSp[layer]);
+    }
+  }
+  for (int x=0; x<HW_SCREEN_W; x++) {
+    HwColor finalColor = {.data = 0};
+    for (int i=0; i<4; i++) {
+      HwColor spColor = {.data=lineBufferSp[i][x]};
+      if (color_merge(finalColor, spColor)) break;
+      HwColor bgColor = {.data=lineBufferBg[i][x]};
+      if (color_merge(finalColor, bgColor)) break;
     }
     finalColor.a = 255;
-    screenBuffer[x + y*320] = finalColor.data;
+
+    screenBuffer[x + y*HW_SCREEN_W] = finalColor.data;
   }
 }
 
 void Ppu::drawAllLine()
 {
-  for (int y=0; y<240; y++) {
+  for (int y=0; y<HW_SCREEN_H; y++) {
     drawLine(y);
   }
 }
 
 void Ppu::copyScreenBuffer(uint32_t* buffer)
 {
-  const uint8_t* tileram = memory.section("tile").buffer();
-  HwBG* bg[1] = {(HwBG*)(tileram + HWREG_BG0_ADDR)};
-  for (int i=0; i<320 * 240; i++) {
+  for (int i=0; i<HW_SCREEN_W * HW_SCREEN_H; i++) {
     buffer[i] = screenBuffer[i];
-  }
-}
-
-void Ppu::printTile()
-{
-  const uint8_t* tileram = memory.section("tile").buffer();
-  HwPalette* palette[1] = {(HwPalette*)(tileram + HWREG_PALETTE0_ADDR)};
-  HwTile* tile[] = {(HwTile*)(tileram + HWREG_TILE0_ADDR)};
-  HwTilemap* tilemap[1] = {(HwTilemap*)(tileram + HWREG_TILEMAP0_ADDR)};
-  HwBG* bg[4] = {
-    (HwBG*)(tileram + HWREG_BG0_ADDR),
-    (HwBG*)(tileram + HWREG_BG1_ADDR),
-    (HwBG*)(tileram + HWREG_BG2_ADDR),
-    (HwBG*)(tileram + HWREG_BG3_ADDR),
-  };
-  uint8_t tilemapNo = 0;
-  uint8_t tileNo = 0;
-  uint8_t paletteNo = 0;
-  fmt::print("tileram={}, tile[0]={}, pal[0]={}\n", (void*)(tileram), (void*)(tile[0]), (void*)(palette[0]));
-  fmt::print("sizeof_HwColor={}, sizeof_HwPalette={}\n", sizeof(HwColor), sizeof(HwPalette));
-  fmt::print("&tile.data={}\n", (void*)&(tile[0][0].data[0%8][0%8]));
-  for (int y=0; y< 8; y++) {
-    int y0 = y + 0;
-    for (int x=0; x<8; x++) {
-      int x0 = x + 0;
-      uint16_t tileIdx = tilemap[tilemapNo]->tileIdx[(x0/8) + (y0/8)*HW_TILEMAP_XTILE];
-      uint8_t paletteIdx = tile[tileNo][tileIdx].data[y0%8][x0%8];
-      HwColor* color = &palette[paletteNo]->color[paletteIdx];
-      fmt::print(" [{:2d}][{:2d}]{:08x}", tileIdx, paletteIdx, color->data);
-      fmt::print(" {}", static_cast<void*>(&tile[tileNo][tileIdx].data[y0%8][x0%8]));
-    }
-    fmt::print("\n");
   }
 }

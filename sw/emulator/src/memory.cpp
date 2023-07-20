@@ -1,4 +1,5 @@
 #include <memory.h>
+#include <memorymap.h>
 #include <fmt/core.h>
 
 MemorySection::MemorySection()
@@ -52,14 +53,13 @@ int32_t MemorySection::read(uint32_t addr, int size)
 {
   uint32_t relativeAddr = addr - this->addr;
   // uint8_t* bytes = data.data();
-  // int32_t value = *((int32_t*)(bytes + relativeAddr));
-  int32_t value = *((int32_t*)(&data[0] + relativeAddr));
   if (size == 1)
-    return value & 0xff;
+    return *((int8_t*)(&data[0] + relativeAddr));
   else if (size == 2)
-    return value & 0xffff;
+    return *((int16_t*)(&data[0] + relativeAddr));
   else if (size == 4)
-    return value;
+    return *((int32_t*)(&data[0] + relativeAddr));
+
   return 0;
 }
 
@@ -67,12 +67,6 @@ void MemorySection::write(uint32_t addr, int size, int32_t value)
 {
   uint32_t relativeAddr = addr - this->addr;
   // uint8_t* bytes = data.data();
-  // if (size == 1)
-  //   *((int8_t*)(bytes + relativeAddr)) = value & 0xff;
-  // else if (size == 2)
-  //   *((int16_t*)(bytes + relativeAddr)) = value & 0xffff;
-  // else if (size == 4)
-  //   *((int32_t*)(bytes + relativeAddr)) = value;
   if (size == 1)
     *((int8_t*)(&data[0] + relativeAddr)) = value & 0xff;
   else if (size == 2)
@@ -100,6 +94,7 @@ const uint8_t* MemorySection::buffer()
 Memory::Memory()
   :sections()
 {
+  initMinimumSections();
 }
 
 Memory::~Memory()
@@ -118,13 +113,14 @@ void Memory::clearSection()
 void Memory::initMinimumSections()
 {
   sections.clear();
-  sections.insert(make_pair("program", MemorySection("program", 0x0800'0000, 0x0100'0000)));
-  sections.insert(make_pair("stack",   MemorySection("stack",   0x01C0'0000, 0x0040'0000)));
-  sections.insert(make_pair("tile",    MemorySection("tile",    0x0600'0000, 0x0100'0000)));
-  sections.insert(make_pair("vram",    MemorySection("vram",    0x0400'0000, 0x0100'0000)));
-  sections.insert(make_pair("ioram",   MemorySection("ioram",   0x0300'0000, 0x0001'0000)));
-  sections.insert(make_pair("system",  MemorySection("system",  0x0000'0000, 0x0001'0000)));
-  sections.insert(make_pair("data",    MemorySection("data"  ,  0x0100'0000, 0x00C0'0000)));
+  sections.insert(make_pair("program", MemorySection("program", HWREG_PROGRAM_BASEADDR    , 0x0100'0000)));
+  sections.insert(make_pair("stack",   MemorySection("stack",   HWREG_WORKRAM_END - 0x0040'0000, 0x0040'0000)));
+  sections.insert(make_pair("tile",    MemorySection("tile",    HWREG_TILERAM_BASEADDR    , 0x0100'0000)));
+  sections.insert(make_pair("vram",    MemorySection("vram",    HWREG_VRAM_BASEADDR       , 0x0100'0000)));
+  sections.insert(make_pair("ioram",   MemorySection("ioram",   HWREG_IORAM_BASEADDR      , 0x0001'0000)));
+  sections.insert(make_pair("aram",    MemorySection("aram",    HWREG_ARAM_BASEADDR       , 0x0100'0000)));
+  sections.insert(make_pair("system",  MemorySection("system",  HWREG_SYSROM_BASEADDR     , 0x0001'0000)));
+  sections.insert(make_pair("data",    MemorySection("data"  ,  HWREG_FASTWORKRAM_BASEADDR, 0x00C0'0000)));
 }
 void Memory::addSection(const string& name, uint32_t addr, uint32_t size)
 {
