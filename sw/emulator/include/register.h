@@ -1,6 +1,6 @@
 #pragma once
 #include <common.h>
-#include <map>
+#include <vector>
 #include <string>
 
 using namespace std;
@@ -17,13 +17,26 @@ public:
 
 class RegisterGroup {
 private:
-  map<size_t, Register> regs;  // sparce array of Register
+  vector<Register> regs;  // sparce array of Register
 public:
   RegisterGroup();
   RegisterGroup(size_t size);
   ~RegisterGroup();
-  inline Register operator[](size_t index) const { return regs.at(index); }
-  inline Register& operator[](size_t index) { return regs.at(index); }
+  inline Register& operator[](size_t index) noexcept { return regs[index]; }
+  void insert(size_t index, const Register& reg);
+  void dump();
+};
+
+class SparceRegisterGroup {
+private:
+  vector<Register> regs;  // sparce array of Register
+  vector<size_t> indexs;
+  Register& at(size_t index);
+public:
+  SparceRegisterGroup();
+  SparceRegisterGroup(size_t size);
+  ~SparceRegisterGroup();
+  inline Register& operator[](size_t index) noexcept { return at(index); }
   void insert(size_t index, const Register& reg);
   void dump();
 };
@@ -33,7 +46,7 @@ public:
   Register pc;
   Register prev_pc;
   RegisterGroup gpr;
-  RegisterGroup csr;
+  SparceRegisterGroup csr;
   RegisterSet();
   ~RegisterSet();
 };

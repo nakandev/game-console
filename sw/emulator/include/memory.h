@@ -28,6 +28,7 @@ class MemorySection {
     int32_t read32(uint32_t addr);
     void write(uint32_t addr, int size, int32_t value);
     void copy(uint32_t addr, int size, uint8_t* buf);
+    void set(uint32_t addr, int size, uint8_t value);
     const uint8_t* buffer();
 };
 

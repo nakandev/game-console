@@ -1,4 +1,5 @@
 #include <board.h>
+#include <fmt/core.h>
 
 Board::Board()
   : memory(), io(memory), cpu(memory), ppu(memory), apu(memory)
@@ -19,6 +20,7 @@ void Board::updateFrameUntilVblank()
     ppu.drawLine(y);
     io.setExtIntStatus(HW_IO_EXTINT_HBLANK);
     io.requestExtInt(HW_IO_EXTINT_HBLANK);
+    cpu.handleInterruption();
     for (int i=0; i<HW_SCREEN_HBLANK; i++) cpu.stepi();
     io.clearExtIntStatus(HW_IO_EXTINT_HBLANK);
   }
@@ -28,6 +30,7 @@ void Board::updateFrameSinceVblank()
 {
   io.setExtIntStatus(HW_IO_EXTINT_VBLANK);
   io.requestExtInt(HW_IO_EXTINT_VBLANK);
+  cpu.handleInterruption();
   for (int i=0; i<HW_SCREEN_VBLANK * (HW_SCREEN_W + HW_SCREEN_HBLANK); i++) cpu.stepi();
   io.clearExtIntStatus(HW_IO_EXTINT_VBLANK);
 }

@@ -1,4 +1,5 @@
 #pragma once
+#include <map>
 #include <memory>
 
 class Cpu;
@@ -28,6 +29,127 @@ typedef enum {
 } OpType;
 
 enum {
+  INSTR_UNKNOWN = 0,
+  INSTR_LUI,
+  INSTR_AUIPC,
+  INSTR_JAL,
+  INSTR_JALR,
+  INSTR_BEQ,
+  INSTR_BNE,
+  INSTR_BLT,
+  INSTR_BGE,
+  INSTR_BLTU,
+  INSTR_BGEU,
+  INSTR_LB,
+  INSTR_LH,
+  INSTR_LW,
+  INSTR_LBU,
+  INSTR_LHU,
+  INSTR_SB,
+  INSTR_SH,
+  INSTR_SW,
+  INSTR_ADDI,
+  INSTR_SLTI,
+  INSTR_SLTIU,
+  INSTR_XORI,
+  INSTR_ORI,
+  INSTR_ANDI,
+  INSTR_SLLI,
+  INSTR_SRLI,
+  INSTR_SRAI,
+  INSTR_ADD,
+  INSTR_SUB,
+  INSTR_SLL,
+  INSTR_SLT,
+  INSTR_SLTU,
+  INSTR_XOR,
+  INSTR_SRL,
+  INSTR_SRA,
+  INSTR_OR,
+  INSTR_AND,
+  // INSTR_FENCE,
+  INSTR_ECALL,
+  INSTR_EBREAK,
+  INSTR_MRET,
+  INSTR_WFI,
+
+  // INSTR_FENCEI,
+
+  INSTR_CSRRW,
+  INSTR_CSRRS,
+  INSTR_CSRRC,
+  INSTR_CSRRWI,
+  INSTR_CSRRSI,
+  INSTR_CSRRCI,
+
+  INSTR_MUL,
+  INSTR_MULH,
+  INSTR_MULHSU,
+  INSTR_MULHU,
+  INSTR_DIV,
+  INSTR_DIVU,
+  INSTR_REM,
+  INSTR_REMU,
+};
+
+enum {
+  INSTR_CUNKNOWN = 0,
+  INSTR_CADDI4SPN,
+  // INSTR_CFLD,
+  // INSTR_CLQ,
+  INSTR_CLW,
+  // INSTR_CFLW,
+  // INSTR_CLD,
+  // INSTR_CFSD,
+  // INSTR_CSQ,
+  INSTR_CSW,
+  // INSTR_CFSW,
+  // INSTR_CSD,
+  INSTR_CNOP,
+  INSTR_CADDI,
+  INSTR_CJAL,
+  // INSTR_CADDIW,
+  INSTR_CLI,
+  INSTR_CADDI16SP,
+  INSTR_CLUI,
+  INSTR_CSRLI,
+  // INSTR_CSRLI64,
+  INSTR_CSRAI,
+  // INSTR_CSRAI64,
+  INSTR_CANDI,
+  INSTR_CSUB,
+  INSTR_CXOR,
+  INSTR_COR,
+  INSTR_CAND,
+  // INSTR_CSUBW,
+  // INSTR_CADDW,
+  INSTR_CJ,
+  INSTR_CBEQZ,
+  INSTR_CBNEZ,
+
+  INSTR_CSLLI,
+  // INSTR_CSLLI64,
+  // INSTR_CFLDSP,
+  // INSTR_CLQSP,
+  INSTR_CLWSP,
+  // INSTR_CFLWSP,
+  // INSTR_CLDSP,
+  INSTR_CJR,
+  INSTR_CMV,
+  INSTR_CEBREAK,
+  INSTR_CJALR,
+  INSTR_CADD,
+  // INSTR_CFSDSP,
+  // INSTR_CSQSP,
+  INSTR_CSWSP,
+  // INSTR_CFSWSP,
+  // INSTR_CSDSP,
+};
+
+enum {
+  OPCODE_C0 = 0x0,
+  OPCODE_C1 = 0x1,
+  OPCODE_C2 = 0x2,
   OPCODE_LUI    = (0x0D << 2) | 3,
   OPCODE_AUIPC  = (0x05 << 2) | 3,
   OPCODE_JAL    = (0x1B << 2) | 3,
@@ -39,6 +161,9 @@ enum {
   OPCODE_Arith  = (0x0C << 2) | 3,
   OPCODE_FENCE  = (0x03 << 2) | 3,
   OPCODE_SYSTEM = (0x1C << 2) | 3,  // ECALL, EBREAK, ZiCSR
+};
+
+enum {
   FUNCT3_JALR  = 0,
   FUNCT3_BEQ   = 0,
   FUNCT3_BNE   = 1,
@@ -92,9 +217,6 @@ enum {
 };
 
 enum {
-  OPCODE_C0 = 0x0,
-  OPCODE_C1 = 0x1,
-  OPCODE_C2 = 0x2,
   // TypeCR
   FUNCT4_C_JR   = 0x04,
   FUNCT4_C_JALR = 0x04,
@@ -150,19 +272,19 @@ enum {
   // TypeCJ
   FUNCT3_C_J   = 0x05,
   FUNCT3_C_JAL = 0x01,
-
-  FUNCT3_,
 };
 
 struct Instruction {
   uint32_t binary;
+  uint32_t instr;
   uint8_t opcode;
-  uint8_t funct3;
-  uint8_t funct7;
+  uint8_t functB;  // funct7, funct6
+  uint16_t functA;  // funct3, funct4
   uint8_t dst;
   uint8_t src1;
   uint8_t src2;
-  union32_t imm;
+  uint8_t src3;
+  union32_t imm;  // funct12
   union32_t result;
   int size;
   OpType type;
@@ -181,10 +303,18 @@ public:
 };
 
 class InstrRV32IManipulator {
+  void (InstrRV32IManipulator::*execute_tableI[1024])(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void (InstrRV32IManipulator::*execute_tableC[1024])(Instruction& instr, RegisterSet& regs, Memory& memory);
 public:
   InstrRV32IManipulator();
   ~InstrRV32IManipulator();
+  void initI();
+  void initC();
+  bool checkInterruption(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void handleInterruption(Instruction& instr, RegisterSet& regs);
+  void returnInterruption(Instruction& instr, RegisterSet& regs);
   void decode(uint32_t bytes, Instruction& instr);
+  void decode32(uint32_t bytes, Instruction& instr);
   void execute(Instruction& instr, RegisterSet& regs, Memory& memory);
   void decodeTypeR(uint32_t bytes, Instruction& instr);
   void decodeTypeI(uint32_t bytes, Instruction& instr);
@@ -193,7 +323,7 @@ public:
   void decodeTypeU(uint32_t bytes, Instruction& instr);
   void decodeTypeJ(uint32_t bytes, Instruction& instr);
   void decodeTypeSystem(uint32_t bytes, Instruction& instr);
-  void decodeTypeExtC(uint32_t bytes, Instruction& instr);
+  void decode16(uint32_t bytes, Instruction& instr);
   void decodeTypeCR(uint32_t bytes, Instruction& instr);
   void decodeTypeCI(uint32_t bytes, Instruction& instr);
   void decodeTypeCSS(uint32_t bytes, Instruction& instr);
@@ -222,8 +352,135 @@ public:
   void executeTypeCB2(Instruction& instr, RegisterSet& regs, Memory& memory);
   void executeTypeCB(Instruction& instr, RegisterSet& regs, Memory& memory);
   void executeTypeCJ(Instruction& instr, RegisterSet& regs, Memory& memory);
-  void printInstrInfo(const Instruction& instr, const RegisterSet& regs, const Memory& memory);
-  bool checkInterruption(Instruction& instr, RegisterSet& regs, Memory& memory);
-  void handleInterruption(Instruction& instr, RegisterSet& regs);
-  void returnInterruption(Instruction& instr, RegisterSet& regs);
+
+  void execute_unknown(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void execute_lui(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void execute_auipc(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void execute_jal(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void execute_jalr(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void execute_beq(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void execute_bne(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void execute_blt(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void execute_bge(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void execute_bltu(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void execute_bgeu(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void execute_lb(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void execute_lh(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void execute_lw(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void execute_lbu(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void execute_lhu(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void execute_sb(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void execute_sh(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void execute_sw(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void execute_addi(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void execute_slti(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void execute_sltiu(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void execute_xori(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void execute_ori(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void execute_andi(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void execute_slli(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void execute_srli(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void execute_srai(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void execute_add(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void execute_sub(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void execute_sll(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void execute_slt(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void execute_sltu(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void execute_xor(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void execute_srl(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void execute_sra(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void execute_or(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void execute_and(Instruction& instr, RegisterSet& regs, Memory& memory);
+  // execute_fence(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void execute_ecall(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void execute_ebreak(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void execute_mret(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void execute_wfi(Instruction& instr, RegisterSet& regs, Memory& memory);
+  // execute_fencei(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void execute_csrrw(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void execute_csrrs(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void execute_csrrc(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void execute_csrrwi(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void execute_csrrsi(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void execute_csrrci(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void execute_mul(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void execute_mulh(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void execute_mulhsu(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void execute_mulhu(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void execute_div(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void execute_divu(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void execute_rem(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void execute_remu(Instruction& instr, RegisterSet& regs, Memory& memory);
+
+  void execute_cunknown(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void execute_caddi4spn(Instruction& instr, RegisterSet& regs, Memory& memory);
+  // void execute_cfld(Instruction& instr, RegisterSet& regs, Memory& memory);
+  // void execute_clq(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void execute_clw(Instruction& instr, RegisterSet& regs, Memory& memory);
+  // void execute_cflw(Instruction& instr, RegisterSet& regs, Memory& memory);
+  // void execute_cld(Instruction& instr, RegisterSet& regs, Memory& memory);
+  // void execute_cfsd(Instruction& instr, RegisterSet& regs, Memory& memory);
+  // void execute_csq(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void execute_csw(Instruction& instr, RegisterSet& regs, Memory& memory);
+  // void execute_cfsw(Instruction& instr, RegisterSet& regs, Memory& memory);
+  // void execute_csd(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void execute_cnop(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void execute_caddi(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void execute_cjal(Instruction& instr, RegisterSet& regs, Memory& memory);
+  // void execute_caddiw(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void execute_cli(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void execute_caddi16sp(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void execute_clui(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void execute_csrli(Instruction& instr, RegisterSet& regs, Memory& memory);
+  // void execute_csrli64(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void execute_csrai(Instruction& instr, RegisterSet& regs, Memory& memory);
+  // void execute_csrai64(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void execute_candi(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void execute_csub(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void execute_cxor(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void execute_cor(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void execute_cand(Instruction& instr, RegisterSet& regs, Memory& memory);
+  // void execute_csubw(Instruction& instr, RegisterSet& regs, Memory& memory);
+  // void execute_caddw(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void execute_cj(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void execute_cbeqz(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void execute_cbnez(Instruction& instr, RegisterSet& regs, Memory& memory);
+
+  void execute_cslli(Instruction& instr, RegisterSet& regs, Memory& memory);
+  // void execute_cslli64(Instruction& instr, RegisterSet& regs, Memory& memory);
+  // void execute_cfldsp(Instruction& instr, RegisterSet& regs, Memory& memory);
+  // void execute_clqsp(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void execute_clwsp(Instruction& instr, RegisterSet& regs, Memory& memory);
+  // void execute_cflwsp(Instruction& instr, RegisterSet& regs, Memory& memory);
+  // void execute_cldsp(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void execute_cjr(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void execute_cmv(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void execute_cebreak(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void execute_cjalr(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void execute_cadd(Instruction& instr, RegisterSet& regs, Memory& memory);
+  // void execute_cfsdsp(Instruction& instr, RegisterSet& regs, Memory& memory);
+  // void execute_csqsp(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void execute_cswsp(Instruction& instr, RegisterSet& regs, Memory& memory);
+  // void execute_cfswsp(Instruction& instr, RegisterSet& regs, Memory& memory);
+  // void execute_csdsp(Instruction& instr, RegisterSet& regs, Memory& memory);
+
+  void printInstr(int64_t icount, uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory);
+  string disassemble(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory);
+  string disassembleTypeR(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory);
+  string disassembleTypeI(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory);
+  string disassembleTypeS(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory);
+  string disassembleTypeB(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory);
+  string disassembleTypeU(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory);
+  string disassembleTypeJ(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory);
+  string disassembleTypeSystem(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory);
+  string disassembleTypeCR(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory);
+  string disassembleTypeCI(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory);
+  string disassembleTypeCSS(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory);
+  string disassembleTypeCIW(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory);
+  string disassembleTypeCL(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory);
+  string disassembleTypeCS(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory);
+  string disassembleTypeCA(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory);
+  string disassembleTypeCB2(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory);
+  string disassembleTypeCB(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory);
+  string disassembleTypeCJ(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory);
 };

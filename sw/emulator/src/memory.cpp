@@ -84,6 +84,14 @@ void MemorySection::copy(uint32_t addr, int size, uint8_t* buf)
   }
 }
 
+void MemorySection::set(uint32_t addr, int size, uint8_t value)
+{
+  uint32_t relativeAddr = addr - this->addr;
+  for (int i=0; i<size; i++) {
+    data[i + relativeAddr] = value;
+  }
+}
+
 const uint8_t* MemorySection::buffer()
 {
   // return data.data();

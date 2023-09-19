@@ -86,7 +86,13 @@ static bool color_merge(HwColor& src, const HwColor& dst){
   }
 }
 
-static void drawLineBG(HwTileRam& tileram, HwBG& bg, int x, int y, vector<uint32_t>& buffer)
+static void drawLineBGPixel(uint8_t* vram, HwBG& bg, int x, int y, vector<uint32_t>& buffer)
+{
+  HwColor* colors = (HwColor*) vram;
+  buffer[x] = colors[x + y * HW_SCREEN_W].data;
+}
+
+static void drawLineBGTile(HwTileRam& tileram, HwBG& bg, int x, int y, vector<uint32_t>& buffer)
 {
   uint8_t tilemapNo = bg.tilemapNo;
   uint8_t tileNo = bg.tileNo;
@@ -160,6 +166,7 @@ static void sortLayerIndex(int layers[4])
 void Ppu::drawLine(int y)
 {
   HwTileRam& tileram = *(HwTileRam*)memory.section("tile").buffer();
+  uint8_t* vram = (uint8_t*)memory.section("vram").buffer();
   int spnum = preparePpuSprite(tileram, ppuSprite, y);
   for (auto& buf: lineBufferBg) {
     std::fill(buf.begin(), buf.end(), 0);
@@ -173,7 +180,12 @@ void Ppu::drawLine(int y)
   for (int x=0; x<HW_SCREEN_W; x++) {
     for (int i=0; i<4; i++) {
       uint8_t layer = layers[i];
-      drawLineBG(tileram, tileram.bg[layer], x, y, lineBufferBg[layer]);
+      auto& bg = tileram.bg[layer];
+      if (bg.flag.mode == HWBG_PIXEL_MODE) {
+        drawLineBGPixel(vram, tileram.bg[layer], x, y, lineBufferBg[layer]);
+      } else {
+        drawLineBGTile(tileram, tileram.bg[layer], x, y, lineBufferBg[layer]);
+      }
     }
   }
   for (int x=0; x<HW_SCREEN_W; x++) {

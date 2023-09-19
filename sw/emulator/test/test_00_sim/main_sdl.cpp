@@ -18,7 +18,7 @@ bool handleInput(Board& board)
   SDL_Event event;
   while (SDL_PollEvent(&event)) {
     switch (event.type) {
-    case SDL_QUIT: /** ウィンドウのxボタンやctrl-Cを押した場合 */
+    case SDL_QUIT: /* Window [X] button, or Ctrl-Q */
       return true;
     case SDL_KEYDOWN:
       switch (event.key.keysym.sym) {
@@ -77,7 +77,7 @@ void audio_callback(void *userdata, Uint8 *stream, int len)
 
 int main(int argc, char* argv[])
 {
-  string path = "/home/nyalry/nakan/dev/hobby/game-console/sw/dev/c/test/trial_02_tileram/trial_02_tileram";
+  string path = "/home/nyalry/nakan/dev/hobby/game-console/sw/dev/c/test/trial_08_tilefile/trial_08_tilefile";
   if (argc == 2) {
     path = string(argv[1]);
   }
@@ -93,13 +93,13 @@ int main(int argc, char* argv[])
     SDL_INIT_AUDIO
   );   // Initialize SDL2
 
-  SDL_Window *window;        // Declare a pointer to an SDL_Window
+  SDL_Window *window;
   window = SDL_CreateWindow( 
-    "niRVana : RISC-V Game Console",                  //    window title
-    SDL_WINDOWPOS_UNDEFINED,           //    initial x position
-    SDL_WINDOWPOS_UNDEFINED,           //    initial y position
-    HW_SCREEN_W,                               //    width, in pixels
-    HW_SCREEN_H,                               //    height, in pixels
+    "niRVana : RISC-V Game Console",
+    SDL_WINDOWPOS_UNDEFINED,
+    SDL_WINDOWPOS_UNDEFINED,
+    HW_SCREEN_W,
+    HW_SCREEN_H,
     SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL// | SDL_WINDOW_RESIZABLE
   );
   if(window==NULL){
@@ -114,15 +114,17 @@ int main(int argc, char* argv[])
     SDL_TEXTUREACCESS_STREAMING,
     HW_SCREEN_W, HW_SCREEN_H
   );
+  int screenScale = 3;
   SDL_RenderSetLogicalSize(renderer, HW_SCREEN_W, HW_SCREEN_H);
   SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "nearest");
-  SDL_SetWindowSize(window, HW_SCREEN_W * 2, HW_SCREEN_H * 2);
+  SDL_SetWindowSize(window, HW_SCREEN_W * screenScale, HW_SCREEN_H * screenScale);
   SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
 
   int pitch = HW_SCREEN_W * 4;
   float fps = 60.0;
-  int sec = 20;
-  float msecPerFrame = 1000.0/fps;
+  int sec = 40;
+  // int msecPerFrame[] = {33, 34, 33};  // fps 30
+  int msecPerFrame[] = {17, 16, 17};  // fps 60
 
   SDL_AudioSpec desired, obtained;
   desired.freq = HW_MUSIC_FREQUENCY;
@@ -164,8 +166,8 @@ int main(int argc, char* argv[])
     SDL_RenderCopy(renderer, texture, NULL, NULL);
     SDL_RenderPresent(renderer);
     endTime = SDL_GetTicks();
-    if (startTime + msecPerFrame > endTime) {
-      SDL_Delay((uint32_t)(startTime + msecPerFrame - endTime));
+    if (startTime + msecPerFrame[i%3] > endTime) {
+      SDL_Delay((uint32_t)(startTime + msecPerFrame[i%3] - endTime));
     }
   }
 

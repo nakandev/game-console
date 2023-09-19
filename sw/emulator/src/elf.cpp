@@ -25,6 +25,7 @@ void Elf::load(const string& path)
   /* read Elf header */
   ElfHeader* eh = (ElfHeader*)(bufferptr + 0);
   fmt::print("cls={:d}, endian={:d}, phnum={:d}, shnum={:d}\n", eh->ei.cls, eh->ei.data, eh->phnum, eh->shnum);
+  fmt::print("type={:d}, machine={:d}, version={:d}, entry={:08x}\n", eh->type, eh->machine, eh->version, eh->entry);
 
   /* read Section headers */
   fmt::print("section headers\n");
@@ -48,6 +49,14 @@ void Elf::load(const string& path)
   // SectionHeader* strtab_sh = (SectionHeader*)(bufferptr + eh->shoffset + eh->shentrysize * strtab_idx);
 }
 
+Elf::Section* Elf::getSection(const string& name)
+{
+  for (auto& s: sections) {
+    if (s.name == name) return &s;
+  }
+  return nullptr;
+}
+
 void Elf::allocMemory(Memory& memory)
 {
   // memory.initMinimumSections();
@@ -64,9 +73,21 @@ void Elf::allocMemory(Memory& memory)
       program.copy(section.addr, section.size, (buffer + section.offset));
     }
   }
+  // auto* _dataS = getSection(".data");
+  // if (_dataS) {
+  //   auto& _data = memory.section(".data");
+  //   memory.addSection(_data.name, _data.addr, _data.addr);
+  //   fmt::print("s.addr={:x} s.size={:x} offset={:x} b.size={:x} b+offset={}\n",
+  //       _dataS->addr, _dataS->size, _dataS->offset, data.size(), (buffer + _dataS->offset));
+  //   _data.copy(_dataS->addr, _dataS->size, (buffer + _dataS->offset));
+  // }
+  auto& _data = memory.section("data");
   for (auto& section: sections) {
-    if (section.name == ".data" || section.name == ".bss") {
-      memory.addSection(section.name, section.addr, section.addr);
+    if (section.name == ".data" || section.name == ".sdata") {
+      _data.copy(section.addr, section.size, (buffer + section.offset));
+    }
+    if (section.name == ".bss" || section.name == ".sbss") {
+      _data.set(section.addr, section.size, 0);
     }
   }
 }

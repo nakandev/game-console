@@ -7,7 +7,7 @@
 
 class Cpu {
 private:
-  vector<uint8_t> programCode;
+  MemorySection* programSection;
   shared_ptr<Elf> elf;
   InstrRV32IManipulator instrManip;
   vector<Instruction> currentInstr;
@@ -27,7 +27,9 @@ public:
   void setEntrypoint(uint32_t entry);
   void launch(uint32_t entry=0);
   void requestInterruption();
+  void handleInterruption();
   void stepi();
   void printPc();
+  void disassembleAll();
 };
 

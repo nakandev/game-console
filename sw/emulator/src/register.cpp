@@ -34,13 +34,53 @@ RegisterGroup::~RegisterGroup()
 
 void RegisterGroup::insert(size_t index, const Register& reg)
 {
-  regs.insert(make_pair(index, reg));
+  if (regs.size() < index + 1) {
+    regs.resize(index + 1);
+  }
+  regs[index] = reg;
 }
 
 void RegisterGroup::dump()
 {
   for (auto& regitem: regs) {
-    auto& reg = regitem.second;
+    auto& reg = regitem;
+    fmt::print("  {0:2d}:{1:4s} = {2:08x} ({2:d})\n", reg.no, reg.name, reg.val.s);
+  }
+}
+
+SparceRegisterGroup::SparceRegisterGroup()
+  : regs(), indexs()
+{
+}
+
+SparceRegisterGroup::~SparceRegisterGroup()
+{
+  indexs.clear();
+  regs.clear();
+}
+
+void SparceRegisterGroup::insert(size_t index, const Register& reg)
+{
+  // regs.insert(make_pair(index, reg));
+  indexs.push_back(index);
+  regs.push_back(reg);
+}
+
+Register& SparceRegisterGroup::at(size_t index)
+{
+  for (int i=0; i<indexs.size(); i++) {
+    if (indexs[i] == index) {
+      return regs[i];
+    }
+  }
+  return regs[0];
+}
+
+void SparceRegisterGroup::dump()
+{
+  for (auto& regitem: regs) {
+    // auto& reg = regitem.second;
+    auto& reg = regitem;
     fmt::print("  {0:2d}:{1:4s} = {2:08x} ({2:d})\n", reg.no, reg.name, reg.val.s);
   }
 }
@@ -48,7 +88,7 @@ void RegisterGroup::dump()
 RegisterSet::RegisterSet()
   : pc(), prev_pc(),
     gpr(RegisterGroup()),
-    csr(RegisterGroup())
+    csr(SparceRegisterGroup())
 {
   pc = Register(32, "pc");
   for (size_t i=0; i<32; i++) {

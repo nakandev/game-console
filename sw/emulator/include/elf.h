@@ -81,5 +81,6 @@ public:
   Elf();
   ~Elf();
   void load(const string& path);
+  Section* getSection(const string& name);
   void allocMemory(Memory& memory);
 };

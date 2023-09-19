@@ -98,6 +98,8 @@ enum {
   HWREG_BG1_ADDR      = HWREG_BG_BASEADDR + HWREG_BG_BYTESIZE * 1,
   HWREG_BG2_ADDR      = HWREG_BG_BASEADDR + HWREG_BG_BYTESIZE * 2,
   HWREG_BG3_ADDR      = HWREG_BG_BASEADDR + HWREG_BG_BYTESIZE * 3,
+  HWBG_TILE_MODE = 0,
+  HWBG_PIXEL_MODE = 1,
 
   HWREG_SPRITE_BASEADDR    = HWREG_TILERAM_BASEADDR + 0x0040'0000,
   HWREG_SPRITE_BYTESIZE    = 0x1000,
@@ -115,9 +117,13 @@ enum {
   HW_SCREEN_VBLANK = 80,
 
   HWREG_INSTRUMENT_BASEADDR = HWREG_ARAM_BASEADDR + 0x0000'0000,
+  HW_SOUNDOP_SIN = 0,
+  HW_SOUNDOP_SQUARE = 1,
+  HW_SOUNDOP_SAWTOOTH = 2,
+  HW_SOUNDOP_NOISE = 3,
   HW_SPECTRUM_MIN = 0,
   HW_SPECTRUM_MAX = 128,
-  HW_SPECTRUM_NUM = 16,
+  // HW_SPECTRUM_NUM = 16,
   HW_INSTRUMENT_TIMESLICE = 16,
   HW_INSTRUMENT_NUM = 64,
   HW_MUSICNOTE_NUM = 256,
@@ -195,11 +201,12 @@ struct HwBG {
   union {
     struct {
       uint8_t enable    : 1;
+      uint8_t mode      : 1;
       uint8_t vflip     : 1;
       uint8_t hflip     : 1;
       uint8_t layer     : 2;
       uint8_t affineEnable : 1;
-      uint8_t __padding : 2;
+      uint8_t __padding : 1;
     };
     uint8_t data;
   } flag;
@@ -242,32 +249,34 @@ struct HwTileRam {
 };
 
 /* Audio */
-union HwSpectrum {
-  struct {
-    int16_t freq;
-    int16_t amp;
-  };
-  uint32_t data;
-  HwSpectrum(){}
-  HwSpectrum(int16_t f, int16_t a){freq=f; amp=a;}
-  HwSpectrum(const HwSpectrum& rhs){this->data=rhs.data;}
-  HwSpectrum(std::initializer_list<HwSpectrum>){}
-  ~HwSpectrum(){}
-  HwSpectrum& operator=(const HwSpectrum& rhs){this->data=rhs.data; return *this;}
-  HwSpectrum& operator=(std::initializer_list<HwSpectrum>){return *this;}
+struct HwSoundOp {
+  uint32_t func : 2;
+  uint32_t arg  : 5;
+  uint32_t A : 6;
+  uint32_t D : 6;
+  uint32_t S : 6;
+  uint32_t R : 7;
+  // uint32_t padding0 : 1;
+  int16_t amp      : 10;  // 1bit:signed, 5bit:upper, 4bit:lower.
+  int16_t padding1 : 6;
+  uint8_t ratio;
+  uint8_t detune;
 };
 
 struct HwInstrument {  // Tile
-  HwSpectrum spectrum[HW_INSTRUMENT_TIMESLICE][HW_SPECTRUM_NUM];
+  uint8_t soundOpId[4];
+  uint8_t algorithm;
+  uint8_t dummy[3];
 };
 
 struct HwMusicNote {
   uint8_t enable       : 1;
   uint8_t instrumentId : 7;
-  uint8_t padding : 4;
+  uint8_t length  : 4;
   uint8_t channel : 4;
   int8_t direction;
   int8_t scale;
+  uint32_t start;
 };
 
 struct HwMusicsheet {  // Tilemap
@@ -285,19 +294,23 @@ struct HwMusic {  // BG
   } flag;
   uint8_t loopNote;
   uint8_t endNote;
-  uint8_t noteFrameLength;
+  uint8_t noteFrameLength;  // bps=(60/this)*60
   struct {
     uint8_t enable  : 1;
     uint8_t sheetId : 7;
   } channel[HW_MUSIC_CHANNEL_NUM];
-  uint32_t _padding21to23;
-  uint32_t _padding24to26 : 24;
-  uint32_t noteTime       :  8;  // auto update
-  uint32_t freqTime;  // auto update
+  uint16_t _padding21to22;
+  uint8_t  _padding23;
+  int8_t  masterDirection;
+  uint32_t masterVolume   : 16;
+  uint32_t _padding24to26 :  8;
+  uint32_t noteCount      :  8;  // auto update
+  uint32_t freqCount;  // auto update
 };
 
 struct HwARam {
-  __attribute__((aligned(0x02'0000))) HwInstrument instrument[0x02'0000/sizeof(HwInstrument)];  // 64*16*16*4 (inst*slice*spect*struct)
-  __attribute__((aligned(0x01'0000))) HwMusicsheet musicsheet[0x01'0000/sizeof(HwMusicsheet)];  // 16*256*4 (sheets*notes*struct)
+  __attribute__((aligned(0x00'4000))) HwSoundOp soundOp[0x00'1000/sizeof(HwSoundOp)];  // 128*4*8 (soundOpNum*4module*struct)
+  __attribute__((aligned(0x00'4000))) HwInstrument instrument[0x00'0800/sizeof(HwInstrument)];  // 256*8=0x800 (instNum*struct)
+  __attribute__((aligned(0x01'0000))) HwMusicsheet musicsheet[0x01'0000/sizeof(HwMusicsheet)];  // 32*256*8 (sheets*notes*struct)
   __attribute__((aligned(0x00'1000))) HwMusic music[0x00'1000/sizeof(HwMusic)];  // 8*32 (musics*struct)
 };
