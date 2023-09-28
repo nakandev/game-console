@@ -2,7 +2,7 @@
 #include <fmt/core.h>
 
 Board::Board()
-  : memory(), io(memory), cpu(memory), ppu(memory), apu(memory)
+  : masterClock(30*1024*1024), memory(), io(memory), cpu(memory), ppu(memory), apu(memory)
 {
   io.setCpu(cpu);
   io.setPpu(ppu);

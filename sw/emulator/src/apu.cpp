@@ -18,7 +18,8 @@ Apu::Apu(Memory& memory)
   : memory(memory),
   noteBuffer(),
   musicBuffer(),
-  apuMusicData()
+  apuMusicData(),
+  debug()
 {
   noteBuffer.resize(HW_MUSIC_CHANNEL_NUM);
   musicBuffer.resize(HW_MUSIC_FREQ_PER_FRAME * 2);
@@ -27,6 +28,9 @@ Apu::Apu(Memory& memory)
   for (int i=0; i<HW_SPECTRUM_MAX - 1; i++) {
     spectrum_freqs[i + 1] = 27.5 * powf(2.0, (FLOAT)i/12.0);
   }
+  debug.enableCh.resize(HW_MUSIC_CHANNEL_NUM);
+  for (auto& enable: debug.enableCh)
+    enable = true;
 }
 
 Apu::~Apu()
@@ -335,7 +339,7 @@ void Apu::updateMusicBuffer()
     FLOAT vfL = 0.0;
     FLOAT vfR = 0.0;
     for (int ch=0; ch<8; ch++) {
-      if (!music.channel[ch].enable) continue;
+      if (!(debug.enableCh[ch] && music.channel[ch].enable)) continue;
       auto sheetId = music.channel[ch].sheetId;
       auto noteId = noteBuffer[ch].noteIdx;
       auto& sheet = aram.musicsheet[sheetId];

@@ -24,6 +24,7 @@ public:
   ~RegisterGroup();
   inline Register& operator[](size_t index) noexcept { return regs[index]; }
   void insert(size_t index, const Register& reg);
+  void init();
   void dump();
 };
 
@@ -36,8 +37,9 @@ public:
   SparceRegisterGroup();
   SparceRegisterGroup(size_t size);
   ~SparceRegisterGroup();
-  inline Register& operator[](size_t index) noexcept { return at(index); }
+  inline Register& operator[](size_t index) noexcept {return at(index); }
   void insert(size_t index, const Register& reg);
+  void init();
   void dump();
 };
 
@@ -49,6 +51,7 @@ public:
   SparceRegisterGroup csr;
   RegisterSet();
   ~RegisterSet();
+  void init();
 };
 
 enum {

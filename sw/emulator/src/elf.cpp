@@ -26,16 +26,27 @@ void Elf::load(const string& path)
   ElfHeader* eh = (ElfHeader*)(bufferptr + 0);
   fmt::print("cls={:d}, endian={:d}, phnum={:d}, shnum={:d}\n", eh->ei.cls, eh->ei.data, eh->phnum, eh->shnum);
   fmt::print("type={:d}, machine={:d}, version={:d}, entry={:08x}\n", eh->type, eh->machine, eh->version, eh->entry);
+  elfHeader = *eh;
+
+  /* read Program headers */
+  fmt::print("program headers\n");
+  fmt::print("  type---- offset-- vaddr--- paddr--- filesize memsize- flags--- align---\n");
+  for (int pi=0; pi<eh->phnum; pi++) {
+    ProgramHeader* ph = (ProgramHeader*)(bufferptr + eh->phoffset + eh->phentrysize * pi);
+    fmt::print("  {:08x} {:08x} {:08x} {:08x} {:08x} {:08x} {:08x} {:8d}\n",
+      ph->type, ph->offset, ph->vaddr, ph->paddr, ph->filesize, ph->memorysize, ph->flags, ph->align);
+  }
 
   /* read Section headers */
   fmt::print("section headers\n");
-  fmt::print("  name---------------- addr---- offset-- size----\n");
+  fmt::print("  name---------------- addr---- offset-- size---- flags---\n");
   sections.clear();
   for (int si=0; si<eh->shnum; si++) {
     SectionHeader* sh = (SectionHeader*)(bufferptr + eh->shoffset + eh->shentrysize * si);
     SectionHeader* nametable_sh = (SectionHeader*)(bufferptr + eh->shoffset + eh->shentrysize * eh->shstringindex);
     char* sname = (char*)(bufferptr + nametable_sh->offset + sh->name);
-    fmt::print("  {:20s} {:08x} {:08x} {:8x}\n", sname, sh->addr, sh->offset, sh->size);
+    fmt::print("  {:20s} {:08x} {:08x} {:8x} {:8}\n",
+      sname, sh->addr, sh->offset, sh->size, sh->flags);
     sections.push_back(Section{.name=sname, .addr=sh->addr, .offset=sh->offset, .size=sh->size});
   }
 
@@ -47,6 +58,11 @@ void Elf::load(const string& path)
   // /* read StringTable section */
   // int strtab_idx = ei->shnum - 2;
   // SectionHeader* strtab_sh = (SectionHeader*)(bufferptr + eh->shoffset + eh->shentrysize * strtab_idx);
+}
+
+const Elf::ElfHeader& Elf::getElfHeader()
+{
+  return elfHeader;
 }
 
 Elf::Section* Elf::getSection(const string& name)

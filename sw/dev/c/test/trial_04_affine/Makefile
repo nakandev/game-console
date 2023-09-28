@@ -29,8 +29,8 @@ vpath %.cpp $(NKX_C_ROOT)/src/nkx/util
 .PHONY: all clean run
 
 all: $(OBJS)
-	$(CXX) $(LDFLAGS) -o $(TARGET) $^ $(LIBS)
-	$(OBJDUMP) -D -C $(TARGET) > $(TARGET).dis
+	$(CXX) $(LDFLAGS) -o $(TARGET).exe $^ $(LIBS)
+	$(OBJDUMP) -D -C $(TARGET).exe > $(TARGET).dis
 
 startup.o: startup.cpp
 	$(CXX) -c $(CFLAGS) -mno-relax -o $@ $<
@@ -42,7 +42,7 @@ startup.o: startup.cpp
 	$(CXX) -c $(CFLAGS) -o $@ $<
 
 run:
-	./$(TARGET)
+	./$(TARGET).exe
 
 clean:
-	rm -f $(OBJS) $(TARGET) $(TARGET).*
+	rm -f $(OBJS) $(TARGET).exe $(TARGET).*

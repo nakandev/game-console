@@ -49,7 +49,8 @@ InstrRV32IManipulator::decode16(uint32_t bytes, Instruction& instr)
     decodeTypeCSS(bytes16, instr);
   } else
   {
-    instr = Instruction{.size=2};
+    instr = Instruction();
+    instr.size = 2;
   }
 }
 
@@ -197,6 +198,7 @@ InstrRV32IManipulator::decodeTypeCSS(uint32_t bytes, Instruction& instr)
   instr.result.s = 0;
   instr.isJumped = false;
   instr.isWaiting = false;
+  instr.waitCycle = 3;
 
   instr.instr = INSTR_UNKNOWN;
   if (opcode == OPCODE_C2) {
@@ -247,6 +249,7 @@ InstrRV32IManipulator::decodeTypeCL(uint32_t bytes, Instruction& instr)
   instr.result.s = 0;
   instr.isJumped = false;
   instr.isWaiting = false;
+  instr.waitCycle = 3;
 
   instr.instr = INSTR_UNKNOWN;
   if (funct3 == 0b010) {
@@ -282,6 +285,7 @@ InstrRV32IManipulator::decodeTypeCS(uint32_t bytes, Instruction& instr)
   instr.result.s = 0;
   instr.isJumped = false;
   instr.isWaiting = false;
+  instr.waitCycle = 3;
 
   instr.instr = INSTR_UNKNOWN;
   if (funct3 == 0b110) {

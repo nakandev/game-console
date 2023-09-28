@@ -7,6 +7,7 @@
 
 class Board {
 public:
+  uint64_t masterClock;
   Memory memory;
   IO io;
   Cpu cpu;
@@ -14,6 +15,7 @@ public:
   Apu apu;
   Board();
   ~Board();
+  void initMemory();
   void updateFrameUntilVblank();
   void updateFrameSinceVblank();
 };

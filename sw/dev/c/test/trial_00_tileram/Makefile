@@ -19,13 +19,13 @@ vpath %.cpp $(NKX_C_ROOT)/src/nkx/util
 .PHONY: all clean run
 
 all: $(OBJS)
-	$(CXX) $(LDFLAGS) -o $(TARGET) $^ $(LIBS)
+	$(CXX) $(LDFLAGS) -o $(TARGET).exe $^ $(LIBS)
 
 %.o: %.cpp
 	$(CXX) -c $(CFLAGS) -o $@ $<
 
 run:
-	./$(TARGET)
+	./$(TARGET).exe
 
 clean:
-	rm -f $(OBJS) $(TARGET) *.png
+	rm -f $(OBJS) $(TARGET).exe *.png

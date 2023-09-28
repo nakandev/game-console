@@ -10,7 +10,8 @@ Ppu::Ppu(Memory& memory)
     screenBuffer(),
     ppuSprite(),
     memory(memory),
-    scanline()
+    scanline(),
+    debug()
 {
   lineBufferBg.resize(4);
   for (auto& buffer: lineBufferBg)
@@ -20,6 +21,10 @@ Ppu::Ppu(Memory& memory)
     buffer.resize(HW_SCREEN_W);
   screenBuffer.resize(HW_SCREEN_W * HW_SCREEN_H);
   ppuSprite.resize(HW_SPRITE_NUM);
+  debug.enableBg.resize(4);
+  for (auto& enable: debug.enableBg)
+    enable = true;
+  debug.enableSp = true;
 }
 
 Ppu::~Ppu()
@@ -181,10 +186,12 @@ void Ppu::drawLine(int y)
     for (int i=0; i<4; i++) {
       uint8_t layer = layers[i];
       auto& bg = tileram.bg[layer];
-      if (bg.flag.mode == HWBG_PIXEL_MODE) {
-        drawLineBGPixel(vram, tileram.bg[layer], x, y, lineBufferBg[layer]);
-      } else {
-        drawLineBGTile(tileram, tileram.bg[layer], x, y, lineBufferBg[layer]);
+      if (debug.enableBg[i] && bg.flag.enable) {
+        if (bg.flag.mode == HWBG_PIXEL_MODE) {
+          drawLineBGPixel(vram, tileram.bg[layer], x, y, lineBufferBg[layer]);
+        } else {
+          drawLineBGTile(tileram, tileram.bg[layer], x, y, lineBufferBg[layer]);
+        }
       }
     }
   }
@@ -218,9 +225,23 @@ void Ppu::drawAllLine()
   }
 }
 
-void Ppu::copyScreenBuffer(uint32_t* buffer)
+void Ppu::copyScreenBuffer(uint32_t* buffer, bool inv)
 {
-  for (int i=0; i<HW_SCREEN_W * HW_SCREEN_H; i++) {
-    buffer[i] = screenBuffer[i];
+  if (inv) {
+    for (int i=0; i<HW_SCREEN_W * HW_SCREEN_H; i++) {
+      uint32_t color = screenBuffer[i];
+      color = (
+          ((color & 0xFF000000u) >> 24) |
+          ((color & 0x00FF0000u) >> 8) |
+          ((color & 0x0000FF00u) << 8) |
+          ((color & 0x000000FFu) << 24)
+      );
+      buffer[i] = color;
+    }
+  } else {
+    for (int i=0; i<HW_SCREEN_W * HW_SCREEN_H; i++) {
+      uint32_t color = screenBuffer[i];
+      buffer[i] = color;
+    }
   }
 }

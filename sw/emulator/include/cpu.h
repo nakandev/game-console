@@ -16,16 +16,16 @@ private:
   int64_t instrCount;
   RegisterSet regs;
   Memory& memory;
+protected:
+  void setEntrypoint(uint32_t entry);
 public:
-
   Cpu(Memory& memory);
   ~Cpu();
   void setMaxCycles(int64_t cycles);
-  void loadBinary(vector<uint8_t> binary);
   void loadElf(const string& path);
-  void initRegs();
-  void setEntrypoint(uint32_t entry);
-  void launch(uint32_t entry=0);
+  void init();
+  void reset();
+  void launch();
   void requestInterruption();
   void handleInterruption();
   void stepi();

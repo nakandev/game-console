@@ -66,7 +66,7 @@ int main()
   hwARam.soundOp[1].ratio = 49;
   hwARam.soundOp[1].detune = 0;
   hwARam.soundOp[2].func = HW_SOUNDOP_SIN;
-#if 1
+#if 0
   hwARam.soundOp[2].arg = 0x0f;
   hwARam.soundOp[2].A = 0x1f;
   hwARam.soundOp[2].D = 0x1f;

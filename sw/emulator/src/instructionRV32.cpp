@@ -139,6 +139,7 @@ InstrRV32IManipulator::~InstrRV32IManipulator()
 void
 InstrRV32IManipulator::decode(uint32_t bytes, Instruction& instr)
 {
+  instr.waitCycle = 1;
   if ((bytes & 0x3) != 3) {
     // 16-bits instruction
     decode16(bytes, instr);
@@ -148,8 +149,10 @@ InstrRV32IManipulator::decode(uint32_t bytes, Instruction& instr)
     decode32(bytes, instr);
   } else
   {
-    instr = Instruction{.size=4};
+    instr = Instruction();
+    instr.size = 4;
   }
+  instr.phase = 2;
 }
 
 void
@@ -178,7 +181,8 @@ InstrRV32IManipulator::decode32(uint32_t bytes, Instruction& instr)
     decodeTypeSystem(bytes, instr);
   } else
   {
-    instr = Instruction{.size=4};
+    instr = Instruction();
+    instr.size = 2;
   }
 }
 
@@ -198,6 +202,7 @@ InstrRV32IManipulator::decodeTypeR(uint32_t bytes, Instruction& instr)
   instr.result.s = 0;
   instr.isJumped = false;
   instr.isWaiting = false;
+  instr.waitCycle = 1;
 
   const int instr_table_funct3_0[] = {
     INSTR_ADD,
@@ -258,6 +263,7 @@ InstrRV32IManipulator::decodeTypeI(uint32_t bytes, Instruction& instr)
   instr.result.s = 0;
   instr.isJumped = false;
   instr.isWaiting = false;
+  instr.waitCycle = 1;
 
   const int instr_table_funct3_ArithI[] = {
     INSTR_ADDI,
@@ -314,9 +320,10 @@ InstrRV32IManipulator::decodeTypeS(uint32_t bytes, Instruction& instr)
     instr.imm.s    = sext(11, ((bytes >> 20) & 0xFFFu));
     instr.size = 4;
     instr.type = OPTYPE_S;
-  instr.result.s = 0;
-  instr.isJumped = false;
-  instr.isWaiting = false;
+    instr.result.s = 0;
+    instr.isJumped = false;
+    instr.isWaiting = false;
+    instr.waitCycle = 3;
   }
   else {
     instr.binary = bytes;
@@ -332,9 +339,10 @@ InstrRV32IManipulator::decodeTypeS(uint32_t bytes, Instruction& instr)
         );
     instr.size = 4;
     instr.type = OPTYPE_S;
-  instr.result.s = 0;
-  instr.isJumped = false;
-  instr.isWaiting = false;
+    instr.result.s = 0;
+    instr.isJumped = false;
+    instr.isWaiting = false;
+    instr.waitCycle = 3;
   }
 
   const int instr_table_load[] = {
@@ -388,6 +396,7 @@ InstrRV32IManipulator::decodeTypeB(uint32_t bytes, Instruction& instr)
   instr.result.s = 0;
   instr.isJumped = false;
   instr.isWaiting = false;
+  instr.waitCycle = 1;
 
   const int instr_table_funct3[] = {
     INSTR_BEQ,
@@ -449,6 +458,7 @@ InstrRV32IManipulator::decodeTypeJ(uint32_t bytes, Instruction& instr)
   instr.result.s = 0;
   instr.isJumped = false;
   instr.isWaiting = false;
+  instr.waitCycle = 1;
 
   instr.instr = INSTR_JAL;
 }
@@ -469,6 +479,7 @@ InstrRV32IManipulator::decodeTypeSystem(uint32_t bytes, Instruction& instr)
   instr.result.s = 0;
   instr.isJumped = false;
   instr.isWaiting = false;
+  instr.waitCycle = 1;
 
   const int instr_table_funct3_csr[] = {
     INSTR_UNKNOWN,
@@ -503,6 +514,10 @@ InstrRV32IManipulator::decodeTypeSystem(uint32_t bytes, Instruction& instr)
 void
 InstrRV32IManipulator::execute(Instruction& instr, RegisterSet& regs, Memory& memory)
 {
+  instr.waitCycle--;
+  if (instr.waitCycle > 0) {
+    return;
+  }
   regs.prev_pc = regs.pc;
   if (instr.size == 2) {
     // executeTypeExtC(instr, regs, memory);
@@ -512,10 +527,13 @@ InstrRV32IManipulator::execute(Instruction& instr, RegisterSet& regs, Memory& me
     (this->*(execute_tableI[instr.instr]))(instr, regs, memory);
   }
 
-  // if (!instr.isJumped) {
-  //   regs.pc.val.u += instr.size;
-  //   instr.isJumped = false;
-  // }
+  if (!instr.isJumped) {
+    regs.prev_pc.val.u = regs.pc.val.u;
+    regs.pc.val.u += instr.size;
+    instr.isJumped = false;
+  }
+
+  instr.phase = 3;
 }
 
 void

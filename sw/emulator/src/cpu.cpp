@@ -24,11 +24,6 @@ void Cpu::setMaxCycles(int64_t cycles)
   maxCycles = cycles;
 }
 
-void Cpu::loadBinary(vector<uint8_t> binary)
-{
-  // [TODO] T.B.D.
-}
-
 void Cpu::loadElf(const string& path)
 {
   elf = shared_ptr<Elf>(new Elf());
@@ -36,12 +31,28 @@ void Cpu::loadElf(const string& path)
   elf.get()->allocMemory(memory);
   programSection = &memory.section("program");
   auto& prg = memory.section("program");
+  reset();
 }
 
-void Cpu::initRegs()
+void Cpu::init()
 {
+  reset();
+  elf = shared_ptr<Elf>();
+  memory.initMinimumSections();
+}
+
+void Cpu::reset()
+{
+  for (auto &instr: currentInstr) {
+    instr = Instruction();
+  }
+  regs.init();
   auto& stack = memory.section("stack");
   regs.gpr[2].val.u = stack.addr + stack.size - 4;
+  setEntrypoint(elf.get()->getElfHeader().entry);
+
+  cycleCount = 0;
+  instrCount = 0;
 }
 
 void Cpu::requestInterruption()
@@ -65,20 +76,29 @@ void Cpu::stepi()
   {
     uint32_t val = programSection->read(regs.pc.val.u, 4);
     auto& instr = currentInstr[0];
-    instrManip.decode(val, instr);
-    instrManip.execute(instr, regs, memory);
-    if (!instr.isJumped) {
-      regs.prev_pc.val.u = regs.pc.val.u;
-      regs.pc.val.u += instr.size;
-      instr.isJumped = false;
+    if (instr.phase == 0) {
+      // fetch
+      instr.phase = 1;
     }
-    if (debugLevel >= 1) {
-      if (regs.prev_pc.val.u != regs.pc.val.u) {
-        instrManip.printInstr(instrCount, regs.prev_pc.val.u, instr, regs, memory);
+    if (instr.phase == 1) {
+      instrManip.decode(val, instr);
+    }
+    if (instr.phase == 2) {
+      instrManip.execute(instr, regs, memory);
+    }
+    if (instr.phase == 3) {
+      // post execute
+      if (debugLevel >= 1) {
+        if (regs.prev_pc.val.u != regs.pc.val.u) {
+          instrManip.printInstr(instrCount, regs.prev_pc.val.u, instr, regs, memory);
+        }
       }
-      if (cycleCount >= maxCycles) {
-        exit(0);
-      };
+      instr.phase = 0;
+    }
+  }
+  if (debugLevel >= 1) {
+    if (cycleCount >= maxCycles) {
+      exit(0);
     }
   }
   cycleCount++;
@@ -90,14 +110,12 @@ void Cpu::setEntrypoint(uint32_t entry)
   regs.pc.val.u = entry;
 }
 
-void Cpu::launch(uint32_t entry)
+void Cpu::launch()
 {
-  auto& stack = memory.section("stack");
-  regs.gpr[2].val.u = stack.addr + stack.size - 4;
-  if(debugLevel>=1) fmt::print("sp={:08x}\n",regs.gpr[2].val.u);
-  setEntrypoint(entry);
+  reset();
 
   regs.gpr.dump();
+  uint32_t entry = regs.pc.val.u;
   long long codeSize = memory.section("program").size;
   while(entry <= regs.pc.val.u && regs.pc.val.u < entry + codeSize) {
     stepi();

@@ -1,7 +1,20 @@
+#include "imgui.h"
+#include "imgui_impl_sdl2.h"
+// #include "imgui_impl_sdlrenderer2.h"
+#include "imgui_impl_opengl3.h"
 #include <SDL2/SDL.h>
+#include <GL/glew.h>
+#include <GLFW/glfw3.h>
+#include <SDL2/SDL_opengl.h>
 #include <emulator.h>
 #include <fmt/core.h>
-#include <cmath>
+
+GLuint framebuffer;
+GLuint texture;
+GLuint renderbuffer;
+
+extern bool Splitter(bool split_vertically, float thickness, float* size1, float* size2, float min_size1, float min_size2, float splitter_long_axis_size = -1.0f);
+extern void DrawSplitter(int split_vertically, float thickness, float* size0, float* size1, float min_size0, float min_size1);
 
 static uint nearPow2(int n)
 {
@@ -17,6 +30,7 @@ bool handleInput(Board& board)
   // handle events
   SDL_Event event;
   while (SDL_PollEvent(&event)) {
+    ImGui_ImplSDL2_ProcessEvent(&event);
     switch (event.type) {
     case SDL_QUIT: /* Window [X] button, or Ctrl-Q */
       return true;
@@ -85,17 +99,20 @@ int main(int argc, char* argv[])
 
   board.cpu.setMaxCycles(100);
   board.cpu.loadElf(path);
-  board.cpu.initRegs();
-  board.cpu.setEntrypoint(0x0800'0000);
 
   SDL_Init(
     SDL_INIT_VIDEO |
     SDL_INIT_AUDIO
-  );   // Initialize SDL2
+  );
 
+  SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+  SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
+  SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
   SDL_Window *window;
+  // string title = "niRVana : RISC-V Game Console";
+  string title = "RISC-V Retro Game Console";
   window = SDL_CreateWindow( 
-    "niRVana : RISC-V Game Console",
+    title.c_str(),
     SDL_WINDOWPOS_UNDEFINED,
     SDL_WINDOWPOS_UNDEFINED,
     HW_SCREEN_W,
@@ -105,20 +122,27 @@ int main(int argc, char* argv[])
   if(window==NULL){
     return 1;
   }
-  SDL_Renderer* renderer;
-  renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
-  SDL_Texture* texture = SDL_CreateTexture(
-    renderer,
-    SDL_PIXELFORMAT_RGBA8888,
-    // SDL_PIXELFORMAT_ABGR8888,
-    SDL_TEXTUREACCESS_STREAMING,
-    HW_SCREEN_W, HW_SCREEN_H
-  );
-  int screenScale = 3;
-  SDL_RenderSetLogicalSize(renderer, HW_SCREEN_W, HW_SCREEN_H);
-  SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "nearest");
+  int screenScale = 4;
   SDL_SetWindowSize(window, HW_SCREEN_W * screenScale, HW_SCREEN_H * screenScale);
   SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
+
+  SDL_GLContext gl_context = SDL_GL_CreateContext(window);
+  SDL_GL_MakeCurrent(window, gl_context);
+  SDL_GL_SetSwapInterval(1); // Enable vsync
+  glewInit();
+
+  // Setup Dear ImGui context
+  IMGUI_CHECKVERSION();
+  ImGui::CreateContext();
+  ImGuiIO& io = ImGui::GetIO(); (void)io;
+  io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+  // io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+  // Setup Dear ImGui style
+  ImGui::StyleColorsDark();
+  // Setup Platform/Renderer backends
+  const char* glsl_version = "#version 130";
+  ImGui_ImplSDL2_InitForOpenGL(window, gl_context);
+  ImGui_ImplOpenGL3_Init(glsl_version);
 
   int pitch = HW_SCREEN_W * 4;
   float fps = 60.0;
@@ -131,7 +155,6 @@ int main(int argc, char* argv[])
   desired.format = AUDIO_S16LSB;
   desired.channels = 2;
   desired.samples = nearPow2(HW_MUSIC_FREQ_PER_FRAME * 2);
-  // desired.callback = audio_callback;
   desired.callback = nullptr;
   desired.userdata = &board.apu.apuMusicData;
 
@@ -142,6 +165,48 @@ int main(int argc, char* argv[])
   }
   SDL_PauseAudioDevice(audioDev, false);
 
+  /* create_framebuffer */
+  if (true) {
+    int width = 320, height = 240;
+    glGenFramebuffers(1, &framebuffer);
+    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+
+    glGenTextures(1, &texture);
+    glBindTexture(GL_TEXTURE_2D, texture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0);
+
+    glGenRenderbuffers(1, &renderbuffer);
+    glBindRenderbuffer(GL_RENDERBUFFER, renderbuffer);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, renderbuffer);
+
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+      fmt::print("ERROR::FRAMEBUFFER:: Framebuffer is not complete!\n");
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glBindRenderbuffer(GL_RENDERBUFFER, 0);
+
+  }
+
+  vector<uint32_t> screenBuffer;
+  screenBuffer.resize(320 * 240);
+
+  // 800 x 600
+  float hMenu = 30;
+  float margin = 10;
+  float thick = 10;
+  // float wSCR = io.DisplaySize.x, hSCR = io.DisplaySize.y;
+  float wSCR = HW_SCREEN_W * screenScale - margin, hSCR = HW_SCREEN_H * screenScale - margin - hMenu;
+  float wLC = (wSCR*0.8)-thick, hLC = (hSCR*0.8)-thick;
+  float wL = (wSCR*0.2)-thick, hL = hLC;
+  float wC = (wSCR*0.6)-thick, hC = hLC;
+  float wR = (wSCR*0.2), hR = (hSCR*1.0);
+  float wB = (wSCR*0.8)-thick, hB = (hSCR*0.2);
+
   board.updateFrameUntilVblank();
   board.updateFrameSinceVblank();
   uint32_t startTime, endTime;
@@ -151,32 +216,176 @@ int main(int argc, char* argv[])
       break;
     }
 
-    // update cpu, screen, audio
-    uint32_t* screenBuffer = nullptr;
-    SDL_LockTexture(texture, NULL, (void**)&screenBuffer, &pitch);
+    // Start the Dear ImGui frame
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplSDL2_NewFrame();
+    ImGui::NewFrame();
 
+    // update cpu, screen, audio
     board.updateFrameUntilVblank();
-    board.ppu.copyScreenBuffer(screenBuffer);
+    board.ppu.copyScreenBuffer(screenBuffer.data(), true);
     SDL_QueueAudio(audioDev, (void*)board.apu.apuMusicData.buffer, HW_MUSIC_FREQ_PER_FRAME*2*2);
     board.updateFrameSinceVblank();
 
-    SDL_RenderClear(renderer);
-    SDL_UnlockTexture(texture);
-    SDL_UpdateTexture(texture, NULL, screenBuffer, pitch);
-    SDL_RenderCopy(renderer, texture, NULL, NULL);
-    SDL_RenderPresent(renderer);
+    auto imguiWindowFlag = 
+      ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
+    auto pOpen = true;
+    ImGui::SetNextWindowPos(ImVec2(0, 0));
+    ImGui::SetNextWindowSize(ImVec2(io.DisplaySize.x, io.DisplaySize.y));
+    ImGui::Begin("Another Window", &pOpen, imguiWindowFlag);
+    { /* Menu */
+      auto menuItem_Debug_Mode = false;
+      if (ImGui::BeginMenuBar()) {
+        if (ImGui::BeginMenu("System")) {
+          ImGui::MenuItem("Open", "CTRL+O");
+          ImGui::Separator();
+          ImGui::MenuItem("Quit", "CTRL+Q");
+          ImGui::EndMenu();
+        }
+        if (ImGui::BeginMenu("Config")) {
+          ImGui::MenuItem("Input", "");
+          ImGui::MenuItem("Video", "");
+          ImGui::MenuItem("Audio", "");
+          ImGui::MenuItem("Network", "");
+          ImGui::EndMenu();
+        }
+        if (ImGui::BeginMenu("Emulator")) {
+          ImGui::MenuItem("Launch", "");
+          ImGui::MenuItem("Pause", "");
+          ImGui::MenuItem("Reset", "");
+          ImGui::Separator();
+          ImGui::MenuItem("Debug Mode", "", &menuItem_Debug_Mode);
+          ImGui::EndMenu();
+        }
+        ImGui::EndMenuBar();
+      }
+    }
+    { /* Main Panel */
+      ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+      ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+      ImGui::PushStyleVar(ImGuiStyleVar_ChildBorderSize, 1.0f);
+      DrawSplitter(false, 10, &wLC, &wR, 50, 50);
+      wC = wLC - wL - thick;
+      wB = wLC;
+      ImGui::BeginChild(ImGui::GetID((void*)0), ImVec2(wLC, hR), ImGuiWindowFlags_NoTitleBar);
+        DrawSplitter(true, 10, &hLC, &hB, 50, 50);
+        ImGui::BeginChild(ImGui::GetID((void*)1), ImVec2(wLC, hLC), ImGuiWindowFlags_NoTitleBar);
+          DrawSplitter(false, 10, &wL, &wC, 50, 50);
+          ImGui::BeginChild(ImGui::GetID((void*)2), ImVec2(wL, hLC), ImGuiWindowFlags_NoTitleBar);
+            ImGui::Text("Control Panel\n");
+          ImGui::EndChild();
+          ImGui::SameLine();
+          ImGui::BeginChild(ImGui::GetID((void*)3), ImVec2(wC, hLC), ImGuiWindowFlags_NoTitleBar);
+            float gameW = wC;
+            float gameH = 240.0 / 320 * gameW;
+            ImGui::Image(reinterpret_cast<void *>(framebuffer), ImVec2(gameW, gameH));
+          ImGui::EndChild();
+        ImGui::EndChild();
+        ImGui::BeginChild(ImGui::GetID((void*)4), ImVec2(wB, hB), ImGuiWindowFlags_NoTitleBar);
+          ImGui::Text("Viewer Panel");
+        ImGui::EndChild();
+      ImGui::EndChild();
+      ImGui::SameLine();
+      ImGui::BeginChild(ImGui::GetID((void*)5), ImVec2(wR, hR), ImGuiWindowFlags_NoTitleBar);
+        ImGui::Text("Property Panel\nHwREG\n");
+      ImGui::EndChild();
+      ImGui::PopStyleVar(3);
+    }
+    ImGui::End();
+
+    // auto imguiWindowFlag2 = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar;
+    // auto pOpen2 = true;
+    // ImGui::SetNextWindowPos(ImVec2(320, 240), ImGuiCond_FirstUseEver);
+    // ImGui::SetNextWindowSize(ImVec2(320+20, 240+20));
+    // ImGui::Begin("Another Window 2", &pOpen2, imguiWindowFlag2);
+    // // ImGui::Image((void *)framebuffer, ImVec2(320, 240));
+    // ImGui::Image(reinterpret_cast<void *>(framebuffer), ImVec2(320, 240));
+    // ImGui::End();
+
+    // Rendering
+    ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+    ImGui::Render();
+
+    {
+      int width = 320, height = 240;
+      glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+      glViewport(0, 0, 320, 240);
+      glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+      glClear(GL_COLOR_BUFFER_BIT);
+      glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+      glBindTexture(GL_TEXTURE_2D, texture);
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, screenBuffer.data());
+      // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+      // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+      glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0);
+    }
+
+    glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
+    glClearColor(clear_color.x * clear_color.w, clear_color.y * clear_color.w, clear_color.z * clear_color.w, clear_color.w);
+    glClear(GL_COLOR_BUFFER_BIT);
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+    SDL_GL_SwapWindow(window);
+
     endTime = SDL_GetTicks();
     if (startTime + msecPerFrame[i%3] > endTime) {
       SDL_Delay((uint32_t)(startTime + msecPerFrame[i%3] - endTime));
     }
   }
 
-  SDL_PauseAudioDevice(audioDev, true);
-  SDL_CloseAudioDevice(audioDev);
-  if (texture) SDL_DestroyTexture(texture);
-  if (renderer) SDL_DestroyRenderer(renderer);
-  if (window) SDL_DestroyWindow(window);
-  SDL_Quit();
+  // Cleanup
+  if (true) {
+    glDeleteRenderbuffers(1, &renderbuffer);
+    glDeleteTextures(1, &texture);
+    glDeleteFramebuffers(1, &framebuffer);
+  }
+  ImGui_ImplOpenGL3_Shutdown();
+  ImGui_ImplSDL2_Shutdown();
+  ImGui::DestroyContext();
+  // if (audioDev) {
+  //   SDL_PauseAudioDevice(audioDev, true);
+  //   SDL_CloseAudioDevice(audioDev);
+  // }
+  // if (window) {
+  //   SDL_DestroyWindow(window);
+  // }
+  // SDL_Quit();
 
   return 0;
+}
+
+void DrawSplitter(int split_vertically, float thickness, float* size0, float* size1, float min_size0, float min_size1)
+{
+  ImVec2 backup_pos = ImGui::GetCursorPos();
+  if (split_vertically)
+      ImGui::SetCursorPosY(backup_pos.y + *size0);
+  else
+      ImGui::SetCursorPosX(backup_pos.x + *size0);
+
+  ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0,0,0,0));
+  // We don't draw while active/pressed because as we move the panes the splitter button will be 1 frame late
+  ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0,0,0,0));
+  ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.6f,0.6f,0.6f,0.10f));
+  ImGui::Button("##Splitter", ImVec2(!split_vertically ? thickness : -1.0f, split_vertically ? thickness : -1.0f));
+  ImGui::PopStyleColor(3);
+
+  ImGui::SetItemAllowOverlap(); // This is to allow having other buttons OVER our splitter. 
+
+  if (ImGui::IsItemActive())
+  {
+    float mouse_delta = split_vertically ? ImGui::GetIO().MouseDelta.y : ImGui::GetIO().MouseDelta.x;
+
+    // Minimum pane size
+    if (mouse_delta < min_size0 - *size0)
+        mouse_delta = min_size0 - *size0;
+    if (mouse_delta > *size1 - min_size1)
+        mouse_delta = *size1 - min_size1;
+
+    // Apply resize
+    *size0 += mouse_delta;
+    *size1 -= mouse_delta;
+  }
+  ImGui::SetCursorPos(backup_pos);
 }

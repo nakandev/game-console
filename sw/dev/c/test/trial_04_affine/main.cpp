@@ -151,6 +151,7 @@ int main()
   hwTileRam.bg[1].flag.layer = 1;
   hwTileRam.bg[2].flag.layer = 0;
   hwTileRam.bg[3].flag.layer = 0;
+  hwTileRam.bg[0].flag.enable = true;
   /* SP tile settings */
   int sptileNo = 15;
   const int tidxTbl[] = {0, 3, 7, 12, 15, 56, 63};

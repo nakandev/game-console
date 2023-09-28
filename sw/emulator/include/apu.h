@@ -25,6 +25,9 @@ private:
   vector<int16_t> musicBuffer;
 public:
   ApuMusicData apuMusicData;
+  struct {
+    vector<uint8_t> enableCh;
+  } debug;
   Apu(Memory& memory);
   ~Apu();
   void updateMusicBuffer();

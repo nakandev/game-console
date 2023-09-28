@@ -278,18 +278,21 @@ struct Instruction {
   uint32_t binary;
   uint32_t instr;
   uint8_t opcode;
-  uint8_t functB;  // funct7, funct6
-  uint16_t functA;  // funct3, funct4
   uint8_t dst;
   uint8_t src1;
   uint8_t src2;
   uint8_t src3;
+  uint8_t waitCycle;
+  uint8_t phase;  // 0:fetch 1:decode 2:execute
+  uint8_t pad2;
   union32_t imm;  // funct12
   union32_t result;
-  int size;
+  int32_t size;
   OpType type;
   bool isJumped;
   bool isWaiting;
+  Instruction(): waitCycle(1) {}
+  virtual ~Instruction() {}
 };
 
 class InstrManipulator {

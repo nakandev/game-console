@@ -24,14 +24,14 @@ vpath %.cpp $(NKX_C_ROOT)/src/nkx/util
 .PHONY: all clean run
 
 all: $(OBJS)
-	$(CXX) $(LDFLAGS) -o $(TARGET) $^ $(LIBS)
-	$(OBJDUMP) -d -C $(TARGET) > $(TARGET).dis
+	$(CXX) $(LDFLAGS) -o $(TARGET).exe $^ $(LIBS)
+	$(OBJDUMP) -d -C $(TARGET).exe > $(TARGET).dis
 
 %.o: %.cpp
 	$(CXX) -c $(CFLAGS) -o $@ $<
 
 run:
-	./$(TARGET)
+	./$(TARGET).exe
 
 clean:
-	rm -f $(OBJS) $(TARGET) $(TARGET).*
+	rm -f $(OBJS) $(TARGET).exe $(TARGET).*

@@ -37,12 +37,12 @@ public:
   };
   struct ProgramHeader {
     uint32_t type;
-    uint32_t flags;
     uint32_t offset;
     uint32_t vaddr;
     uint32_t paddr;
     uint32_t filesize;
     uint32_t memorysize;
+    uint32_t flags;
     uint32_t align;
   };
   struct SectionHeader {
@@ -81,6 +81,7 @@ public:
   Elf();
   ~Elf();
   void load(const string& path);
+  const ElfHeader& getElfHeader();
   Section* getSection(const string& name);
   void allocMemory(Memory& memory);
 };

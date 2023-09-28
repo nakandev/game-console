@@ -28,10 +28,14 @@ private:
   void setHBlank(bool flag);
   void setVBlank(bool flag);
 public:
+  struct {
+    vector<uint8_t> enableBg;
+    uint8_t enableSp;
+  } debug;
   Ppu(Memory& memory);
   ~Ppu();
   int currentLineNo();
   void drawLine(int y);
   void drawAllLine();
-  void copyScreenBuffer(uint32_t* buffer);
+  void copyScreenBuffer(uint32_t* buffer, bool inv=false);
 };

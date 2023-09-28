@@ -40,6 +40,13 @@ void RegisterGroup::insert(size_t index, const Register& reg)
   regs[index] = reg;
 }
 
+void RegisterGroup::init()
+{
+  for (int i=0; i<regs.size(); i++) {
+    regs[i].val.s = 0;
+  }
+}
+
 void RegisterGroup::dump()
 {
   for (auto& regitem: regs) {
@@ -64,6 +71,13 @@ void SparceRegisterGroup::insert(size_t index, const Register& reg)
   // regs.insert(make_pair(index, reg));
   indexs.push_back(index);
   regs.push_back(reg);
+}
+
+void SparceRegisterGroup::init()
+{
+  for (int i=0; i<indexs.size(); i++) {
+    regs[i].val.s = 0;
+  }
 }
 
 Register& SparceRegisterGroup::at(size_t index)
@@ -126,4 +140,12 @@ RegisterSet::RegisterSet()
 
 RegisterSet::~RegisterSet()
 {
+}
+
+void RegisterSet::init()
+{
+  pc.val.s = 0;
+  prev_pc.val.s = 0;
+  gpr.init();
+  csr.init();
 }

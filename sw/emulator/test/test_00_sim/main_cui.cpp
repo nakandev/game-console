@@ -14,11 +14,10 @@ int main_disassembler(int argc, char* argv[])
   }
   auto board = Board();
   board.cpu.loadElf(path);
-  board.cpu.initRegs();
-  board.cpu.setEntrypoint(0x0800'0000);
   auto debugger = Debugger();
   debugger.setCpu(board.cpu);
   debugger.disassemble_all();
+  debugger.runInterpreter();
   return 0;
 }
 
@@ -32,12 +31,9 @@ int main_emulator(int argc, char* argv[])
   }
   auto board = Board();
 
-  // debugLevel = 1;
+  debugLevel = 1;
   board.cpu.setMaxCycles(5000);
   board.cpu.loadElf(path);
-  board.cpu.initRegs();
-  board.cpu.setEntrypoint(0x0800'0000);
-  // board.cpu.launch(0x0800'0000);
 
   using namespace std;
   using namespace std::chrono;
@@ -56,7 +52,8 @@ int main_emulator(int argc, char* argv[])
     this_thread::sleep_until(beginTime + msecPerFrame);
   }
 
-  // for (int i=0; i<times.size() && i<100; i++) {
+  // int i0 = 60;
+  // for (int i=i0+0; i<times.size() && i<i0+100; i++) {
   //   float per = (float)times[i] / msecPerFrame.count();
   //   fmt::print("{:3d} {} {} {}\n", i, times[i], msecPerFrame.count(), per);
   // }
@@ -66,7 +63,7 @@ int main_emulator(int argc, char* argv[])
 
 int main(int argc, char* argv[])
 {
-  main_emulator(argc, argv);
-  // main_disassembler(argc, argv);
+  // main_emulator(argc, argv);
+  main_disassembler(argc, argv);
   return 0;
 }
