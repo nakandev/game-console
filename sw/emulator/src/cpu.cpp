@@ -24,14 +24,17 @@ void Cpu::setMaxCycles(int64_t cycles)
   maxCycles = cycles;
 }
 
-void Cpu::loadElf(const string& path)
+uint8_t Cpu::loadElf(const string& path)
 {
   elf = shared_ptr<Elf>(new Elf());
-  elf.get()->load(path);
+  if (elf.get()->load(path)) {
+    return 1;
+  }
   elf.get()->allocMemory(memory);
   programSection = &memory.section("program");
   auto& prg = memory.section("program");
   reset();
+  return 0;
 }
 
 void Cpu::init()
@@ -49,7 +52,7 @@ void Cpu::reset()
   regs.init();
   auto& stack = memory.section("stack");
   regs.gpr[2].val.u = stack.addr + stack.size - 4;
-  setEntrypoint(elf.get()->getElfHeader().entry);
+  regs.pc.val.u = elf.get()->getElfHeader().entry;
 
   cycleCount = 0;
   instrCount = 0;
@@ -69,7 +72,7 @@ void Cpu::handleInterruption()
   }
 }
 
-void Cpu::stepi()
+void Cpu::stepCycle()
 {
   if (currentInstr[0].isWaiting) {
   } else
@@ -105,24 +108,17 @@ void Cpu::stepi()
   instrCount++;
 }
 
-void Cpu::setEntrypoint(uint32_t entry)
+void Cpu::stepInstr()
 {
-  regs.pc.val.u = entry;
+  auto& instr = currentInstr[0];
+  while (instr.phase != 0) {
+    stepCycle();
+  }
 }
 
-void Cpu::launch()
+const uint32_t Cpu::getPc()
 {
-  reset();
-
-  regs.gpr.dump();
-  uint32_t entry = regs.pc.val.u;
-  long long codeSize = memory.section("program").size;
-  while(entry <= regs.pc.val.u && regs.pc.val.u < entry + codeSize) {
-    stepi();
-    if (cycleCount >= maxCycles) break;
-  }
-  fmt::print("pc:{:08x} (end)\n", regs.pc.val.u);
-  regs.gpr.dump();
+  return regs.pc.val.u;
 }
 
 void Cpu::printPc()
@@ -130,7 +126,7 @@ void Cpu::printPc()
   fmt::print("pc:{:08x}\n", regs.pc.val.u);
 }
 
-void Cpu::disassembleAll()
+const vector<string> Cpu::disassembleAll()
 {
   const uint8_t* buffer = programSection->buffer();
   size_t offset = 0;
@@ -138,15 +134,27 @@ void Cpu::disassembleAll()
   auto icount = 0;
   auto size = elf->getSection(".init")->size;
   size += elf->getSection(".text")->size;
-  fmt::print("size={}\n", size);
+  vector<string> disasms;
   while (offset < size) {
     auto baseAddr = programSection->addr;
     auto pc = baseAddr + offset;
     uint32_t val = programSection->read(pc, 4);
 
     instrManip.decode(val, instr);
-    instrManip.printInstr(icount, pc, instr, regs, memory);
+    // instrManip.printInstr(icount, pc, instr, regs, memory);
+    disasms.push_back(instrManip.instrToStr(icount, pc, instr, regs, memory));
     offset += instr.size;
     icount++;
   }
+  return std::move(disasms);
+}
+
+const vector<string> Cpu::readRegisterAll()
+{
+  vector<string> regStrs;
+  for (int i=0; i<regs.gpr.size(); i++) {
+    string rs = fmt::format("gpr[{:2d}] {:08x}", i, regs.gpr[i].val.u);
+    regStrs.push_back(rs);
+  }
+  return regStrs;
 }

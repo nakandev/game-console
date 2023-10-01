@@ -467,6 +467,7 @@ public:
   // void execute_cfswsp(Instruction& instr, RegisterSet& regs, Memory& memory);
   // void execute_csdsp(Instruction& instr, RegisterSet& regs, Memory& memory);
 
+  const string instrToStr(int64_t icount, uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory);
   void printInstr(int64_t icount, uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory);
   string disassemble(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory);
   string disassembleTypeR(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory);

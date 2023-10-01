@@ -1,4 +1,6 @@
+#pragma once
 #include <cstdint>
+#include <memorymap.h>
 class Memory;
 class Cpu;
 class Ppu;
@@ -18,6 +20,7 @@ public:
   void setApu(Apu& apu);
   void pressPadButton(uint8_t button);
   void releasePadButton(uint8_t button);
+  HwPad getPadStatus();
   void requestExtInt(uint8_t intno);
   void setExtIntStatus(uint8_t intno);
   void clearExtIntStatus(uint8_t intno);

@@ -16,7 +16,7 @@ int main_disassembler(int argc, char* argv[])
   board.cpu.loadElf(path);
   auto debugger = Debugger();
   debugger.setCpu(board.cpu);
-  debugger.disassemble_all();
+  // debugger.disassemble_all();
   debugger.runInterpreter();
   return 0;
 }

@@ -7,6 +7,7 @@ NKX_HWSPEC = $(NKX_ROOT)/hw/spec
 NKX_EMU_ROOT = $(NKX_ROOT)/sw/emulator
 
 IMGUI_DIR = $(NKX_EMU_ROOT)/lib/imgui
+IMGUI_FILE_DIR = $(NKX_EMU_ROOT)/lib/ImGuiFileDialog
 
 SRCS += main_cui.cpp
 SRCS += main_sdl.cpp
@@ -28,6 +29,7 @@ OBJS = $(addsuffix .o,$(basename $(SRCS)))
 OBJS_CUI = main_cui.o $(filter-out main_%.o, $(OBJS))
 OBJS_SDL = main_sdl.o $(filter-out main_%.o, $(OBJS)) 
 OBJS_SDL += imgui.o imgui_demo.o imgui_draw.o imgui_tables.o imgui_widgets.o
+OBJS_SDL += ImGuiFileDialog.o
 OBJS_SDL += imgui_impl_sdl2.o imgui_impl_opengl3.o
 OBJS_WXW = main_wxwidgets.o $(filter-out main_%.o, $(OBJS))
 
@@ -47,7 +49,8 @@ CXX = g++
 # CXX = clang++
 
 CXXFLAGS = -std=c++20 -I$(NKX_EMU_ROOT)/include
-CXXFLAGS += -I$(IMGUI_DIR) -I$(IMGUI_DIR)/backends
+CXXFLAGS += -I$(IMGUI_DIR) -I$(IMGUI_FILE_DIR)
+CXXFLAGS += -I$(IMGUI_DIR)/backends
 CXXFLAGS += -g -O3
 # CXXFLAGS += -pg
 LDFLAGS =
@@ -90,6 +93,9 @@ main_wxwidgets.o: main_wxwidgets.cpp
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
 %.o:$(IMGUI_DIR)/backends/%.cpp
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
+
+%.o:$(IMGUI_FILE_DIR)/%.cpp
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
 run-cui:

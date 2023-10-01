@@ -29,11 +29,12 @@ private:
   void setVBlank(bool flag);
 public:
   struct {
-    vector<uint8_t> enableBg;
-    uint8_t enableSp;
+    vector<bool8_t> enableBg;
+    bool8_t enableSp;
   } debug;
   Ppu(Memory& memory);
   ~Ppu();
+  void init();
   int currentLineNo();
   void drawLine(int y);
   void drawAllLine();

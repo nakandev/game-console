@@ -30,13 +30,20 @@ Apu::Apu(Memory& memory)
   }
   debug.enableCh.resize(HW_MUSIC_CHANNEL_NUM);
   for (auto& enable: debug.enableCh)
-    enable = true;
+    enable.v1 = true;
 }
 
 Apu::~Apu()
 {
   noteBuffer.clear();
   musicBuffer.clear();
+}
+
+void Apu::init()
+{
+  // noteBuffer.resize(HW_MUSIC_CHANNEL_NUM);
+  // musicBuffer.resize(HW_MUSIC_FREQ_PER_FRAME * 2);
+  apuMusicData = {.noteCount=0, .frameCount=0, .buffer=musicBuffer.data()};
 }
 
 static FLOAT envelope(FLOAT y, HwSoundOp& op, uint32_t noteLength, uint32_t time)
@@ -339,7 +346,7 @@ void Apu::updateMusicBuffer()
     FLOAT vfL = 0.0;
     FLOAT vfR = 0.0;
     for (int ch=0; ch<8; ch++) {
-      if (!(debug.enableCh[ch] && music.channel[ch].enable)) continue;
+      if (!(debug.enableCh[ch].v1 && music.channel[ch].enable)) continue;
       auto sheetId = music.channel[ch].sheetId;
       auto noteId = noteBuffer[ch].noteIdx;
       auto& sheet = aram.musicsheet[sheetId];

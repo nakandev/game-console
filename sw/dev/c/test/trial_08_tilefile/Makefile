@@ -6,12 +6,14 @@ SRCS += crt0.s
 SRCS += interrupt.s
 SRCS += startup.cpp
 SRCS += main.cpp
-SRCS += img_sysfont8x8_gif.cpp
 OBJS = $(addsuffix .o,$(basename $(SRCS)))
+OBJS += img_sysfont8x8_gif.pal.o
+OBJS += img_sysfont8x8_gif.tile.o
 
 TOOLCHAIN_PREFIX = /home/nyalry/nakan/work/study/riscv/gcc/build32/bin/riscv32-unknown-elf-
 CXX     = $(TOOLCHAIN_PREFIX)g++
 OBJDUMP = $(TOOLCHAIN_PREFIX)objdump
+OBJCOPY = $(TOOLCHAIN_PREFIX)objcopy
 
 CFLAGS = -std=c++20 -I$(NKX_C_ROOT)/include
 # CFLAGS += -march=rv32im -mabi=ilp32
@@ -24,12 +26,19 @@ LDFLAGS += -T nkx.lds
 LDFLAGS += -Wl,-Map=$(TARGET).map
 LIBS = -static -lnkxhw -lnkxsw
 
+OBJCOPY_FLAGS = -I binary -O elf32-littleriscv
+OBJCOPY_FLAGS +=
+# OBJCOPY_FLAGS += --rename-section .data=.rodata,alloc,load,readonly
+
 vpath %.cpp $(NKX_C_ROOT)/src/nkx/hw
 vpath %.cpp $(NKX_C_ROOT)/src/nkx/util
 
+.SUFFIXES:
 .PHONY: all clean run
 
-all: $(OBJS)
+all: $(TARGET).exe
+
+$(TARGET).exe: $(OBJS)
 	$(CXX) $(LDFLAGS) -o $(TARGET).exe $^ $(LIBS)
 	$(OBJDUMP) -D -C $(TARGET).exe > $(TARGET).dis
 
@@ -41,6 +50,13 @@ startup.o: startup.cpp
 
 %.o: %.s
 	$(CXX) -c $(CFLAGS) -o $@ $<
+
+%.pal.o: %.pal
+	echo $*
+	$(OBJCOPY) $(OBJCOPY_FLAGS) $< $@
+
+%.tile.o: %.tile
+	$(OBJCOPY) $(OBJCOPY_FLAGS) $< $@
 
 run:
 	./$(TARGET).exe

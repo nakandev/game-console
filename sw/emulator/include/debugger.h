@@ -11,6 +11,7 @@ class Cpu;
 
 class Debugger {
   vector<string> commandStrings;
+  vector<uint32_t> breakPoints;
   Cpu* cpu;
 public:
   Debugger();

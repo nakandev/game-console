@@ -1,3 +1,4 @@
+#pragma once
 #include <string>
 #include <vector>
 
@@ -80,7 +81,7 @@ private:
 public:
   Elf();
   ~Elf();
-  void load(const string& path);
+  uint8_t load(const string& path);
   const ElfHeader& getElfHeader();
   Section* getSection(const string& name);
   void allocMemory(Memory& memory);

@@ -22,14 +22,16 @@ public:
   Cpu(Memory& memory);
   ~Cpu();
   void setMaxCycles(int64_t cycles);
-  void loadElf(const string& path);
+  uint8_t loadElf(const string& path);
   void init();
   void reset();
-  void launch();
   void requestInterruption();
   void handleInterruption();
-  void stepi();
+  void stepCycle();
+  void stepInstr();
+  const uint32_t getPc();
   void printPc();
-  void disassembleAll();
+  const vector<string> disassembleAll();
+  const vector<string> readRegisterAll();
 };
 

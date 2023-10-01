@@ -23,8 +23,8 @@ Ppu::Ppu(Memory& memory)
   ppuSprite.resize(HW_SPRITE_NUM);
   debug.enableBg.resize(4);
   for (auto& enable: debug.enableBg)
-    enable = true;
-  debug.enableSp = true;
+    enable.v1 = true;
+  debug.enableSp.v1 = true;
 }
 
 Ppu::~Ppu()
@@ -37,6 +37,10 @@ Ppu::~Ppu()
   lineBufferSp.clear();
   screenBuffer.clear();
   ppuSprite.clear();
+}
+
+void Ppu::init()
+{
 }
 
 int Ppu::currentLineNo()
@@ -186,7 +190,7 @@ void Ppu::drawLine(int y)
     for (int i=0; i<4; i++) {
       uint8_t layer = layers[i];
       auto& bg = tileram.bg[layer];
-      if (debug.enableBg[i] && bg.flag.enable) {
+      if (debug.enableBg[i].v1 && bg.flag.enable) {
         if (bg.flag.mode == HWBG_PIXEL_MODE) {
           drawLineBGPixel(vram, tileram.bg[layer], x, y, lineBufferBg[layer]);
         } else {
@@ -195,13 +199,15 @@ void Ppu::drawLine(int y)
       }
     }
   }
-  for (int x=0; x<HW_SCREEN_W; x++) {
-    HwSP& hwsp = tileram.sp[0];
-    for (int si=0; si<spnum; si++) {
-      auto& ppusp = ppuSprite[si];
-      uint8_t layer = ppusp.hwsp.flag.layer;
-      if (x < ppusp.beginX || ppusp.endX < x) continue;
-      drawLineSprite(tileram, ppusp, x, y, lineBufferSp[layer]);
+  if (debug.enableSp.v1) {
+    for (int x=0; x<HW_SCREEN_W; x++) {
+      HwSP& hwsp = tileram.sp[0];
+      for (int si=0; si<spnum; si++) {
+        auto& ppusp = ppuSprite[si];
+        uint8_t layer = ppusp.hwsp.flag.layer;
+        if (x < ppusp.beginX || ppusp.endX < x) continue;
+        drawLineSprite(tileram, ppusp, x, y, lineBufferSp[layer]);
+      }
     }
   }
   for (int x=0; x<HW_SCREEN_W; x++) {

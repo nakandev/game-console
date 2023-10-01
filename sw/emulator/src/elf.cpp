@@ -11,15 +11,18 @@ Elf::~Elf()
 {
 }
 
-void Elf::load(const string& path)
+uint8_t Elf::load(const string& path)
 {
   this->path = path;
   ifstream ifs(path, ios::binary);
+  if (!ifs) {
+    return 1;
+  }
   vector<uint8_t> buffer(istreambuf_iterator<char>(ifs), {});
   ifs.close();
-  data = std::move(buffer);
+  // data = std::move(buffer);
 
-  uint8_t* bufferptr = data.data();
+  uint8_t* bufferptr = buffer.data();
   fmt::print("elf buffsize: {:d}\n", data.size());
 
   /* read Elf header */
@@ -27,6 +30,10 @@ void Elf::load(const string& path)
   fmt::print("cls={:d}, endian={:d}, phnum={:d}, shnum={:d}\n", eh->ei.cls, eh->ei.data, eh->phnum, eh->shnum);
   fmt::print("type={:d}, machine={:d}, version={:d}, entry={:08x}\n", eh->type, eh->machine, eh->version, eh->entry);
   elfHeader = *eh;
+  int16_t mag[4] = {eh->ei.mag0, eh->ei.mag1, eh->ei.mag2, eh->ei.mag3};
+  if (!(mag[0] == 127 && mag[1] == 'E' && mag[2] == 'L' && mag[3] == 'F')) {
+    return 1;
+  }
 
   /* read Program headers */
   fmt::print("program headers\n");
@@ -58,6 +65,8 @@ void Elf::load(const string& path)
   // /* read StringTable section */
   // int strtab_idx = ei->shnum - 2;
   // SectionHeader* strtab_sh = (SectionHeader*)(bufferptr + eh->shoffset + eh->shentrysize * strtab_idx);
+  data = std::move(buffer);
+  return 0;
 }
 
 const Elf::ElfHeader& Elf::getElfHeader()

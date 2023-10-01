@@ -6,8 +6,8 @@
 
 #include <fmt/core.h>
 
-void
-InstrRV32IManipulator::printInstr(int64_t icount, uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory)
+const string
+InstrRV32IManipulator::instrToStr(int64_t icount, uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory)
 {
   auto op = disassemble(pc, instr, regs, memory);
   auto reginfo = fmt::format("x{:02d}={:08x} x{:02d}={:08x} x{:02d}={:08x} imm={:08x}",
@@ -16,24 +16,34 @@ InstrRV32IManipulator::printInstr(int64_t icount, uint32_t pc, Instruction& inst
     instr.src2, regs.gpr[instr.src2].val.u,
     instr.imm.u
   );
+  string space;
+  string opinfo;
   if (instr.size == 2) {
-    auto space = "    ";
-    auto opinfo = fmt::format("{} {:08x}: {:04x}{} {}", icount, pc, instr.binary, space, op);
-    fmt::print("{}", opinfo);
-    auto tablen = 64 - opinfo.size();
-    for (int i=0; i<tablen; i++) fmt::print(" ");
-    fmt::print("  {}", reginfo);
-    fmt::print("\n");
+    space = "    ";
+    // opinfo = fmt::format("{} {:08x}: {:04x}{}  {}", icount, pc, instr.binary, space, op);
+    opinfo = fmt::format("{:08x}: {:04x}{}  {}", pc, instr.binary, space, op);
   } else
   if (instr.size == 4) {
-    auto space = "";
-    auto opinfo = fmt::format("{} {:08x}: {:08x}{} {}", icount, pc, instr.binary, space, op);
-    fmt::print("{}", opinfo);
-    auto tablen = 64 - opinfo.size();
-    for (int i=0; i<tablen; i++) fmt::print(" ");
-    fmt::print("  {}", reginfo);
-    fmt::print("\n");
+    space = "";
+    // opinfo = fmt::format("{} {:08x}: {:08x}{}  {}", icount, pc, instr.binary, space, op);
+    opinfo = fmt::format("{:08x}: {:08x}{}  {}", pc, instr.binary, space, op);
   }
+  string printstr = fmt::format("{}", opinfo);
+  auto tablen = 64 - opinfo.size();
+  for (int i=0; i<tablen; i++) {
+    printstr += fmt::format(" ");
+  }
+  // printstr += fmt::format("  {}", reginfo);
+  printstr += fmt::format("\n");
+  // fmt::print("{}", printstr);
+  return std::move(printstr);
+}
+
+void
+InstrRV32IManipulator::printInstr(int64_t icount, uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory)
+{
+  string s = instrToStr(icount, pc, instr, regs, memory);
+  fmt::print("{}", s);
 }
 
 string

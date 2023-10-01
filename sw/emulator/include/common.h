@@ -6,6 +6,11 @@
 extern int debugLevel;
 
 typedef union {
+  bool v1;
+  uint8_t v8;
+} bool8_t;
+
+typedef union {
   int32_t s;
   uint32_t u;
   float f;

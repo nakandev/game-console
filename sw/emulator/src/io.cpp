@@ -43,6 +43,14 @@ void IO::releasePadButton(uint8_t button)
   memory.write(addr, 4, status);
 }
 
+HwPad IO::getPadStatus()
+{
+  const uint32_t addr = HW_IO_PAD_ADDR;
+  uint32_t status = memory.read(addr, 4);
+  HwPad hwpad = {.val32=status};
+  return hwpad;
+}
+
 void IO::requestExtInt(uint8_t intno)
 {
   const uint32_t addr = HW_IO_EXTINT_ENABLE_ADDR;

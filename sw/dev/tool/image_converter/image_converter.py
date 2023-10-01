@@ -85,8 +85,8 @@ def main():
 
     n = 8
     dstr = ',\n'.join([','.join([
-        str(e) for e in data[i: i+n]]
-        ) for i in range(0, len(data), n)])
+        str(e) for e in data[i: i + n]]
+    ) for i in range(0, len(data), n)])
     c_str = c_code_str.format(
         name=name, palsize=len(pals), datasize=len(data),
         pal=','.join([hex(i) for i in pals]),
@@ -96,6 +96,12 @@ def main():
         f.write(h_str)
     with open(name + '.cpp', 'w') as f:
         f.write(c_str)
+    with open(name + '.pal.bin', 'wb') as f:
+        for col in pals:
+            f.write(col.to_bytes(4, byteorder='little'))
+    with open(name + '.tile.bin', 'wb') as f:
+        for d in data:
+            f.write(d.to_bytes(1, byteorder='little'))
 
 
 if __name__ == '__main__':

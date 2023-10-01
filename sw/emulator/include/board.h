@@ -1,3 +1,4 @@
+#pragma once
 #include <memorymap.h>
 #include <memory.h>
 #include <cpu.h>
@@ -13,9 +14,11 @@ public:
   Cpu cpu;
   Ppu ppu;
   Apu apu;
+  bool pause;
   Board();
   ~Board();
   void initMemory();
+  void reset();
   void updateFrameUntilVblank();
   void updateFrameSinceVblank();
 };

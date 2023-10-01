@@ -30,6 +30,7 @@ void InstrRV32IManipulator::handleInterruption(Instruction& instr, RegisterSet& 
   regs.csr[MSTATUS].val.u = mstatus;
   // jump to handler specified in MTVEC register.
   regs.pc.val.u = regs.csr[MTVEC].val.u;
+  instr.phase = 0;
   instr.isWaiting = false;
   instr.isJumped = true;
 }

@@ -24,6 +24,7 @@ public:
   ~RegisterGroup();
   inline Register& operator[](size_t index) noexcept { return regs[index]; }
   void insert(size_t index, const Register& reg);
+  size_t size() { return regs.size(); }
   void init();
   void dump();
 };
@@ -39,6 +40,7 @@ public:
   ~SparceRegisterGroup();
   inline Register& operator[](size_t index) noexcept {return at(index); }
   void insert(size_t index, const Register& reg);
+  size_t size() { return regs.size(); }
   void init();
   void dump();
 };

@@ -1,13 +1,15 @@
 #include "imgui.h"
 #include "imgui_impl_sdl2.h"
-// #include "imgui_impl_sdlrenderer2.h"
 #include "imgui_impl_opengl3.h"
+#define okCancelButtonAlignement 1.0f
+#include "ImGuiFileDialog.h"
 #include <SDL2/SDL.h>
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <SDL2/SDL_opengl.h>
 #include <emulator.h>
 #include <fmt/core.h>
+#include <filesystem>
 
 GLuint framebuffer;
 GLuint texture;
@@ -44,10 +46,10 @@ bool handleInput(Board& board)
       case SDLK_k: board.io.pressPadButton(HW_PAD_B); break;
       case SDLK_i: board.io.pressPadButton(HW_PAD_C); break;
       case SDLK_j: board.io.pressPadButton(HW_PAD_D); break;
-      case SDLK_h: board.io.pressPadButton(HW_PAD_S); break;
-      case SDLK_g: board.io.pressPadButton(HW_PAD_T); break;
-      case SDLK_o: board.io.pressPadButton(HW_PAD_L); break;
-      case SDLK_w: board.io.pressPadButton(HW_PAD_R); break;
+      case SDLK_g: board.io.pressPadButton(HW_PAD_S); break;
+      case SDLK_h: board.io.pressPadButton(HW_PAD_T); break;
+      case SDLK_w: board.io.pressPadButton(HW_PAD_L); break;
+      case SDLK_o: board.io.pressPadButton(HW_PAD_R); break;
       default:
         break;
       }
@@ -62,10 +64,10 @@ bool handleInput(Board& board)
       case SDLK_k: board.io.releasePadButton(HW_PAD_B); break;
       case SDLK_i: board.io.releasePadButton(HW_PAD_C); break;
       case SDLK_j: board.io.releasePadButton(HW_PAD_D); break;
-      case SDLK_h: board.io.releasePadButton(HW_PAD_S); break;
-      case SDLK_g: board.io.releasePadButton(HW_PAD_T); break;
-      case SDLK_o: board.io.releasePadButton(HW_PAD_L); break;
-      case SDLK_w: board.io.releasePadButton(HW_PAD_R); break;
+      case SDLK_g: board.io.releasePadButton(HW_PAD_S); break;
+      case SDLK_h: board.io.releasePadButton(HW_PAD_T); break;
+      case SDLK_w: board.io.releasePadButton(HW_PAD_L); break;
+      case SDLK_o: board.io.releasePadButton(HW_PAD_R); break;
       default:
         break;
       }
@@ -91,14 +93,19 @@ void audio_callback(void *userdata, Uint8 *stream, int len)
 
 int main(int argc, char* argv[])
 {
-  string path = "/home/nyalry/nakan/dev/hobby/game-console/sw/dev/c/test/trial_08_tilefile/trial_08_tilefile";
+  filesystem::path elfpath = "/home/nyalry/nakan/dev/hobby/game-console/sw/dev/c/test/trial_08_tilefile/trial_08_tilefile";
   if (argc == 2) {
-    path = string(argv[1]);
+    elfpath = string(argv[1]);
   }
+  filesystem::path elfdir = elfpath.parent_path();
+
   auto board = Board();
+  auto disasms = vector<string>();
 
   board.cpu.setMaxCycles(100);
-  board.cpu.loadElf(path);
+  if (!board.cpu.loadElf(elfpath)) {
+    disasms= board.cpu.disassembleAll();
+  }
 
   SDL_Init(
     SDL_INIT_VIDEO |
@@ -146,7 +153,7 @@ int main(int argc, char* argv[])
 
   int pitch = HW_SCREEN_W * 4;
   float fps = 60.0;
-  int sec = 40;
+  int sec = 120;
   // int msecPerFrame[] = {33, 34, 33};  // fps 30
   int msecPerFrame[] = {17, 16, 17};  // fps 60
 
@@ -154,7 +161,7 @@ int main(int argc, char* argv[])
   desired.freq = HW_MUSIC_FREQUENCY;
   desired.format = AUDIO_S16LSB;
   desired.channels = 2;
-  desired.samples = nearPow2(HW_MUSIC_FREQ_PER_FRAME * 2);
+  desired.samples = nearPow2(HW_MUSIC_FREQ_PER_FRAME);
   desired.callback = nullptr;
   desired.userdata = &board.apu.apuMusicData;
 
@@ -224,7 +231,8 @@ int main(int argc, char* argv[])
     // update cpu, screen, audio
     board.updateFrameUntilVblank();
     board.ppu.copyScreenBuffer(screenBuffer.data(), true);
-    SDL_QueueAudio(audioDev, (void*)board.apu.apuMusicData.buffer, HW_MUSIC_FREQ_PER_FRAME*2*2);
+    if (!board.pause)
+      SDL_QueueAudio(audioDev, (void*)board.apu.apuMusicData.buffer, HW_MUSIC_FREQ_PER_FRAME*2*2);
     board.updateFrameSinceVblank();
 
     auto imguiWindowFlag = 
@@ -237,7 +245,14 @@ int main(int argc, char* argv[])
       auto menuItem_Debug_Mode = false;
       if (ImGui::BeginMenuBar()) {
         if (ImGui::BeginMenu("System")) {
-          ImGui::MenuItem("Open", "CTRL+O");
+          if(ImGui::MenuItem("Open", "CTRL+O")) {
+            string dir = elfpath;
+            ImGuiFileDialog::Instance()->OpenDialog(
+              "ChooseFileDlgKey", "Choose File", ".exe,.elf,.out", dir,
+              1, nullptr, ImGuiFileDialogFlags_Modal
+            );
+          }
+
           ImGui::Separator();
           ImGui::MenuItem("Quit", "CTRL+Q");
           ImGui::EndMenu();
@@ -250,14 +265,38 @@ int main(int argc, char* argv[])
           ImGui::EndMenu();
         }
         if (ImGui::BeginMenu("Emulator")) {
-          ImGui::MenuItem("Launch", "");
-          ImGui::MenuItem("Pause", "");
-          ImGui::MenuItem("Reset", "");
+          if (ImGui::MenuItem("Launch", "")) {
+            board.pause = false;
+          }
+          if (ImGui::MenuItem("Pause", "")) {
+            board.pause = true;
+          }
+          if (ImGui::MenuItem("Reset", "")) {
+            board.reset();
+            board.cpu.loadElf(elfpath);
+          }
           ImGui::Separator();
           ImGui::MenuItem("Debug Mode", "", &menuItem_Debug_Mode);
           ImGui::EndMenu();
         }
         ImGui::EndMenuBar();
+      }
+      /* File Dialog */
+      if (ImGuiFileDialog::Instance()->Display("ChooseFileDlgKey")) 
+      {
+        if (ImGuiFileDialog::Instance()->IsOk())
+        {
+          string selectedFile = ImGuiFileDialog::Instance()->GetFilePathName();
+          string selectedDir = ImGuiFileDialog::Instance()->GetCurrentPath();
+          elfpath = selectedFile;
+          elfdir = selectedDir;
+          board.cpu.init();
+          if(!board.cpu.loadElf(elfpath)) {
+            disasms = board.cpu.disassembleAll();
+            board.pause = false;
+          }
+        }
+        ImGuiFileDialog::Instance()->Close();
       }
     }
     { /* Main Panel */
@@ -272,22 +311,76 @@ int main(int argc, char* argv[])
         ImGui::BeginChild(ImGui::GetID((void*)1), ImVec2(wLC, hLC), ImGuiWindowFlags_NoTitleBar);
           DrawSplitter(false, 10, &wL, &wC, 50, 50);
           ImGui::BeginChild(ImGui::GetID((void*)2), ImVec2(wL, hLC), ImGuiWindowFlags_NoTitleBar);
+          {
             ImGui::Text("Control Panel\n");
+            ImGui::Separator();
+            ImGui::Text("Video\n");
+            ImGui::Checkbox("BG0", &board.ppu.debug.enableBg[0].v1); ImGui::SameLine();
+            ImGui::Checkbox("BG1", &board.ppu.debug.enableBg[1].v1); ImGui::SameLine();
+            ImGui::Checkbox("BG2", &board.ppu.debug.enableBg[2].v1); ImGui::SameLine();
+            ImGui::Checkbox("BG3", &board.ppu.debug.enableBg[3].v1);
+            ImGui::Checkbox("SP ", &board.ppu.debug.enableSp.v1);
+            ImGui::Separator();
+            ImGui::Text("Audio\n");
+            ImGui::Checkbox("Ch0 ", &board.apu.debug.enableCh[0 ].v1); ImGui::SameLine();
+            ImGui::Checkbox("Ch1 ", &board.apu.debug.enableCh[1 ].v1); ImGui::SameLine();
+            ImGui::Checkbox("Ch2 ", &board.apu.debug.enableCh[2 ].v1); ImGui::SameLine();
+            ImGui::Checkbox("Ch3 ", &board.apu.debug.enableCh[3 ].v1);
+            ImGui::Checkbox("Ch4 ", &board.apu.debug.enableCh[4 ].v1); ImGui::SameLine();
+            ImGui::Checkbox("Ch5 ", &board.apu.debug.enableCh[5 ].v1); ImGui::SameLine();
+            ImGui::Checkbox("Ch6 ", &board.apu.debug.enableCh[6 ].v1); ImGui::SameLine();
+            ImGui::Checkbox("Ch7 ", &board.apu.debug.enableCh[7 ].v1);
+            // ImGui::Checkbox("Ch8 ", &board.apu.debug.enableCh[8 ].v1); ImGui::SameLine();
+            // ImGui::Checkbox("Ch9 ", &board.apu.debug.enableCh[9 ].v1); ImGui::SameLine();
+            // ImGui::Checkbox("Ch10", &board.apu.debug.enableCh[10].v1); ImGui::SameLine();
+            // ImGui::Checkbox("Ch11", &board.apu.debug.enableCh[11].v1);
+            // ImGui::Checkbox("Ch12", &board.apu.debug.enableCh[12].v1); ImGui::SameLine();
+            // ImGui::Checkbox("Ch13", &board.apu.debug.enableCh[13].v1); ImGui::SameLine();
+            // ImGui::Checkbox("Ch14", &board.apu.debug.enableCh[14].v1); ImGui::SameLine();
+            // ImGui::Checkbox("Ch15", &board.apu.debug.enableCh[15].v1);
+            ImGui::Separator();
+            ImGui::Text("Input\n");
+            HwPad hwpad = board.io.getPadStatus();
+            bool A = hwpad.A, B = hwpad.B, C = hwpad.C, D = hwpad.D;
+            bool L = hwpad.L, R = hwpad.R, S = hwpad.S, T = hwpad.T;
+            bool Up = hwpad.UP, Dw = hwpad.DOWN, Lf = hwpad.LEFT, Rt = hwpad.RIGHT;
+            ImGui::Checkbox("A", &A); ImGui::SameLine();
+            ImGui::Checkbox("B", &B); ImGui::SameLine();
+            ImGui::Checkbox("C", &C); ImGui::SameLine();
+            ImGui::Checkbox("D", &D);
+            ImGui::Checkbox("L", &L); ImGui::SameLine();
+            ImGui::Checkbox("R", &R); ImGui::SameLine();
+            ImGui::Checkbox("S", &S); ImGui::SameLine();
+            ImGui::Checkbox("T", &T);
+            ImGui::Checkbox("Up", &Up); ImGui::SameLine();
+            ImGui::Checkbox("Dw", &Dw); ImGui::SameLine();
+            ImGui::Checkbox("Lf", &Lf); ImGui::SameLine();
+            ImGui::Checkbox("Rt", &Rt);
+          }
           ImGui::EndChild();
           ImGui::SameLine();
           ImGui::BeginChild(ImGui::GetID((void*)3), ImVec2(wC, hLC), ImGuiWindowFlags_NoTitleBar);
+          {
             float gameW = wC;
             float gameH = 240.0 / 320 * gameW;
             ImGui::Image(reinterpret_cast<void *>(framebuffer), ImVec2(gameW, gameH));
+          }
           ImGui::EndChild();
         ImGui::EndChild();
         ImGui::BeginChild(ImGui::GetID((void*)4), ImVec2(wB, hB), ImGuiWindowFlags_NoTitleBar);
+        {
           ImGui::Text("Viewer Panel");
+          for (auto& s: disasms) {
+            ImGui::Text("%s", s.c_str());
+          }
+        }
         ImGui::EndChild();
       ImGui::EndChild();
       ImGui::SameLine();
       ImGui::BeginChild(ImGui::GetID((void*)5), ImVec2(wR, hR), ImGuiWindowFlags_NoTitleBar);
+      {
         ImGui::Text("Property Panel\nHwREG\n");
+      }
       ImGui::EndChild();
       ImGui::PopStyleVar(3);
     }

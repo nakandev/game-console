@@ -21,6 +21,7 @@ int32_t rand()
   return _randvalue;
 }
 
+/* standard functions */
 uint8_t strlen(const char* str, uint8_t n)
 {
   int i = 0;
@@ -30,14 +31,15 @@ uint8_t strlen(const char* str, uint8_t n)
   return i;
 }
 
-void loadAsciiFontPalette(uint8_t palNo, uint32_t* palData, uint32_t size)
+/* video: tile mode */
+void setPalette(uint8_t palNo, uint32_t* palData, uint32_t size)
 {
   HwTileRam& tileram = *(HwTileRam*)HWREG_TILERAM_BASEADDR;
   for (int i=0; i<size; i++) {
     tileram.palette[palNo].color[i] = {.data=palData[i]};
   }
 }
-void loadAsciiFontTile(uint8_t tileNo, uint8_t* tileData, uint32_t size)
+void setTile(uint8_t tileNo, uint8_t* tileData, uint32_t size)
 {
   HwTileRam& tileram = *(HwTileRam*)HWREG_TILERAM_BASEADDR;
   for (int i=0; i<size; i++) {
@@ -46,6 +48,19 @@ void loadAsciiFontTile(uint8_t tileNo, uint8_t* tileData, uint32_t size)
     int t = i / 64;
     tileram.tile[tileNo][t].data[y][x] = tileData[i];
   }
+}
+void setTilemap(uint8_t mapNo, uint8_t* mapData, uint32_t size)
+{
+}
+
+/* video: text utility */
+void loadAsciiFontPalette(uint8_t palNo, uint32_t* palData, uint32_t size)
+{
+  setPalette(palNo, palData, size);
+}
+void loadAsciiFontTile(uint8_t tileNo, uint8_t* tileData, uint32_t size)
+{
+  setTile(tileNo, tileData, size);
 }
 void setAsciiFontBG(uint8_t bgNo, uint8_t palNo, uint8_t tileNo, uint8_t tilemapNo)
 {

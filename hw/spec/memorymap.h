@@ -139,27 +139,30 @@ enum {
   // HW_MUSIC_DEFAULT_NOTE_FRAMELEN = 64,
 };
 
-struct HwPad {
+union HwPad {
   struct {
-    uint16_t A : 1;
-    uint16_t B : 1;
-    uint16_t C : 1;
-    uint16_t D : 1;
-    uint16_t L : 1;
-    uint16_t R : 1;
-    uint16_t S : 1;
-    uint16_t T : 1;
-    uint16_t _reserved0 : 1;
-    uint16_t _reserved1 : 1;
-    uint16_t _reserved2 : 1;
-    uint16_t _reserved3 : 1;
-    uint16_t UP : 1;
-    uint16_t DOWN : 1;
-    uint16_t LEFT : 1;
-    uint16_t RIGHT : 1;
+    struct {
+      uint16_t A : 1;
+      uint16_t B : 1;
+      uint16_t C : 1;
+      uint16_t D : 1;
+      uint16_t L : 1;
+      uint16_t R : 1;
+      uint16_t S : 1;
+      uint16_t T : 1;
+      uint16_t _reserved0 : 1;
+      uint16_t _reserved1 : 1;
+      uint16_t _reserved2 : 1;
+      uint16_t _reserved3 : 1;
+      uint16_t UP : 1;
+      uint16_t DOWN : 1;
+      uint16_t LEFT : 1;
+      uint16_t RIGHT : 1;
+    };
+    uint8_t AnalogX;
+    uint8_t AnalogY;
   };
-  uint8_t AnalogX;
-  uint8_t AnalogY;
+  uint32_t val32;
 };
 
 union HwColor {
