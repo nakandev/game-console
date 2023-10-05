@@ -35,7 +35,6 @@ InstrRV32IManipulator::instrToStr(int64_t icount, uint32_t pc, Instruction& inst
   }
   // printstr += fmt::format("  {}", reginfo);
   printstr += fmt::format("\n");
-  // fmt::print("{}", printstr);
   return std::move(printstr);
 }
 

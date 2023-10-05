@@ -52,19 +52,19 @@ def main():
     # print('colors :', image.getcolors())
 
     name = os.path.basename(args.input)
-    # name = os.path.splitext(name)[0]
-    name = 'img_' + re.sub(r'[ -/]', '_', name)
+    name = re.sub(r'[ -/]', '_', name)
     print('name:', name)
 
     imgpals = image.getpalette()
     pals = list()
     for i in range(len(image.getcolors())):
         col = imgpals[i * 3: i * 3 + 3]
-        if i == 0:
+        if 'transparency' in image.info and i == image.info['transparency']:
             col = col + [0]
         else:
             col = col + [255]
         col32 = (col[0] << 0) | (col[1] << 8) | (col[2] << 16) | (col[3] << 24)
+        # col32 = (col[2] << 0) | (col[1] << 8) | (col[0] << 16) | (col[3] << 24)
         pals.append(col32)
 
     w, h = image.size
@@ -75,9 +75,6 @@ def main():
                 for x in range(0, 8):
                     p = image.getpixel((x + tx * 8, y + ty * 8))
                     data.append(p)
-                    # print(list(p[:]), end=' ')
-                    # print(p, end=' ')
-                # print('')
 
     h_str = c_header_str.format(
         name=name, palsize=len(pals), datasize=len(data)
@@ -96,10 +93,10 @@ def main():
         f.write(h_str)
     with open(name + '.cpp', 'w') as f:
         f.write(c_str)
-    with open(name + '.pal.bin', 'wb') as f:
+    with open(name + '.pal', 'wb') as f:
         for col in pals:
             f.write(col.to_bytes(4, byteorder='little'))
-    with open(name + '.tile.bin', 'wb') as f:
+    with open(name + '.tile', 'wb') as f:
         for d in data:
             f.write(d.to_bytes(1, byteorder='little'))
 

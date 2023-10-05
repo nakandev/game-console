@@ -84,15 +84,11 @@ void audio_callback(void *userdata, Uint8 *stream, int len)
   ApuMusicData& musicData = *(ApuMusicData*)userdata;
   memset(stream, 0, len);
   memcpy(stream, musicData.buffer, HW_MUSIC_FREQ_PER_FRAME*2*2);
-  // for (int i=0; i<len/2; i++) {
-  //   if (i%2==0)
-  //   fmt::print("{}\n", musicData.buffer[i]);
-  // }
-  // fmt::print("time={} note={} len={}\n", musicData.freqTime, musicData.noteTime, len);
 }
 
 int main(int argc, char* argv[])
 {
+  // debugLevel = 1;
   filesystem::path elfpath = "/home/nyalry/nakan/dev/hobby/game-console/sw/dev/c/test/trial_08_tilefile/trial_08_tilefile";
   if (argc == 2) {
     elfpath = string(argv[1]);
@@ -102,10 +98,12 @@ int main(int argc, char* argv[])
   auto board = Board();
   auto disasms = vector<string>();
 
-  board.cpu.setMaxCycles(100);
+  board.cpu.setMaxCycles(10'000'000);
   if (!board.cpu.loadElf(elfpath)) {
     disasms= board.cpu.disassembleAll();
   }
+
+  bool guiDebug = false;
 
   SDL_Init(
     SDL_INIT_VIDEO |
@@ -124,12 +122,12 @@ int main(int argc, char* argv[])
     SDL_WINDOWPOS_UNDEFINED,
     HW_SCREEN_W,
     HW_SCREEN_H,
-    SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL// | SDL_WINDOW_RESIZABLE
+    SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE
   );
   if(window==NULL){
     return 1;
   }
-  int screenScale = 4;
+  int screenScale = 3;
   SDL_SetWindowSize(window, HW_SCREEN_W * screenScale, HW_SCREEN_H * screenScale);
   SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
 
@@ -145,7 +143,8 @@ int main(int argc, char* argv[])
   io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
   // io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
   // Setup Dear ImGui style
-  ImGui::StyleColorsDark();
+  // ImGui::StyleColorsDark();
+  ImGui::StyleColorsLight();
   // Setup Platform/Renderer backends
   const char* glsl_version = "#version 130";
   ImGui_ImplSDL2_InitForOpenGL(window, gl_context);
@@ -217,7 +216,9 @@ int main(int argc, char* argv[])
   board.updateFrameUntilVblank();
   board.updateFrameSinceVblank();
   uint32_t startTime, endTime;
-  for (int i=0; i<sec*fps; i++) {
+  // for (int i=0; i<sec*fps; i++) {
+  int loopCount = 0;
+  while (true) {
     startTime = SDL_GetTicks();
     if (handleInput(board)) {
       break;
@@ -242,7 +243,6 @@ int main(int argc, char* argv[])
     ImGui::SetNextWindowSize(ImVec2(io.DisplaySize.x, io.DisplaySize.y));
     ImGui::Begin("Another Window", &pOpen, imguiWindowFlag);
     { /* Menu */
-      auto menuItem_Debug_Mode = false;
       if (ImGui::BeginMenuBar()) {
         if (ImGui::BeginMenu("System")) {
           if(ImGui::MenuItem("Open", "CTRL+O")) {
@@ -276,7 +276,7 @@ int main(int argc, char* argv[])
             board.cpu.loadElf(elfpath);
           }
           ImGui::Separator();
-          ImGui::MenuItem("Debug Mode", "", &menuItem_Debug_Mode);
+          ImGui::MenuItem("Debug Mode", "", &guiDebug);
           ImGui::EndMenu();
         }
         ImGui::EndMenuBar();
@@ -322,22 +322,14 @@ int main(int argc, char* argv[])
             ImGui::Checkbox("SP ", &board.ppu.debug.enableSp.v1);
             ImGui::Separator();
             ImGui::Text("Audio\n");
-            ImGui::Checkbox("Ch0 ", &board.apu.debug.enableCh[0 ].v1); ImGui::SameLine();
-            ImGui::Checkbox("Ch1 ", &board.apu.debug.enableCh[1 ].v1); ImGui::SameLine();
-            ImGui::Checkbox("Ch2 ", &board.apu.debug.enableCh[2 ].v1); ImGui::SameLine();
-            ImGui::Checkbox("Ch3 ", &board.apu.debug.enableCh[3 ].v1);
-            ImGui::Checkbox("Ch4 ", &board.apu.debug.enableCh[4 ].v1); ImGui::SameLine();
-            ImGui::Checkbox("Ch5 ", &board.apu.debug.enableCh[5 ].v1); ImGui::SameLine();
-            ImGui::Checkbox("Ch6 ", &board.apu.debug.enableCh[6 ].v1); ImGui::SameLine();
-            ImGui::Checkbox("Ch7 ", &board.apu.debug.enableCh[7 ].v1);
-            // ImGui::Checkbox("Ch8 ", &board.apu.debug.enableCh[8 ].v1); ImGui::SameLine();
-            // ImGui::Checkbox("Ch9 ", &board.apu.debug.enableCh[9 ].v1); ImGui::SameLine();
-            // ImGui::Checkbox("Ch10", &board.apu.debug.enableCh[10].v1); ImGui::SameLine();
-            // ImGui::Checkbox("Ch11", &board.apu.debug.enableCh[11].v1);
-            // ImGui::Checkbox("Ch12", &board.apu.debug.enableCh[12].v1); ImGui::SameLine();
-            // ImGui::Checkbox("Ch13", &board.apu.debug.enableCh[13].v1); ImGui::SameLine();
-            // ImGui::Checkbox("Ch14", &board.apu.debug.enableCh[14].v1); ImGui::SameLine();
-            // ImGui::Checkbox("Ch15", &board.apu.debug.enableCh[15].v1);
+            ImGui::Checkbox("Ch0", &board.apu.debug.enableCh[0 ].v1); ImGui::SameLine();
+            ImGui::Checkbox("Ch1", &board.apu.debug.enableCh[1 ].v1); ImGui::SameLine();
+            ImGui::Checkbox("Ch2", &board.apu.debug.enableCh[2 ].v1); ImGui::SameLine();
+            ImGui::Checkbox("Ch3", &board.apu.debug.enableCh[3 ].v1);
+            ImGui::Checkbox("Ch4", &board.apu.debug.enableCh[4 ].v1); ImGui::SameLine();
+            ImGui::Checkbox("Ch5", &board.apu.debug.enableCh[5 ].v1); ImGui::SameLine();
+            ImGui::Checkbox("Ch6", &board.apu.debug.enableCh[6 ].v1); ImGui::SameLine();
+            ImGui::Checkbox("Ch7", &board.apu.debug.enableCh[7 ].v1);
             ImGui::Separator();
             ImGui::Text("Input\n");
             HwPad hwpad = board.io.getPadStatus();
@@ -409,8 +401,6 @@ int main(int argc, char* argv[])
 
       glBindTexture(GL_TEXTURE_2D, texture);
       glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, screenBuffer.data());
-      // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-      // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
       glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0);
@@ -423,8 +413,12 @@ int main(int argc, char* argv[])
     SDL_GL_SwapWindow(window);
 
     endTime = SDL_GetTicks();
-    if (startTime + msecPerFrame[i%3] > endTime) {
-      SDL_Delay((uint32_t)(startTime + msecPerFrame[i%3] - endTime));
+    if (startTime + msecPerFrame[loopCount%3] > endTime) {
+      SDL_Delay((uint32_t)(startTime + msecPerFrame[loopCount%3] - endTime));
+    }
+    loopCount++;
+    if (loopCount == 3*10000) {
+      loopCount = 0;
     }
   }
 

@@ -29,20 +29,25 @@ void Board::updateFrameUntilVblank()
   for (int y=0; y<HW_SCREEN_H; y++) {
     for (int i=0; i<HW_SCREEN_W; i++) cpu.stepCycle();
     ppu.drawLine(y);
-    io.setExtIntStatus(HW_IO_EXTINT_HBLANK);
-    io.requestExtInt(HW_IO_EXTINT_HBLANK);
-    cpu.handleInterruption();
+    if (y != HW_SCREEN_H - 1) {
+      io.setIntStatus(HW_IO_INT_HBLANK);
+      io.requestInt(HW_IO_INT_HBLANK);
+      cpu.handleInterruption();
+    }
     for (int i=0; i<HW_SCREEN_HBLANK; i++) cpu.stepCycle();
-    io.clearExtIntStatus(HW_IO_EXTINT_HBLANK);
+    if (y != HW_SCREEN_H - 1) {
+      io.clearIntStatus(HW_IO_INT_HBLANK);
+    }
+    io.updateScanlineNumber(y);
   }
   apu.updateMusicBuffer();
 }
 void Board::updateFrameSinceVblank()
 {
   if (pause) return;
-  io.setExtIntStatus(HW_IO_EXTINT_VBLANK);
-  io.requestExtInt(HW_IO_EXTINT_VBLANK);
+  io.setIntStatus(HW_IO_INT_VBLANK);
+  io.requestInt(HW_IO_INT_VBLANK);
   cpu.handleInterruption();
   for (int i=0; i<HW_SCREEN_VBLANK * (HW_SCREEN_W + HW_SCREEN_HBLANK); i++) cpu.stepCycle();
-  io.clearExtIntStatus(HW_IO_EXTINT_VBLANK);
+  io.clearIntStatus(HW_IO_INT_VBLANK);
 }

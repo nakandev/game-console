@@ -35,11 +35,13 @@ OBJS_WXW = main_wxwidgets.o $(filter-out main_%.o, $(OBJS))
 
 # INPUT_ELF_NAME = trial_02_tileram
 # INPUT_ELF_NAME = trial_03_sprite
-INPUT_ELF_NAME = trial_04_affine
+# INPUT_ELF_NAME = trial_04_affine
 # INPUT_ELF_NAME = trial_05_sections
 # INPUT_ELF_NAME = trial_07_audio
 # INPUT_ELF_NAME = trial_08_tilefile
 # INPUT_ELF_NAME = trial_09_vram
+# INPUT_ELF_NAME = trial_10_rasterscroll
+INPUT_ELF_NAME = trial_12_action
 INPUT_ELF = /home/nyalry/nakan/dev/hobby/game-console/sw/dev/c/test/$(INPUT_ELF_NAME)/$(INPUT_ELF_NAME).exe
 # INPUT_ELF = /home/nyalry/nakan/dev/hobby/game-console/sw/dev/c/test/riscv-tests/isa/rv32uc-p-rvc
 

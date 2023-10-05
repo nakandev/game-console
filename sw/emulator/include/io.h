@@ -21,7 +21,8 @@ public:
   void pressPadButton(uint8_t button);
   void releasePadButton(uint8_t button);
   HwPad getPadStatus();
-  void requestExtInt(uint8_t intno);
-  void setExtIntStatus(uint8_t intno);
-  void clearExtIntStatus(uint8_t intno);
+  void requestInt(uint8_t intno);
+  void setIntStatus(uint8_t intno);
+  void clearIntStatus(uint8_t intno);
+  void updateScanlineNumber(uint16_t y);
 };

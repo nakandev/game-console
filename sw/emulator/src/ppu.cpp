@@ -158,9 +158,8 @@ static void drawLineSprite(HwTileRam& tileram, PpuSprite& ppusp, int x, int y, v
   buffer[x] = bufColor.data;
 }
 
-static void sortLayerIndex(int layers[4])
+static void sortLayerIndex(int idxs[4], int layers[4])
 {
-  int idxs[4] = {0, 1, 2, 3};
   int t;
   for (int i=3; i>=0; i--) {
     for (int j=0; j<i; j++) {
@@ -183,14 +182,15 @@ void Ppu::drawLine(int y)
   for (auto& buf: lineBufferSp) {
     std::fill(buf.begin(), buf.end(), 0);
   }
+  int idxs[4] = {0, 1, 2, 3};
   int layers[4];
   for (int i=0; i<4; i++) layers[i] = tileram.bg[i].flag.layer;
-  sortLayerIndex(layers);
+  sortLayerIndex(idxs, layers);
   for (int x=0; x<HW_SCREEN_W; x++) {
     for (int i=0; i<4; i++) {
-      uint8_t layer = layers[i];
+      uint8_t layer = idxs[i];
       auto& bg = tileram.bg[layer];
-      if (debug.enableBg[i].v1 && bg.flag.enable) {
+      if (debug.enableBg[layer].v1 && bg.flag.enable) {
         if (bg.flag.mode == HWBG_PIXEL_MODE) {
           drawLineBGPixel(vram, tileram.bg[layer], x, y, lineBufferBg[layer]);
         } else {

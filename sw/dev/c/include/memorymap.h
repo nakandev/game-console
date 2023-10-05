@@ -14,29 +14,38 @@ enum {
   HWREG_PROGRAM_BASEADDR      = 0x0800'0000,
   HWREG_SAVERAM_BASEADDR      = 0x0E00'0000,
 
-  HW_IO_PAD0 = HWREG_IORAM_BASEADDR + 0x0000,
-  HW_IO_PAD1 = HWREG_IORAM_BASEADDR + 0x0010,
-  HW_IO_PAD_ADDR = HWREG_IORAM_BASEADDR + 0x0000,
-  HW_IO_EXTINT_ENABLE_ADDR = HWREG_IORAM_BASEADDR + 0x0100,
-  HW_IO_EXTINT_STATUS_ADDR = HWREG_IORAM_BASEADDR + 0x0200,
-  HW_IO_EXTINT_VECTOR_ADDR = HWREG_IORAM_BASEADDR + 0x1000,
-  // INT_EXT_CAUSE_BIT / STATUS_BIT
-  HW_IO_EXTINT_HBLANK = 16,
-  HW_IO_EXTINT_VBLANK,
-  HW_IO_EXTINT_PAD,
-  HW_IO_EXTINT_DMA0,
-  HW_IO_EXTINT_DMA1,
-  HW_IO_EXTINT_DMA2,
-  HW_IO_EXTINT_DMA3,
-  HW_IO_EXTINT_SERIAL,
-  HW_IO_EXTINT_24,
-  HW_IO_EXTINT_25,
-  HW_IO_EXTINT_26,
-  HW_IO_EXTINT_27,
-  HW_IO_EXTINT_28,
-  HW_IO_EXTINT_29,
-  HW_IO_EXTINT_30,
-  // HW_IO_EXTINT_31,  // mstatus:bit[31] is reserved.
+  HW_IO_SCREEN_W_ADDR = HWREG_IORAM_BASEADDR + 0x0000,
+  HW_IO_SCREEN_H_ADDR = HWREG_IORAM_BASEADDR + 0x0002,
+  HW_IO_SCANLINE_ADDR = HWREG_IORAM_BASEADDR + 0x0010,
+  HW_IO_AUDIO_XX_ADDR = HWREG_IORAM_BASEADDR + 0x0100,
+  HW_IO_PAD0_ADDR = HWREG_IORAM_BASEADDR + 0x0200,
+  HW_IO_PAD1_ADDR = HWREG_IORAM_BASEADDR + 0x0210,
+  HW_IO_KEYBOARD_ADDR = HWREG_IORAM_BASEADDR + 0x0220,
+  HW_IO_TOUCH_ADDR = HWREG_IORAM_BASEADDR + 0x0230,
+  HW_IO_DMA0_ADDR = HWREG_IORAM_BASEADDR + 0x0300,
+  HW_IO_TIMER0_ADDR = HWREG_IORAM_BASEADDR + 0x0400,
+  HW_IO_SERIAL_ADDR = HWREG_IORAM_BASEADDR + 0x0500,
+  HW_IO_INT_ENABLE_ADDR = HWREG_IORAM_BASEADDR + 0x0600,
+  HW_IO_INT_STATUS_ADDR = HWREG_IORAM_BASEADDR + 0x0604,
+  HW_IO_INT_VECTOR_ADDR = HWREG_IORAM_BASEADDR + 0x0608,
+
+  // INT_ENABLE_BIT / STATUS_BIT
+  HW_IO_INT_HBLANK = 0,
+  HW_IO_INT_VBLANK,
+  HW_IO_INT_PAD0,
+  HW_IO_INT_PAD1,
+  HW_IO_INT_KEYBOARD,
+  HW_IO_INT_TOUCH,
+  HW_IO_INT_DMA0,
+  HW_IO_INT_DMA1,
+  HW_IO_INT_DMA2,
+  HW_IO_INT_DMA3,
+  HW_IO_INT_TIMER0,
+  HW_IO_INT_TIMER1,
+  HW_IO_INT_TIMER2,
+  HW_IO_INT_TIMER3,
+  HW_IO_INT_SAVERAM,
+  HW_IO_INT_SERIAL,
 
   HW_PAD_A = 0,
   HW_PAD_B,
@@ -139,37 +148,97 @@ enum {
   // HW_MUSIC_DEFAULT_NOTE_FRAMELEN = 64,
 };
 
-struct HwPad {
+union HwPad {
   struct {
-    uint16_t A : 1;
-    uint16_t B : 1;
-    uint16_t C : 1;
-    uint16_t D : 1;
-    uint16_t L : 1;
-    uint16_t R : 1;
-    uint16_t S : 1;
-    uint16_t T : 1;
-    uint16_t _reserved0 : 1;
-    uint16_t _reserved1 : 1;
-    uint16_t _reserved2 : 1;
-    uint16_t _reserved3 : 1;
-    uint16_t UP : 1;
-    uint16_t DOWN : 1;
-    uint16_t LEFT : 1;
-    uint16_t RIGHT : 1;
+    struct {
+      uint16_t A : 1;
+      uint16_t B : 1;
+      uint16_t C : 1;
+      uint16_t D : 1;
+      uint16_t L : 1;
+      uint16_t R : 1;
+      uint16_t S : 1;
+      uint16_t T : 1;
+      uint16_t _reserved0 : 1;
+      uint16_t _reserved1 : 1;
+      uint16_t _reserved2 : 1;
+      uint16_t _reserved3 : 1;
+      uint16_t UP : 1;
+      uint16_t DOWN : 1;
+      uint16_t LEFT : 1;
+      uint16_t RIGHT : 1;
+    };
+    uint8_t AnalogX;
+    uint8_t AnalogY;
   };
-  uint8_t AnalogX;
-  uint8_t AnalogY;
+  uint32_t val32;
+};
+
+struct HwKeyboard {
+  uint8_t code;
+  uint8_t modifier;
+  uint8_t on : 1;
+  uint8_t _reserved0 : 7;
+  uint8_t _reserved1;
+};
+
+struct HwTouch {
+  uint16_t x;
+  uint16_t y;
+};
+
+struct HwDma {
+  uint32_t src;
+  uint32_t dst;
+  uint32_t size;
+  uint32_t enable : 1;
+  uint32_t repeat : 1;
+  uint32_t interrupt : 1;
+  uint32_t mode : 1;
+  uint32_t srcIncrement : 2;
+  uint32_t dstIncrement : 2;
+  uint32_t trigger : 4;
+  uint32_t _reserved : 4;
+};
+
+struct HwIoRam {
+  struct HwIoVideo {
+    uint32_t screenW;
+    uint32_t screenH;
+    uint32_t scanline;
+  } video __attribute__((aligned(0x100)));
+  struct HwIoAudio {
+    uint32_t audio;
+  } audio __attribute__((aligned(0x100)));
+  struct HwIoInput {
+    HwPad pad[2];
+    HwKeyboard keyboard;
+    HwTouch touch;
+  } input __attribute__((aligned(0x100)));
+  struct HwIoDma {
+    HwDma dma[4];
+  } dma __attribute__((aligned(0x100)));
+  struct HwIoTimer {
+    uint32_t timer[4];
+  } timer __attribute__((aligned(0x100)));
+  struct HwIoSerial {
+    uint32_t serial;
+  } serial __attribute__((aligned(0x100)));
+  struct HwIoInterrupt {
+    uint32_t enable;
+    uint32_t status;
+    uint32_t vector;
+  } intr __attribute__((aligned(0x100)));
 };
 
 union HwColor {
-  uint32_t data;
   struct {
     uint8_t a;
     uint8_t b;
     uint8_t g;
     uint8_t r;
   };
+  uint32_t data;
 };
 
 union HwPalette {

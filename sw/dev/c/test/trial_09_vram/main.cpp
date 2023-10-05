@@ -24,6 +24,7 @@ int main()
   }
 
   /* BG settings */
+  tileram.bg[0].flag.enable = true;
   tileram.bg[0].flag.mode = HWBG_PIXEL_MODE;
 
   /* main loop */

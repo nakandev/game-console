@@ -144,13 +144,13 @@ int
 Debugger::process_launch()
 {
   if (!cpu) return 1;
-  int maxCycle = 5000;
-  for (int i=0; i<maxCycle; i++) {
+  long long maxCycle = 10000000;
+  for (long long i=0; i<maxCycle; i++) {
     bool _break = false;
     for (auto& bp: breakPoints) {
       auto pc = cpu->getPc();
-      // fmt::print("pc={:08x} bp={:08x}\n", pc, bp);
       if (pc == bp) {
+        fmt::print("pc={:08x} bp={:08x}\n", pc, bp);
         _break = true;
         break;
       }
