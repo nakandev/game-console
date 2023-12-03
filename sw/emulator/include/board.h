@@ -5,6 +5,9 @@
 #include <ppu.h>
 #include <apu.h>
 #include <io.h>
+#include <dma.h>
+#include <timer.h>
+#include <string>
 
 class Board {
 public:
@@ -14,6 +17,8 @@ public:
   Cpu cpu;
   Ppu ppu;
   Apu apu;
+  Dma dma;
+  Timer timer;
   bool pause;
   Board();
   ~Board();
@@ -21,4 +26,8 @@ public:
   void reset();
   void updateFrameUntilVblank();
   void updateFrameSinceVblank();
+  void loadElf(const string& path);
+  void reloadElf();
+  void saveState(const string& path);
+  void loadState(const string& path);
 };

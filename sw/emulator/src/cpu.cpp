@@ -79,24 +79,23 @@ void Cpu::stepCycle()
   {
     uint32_t val = programSection->read(regs.pc.val.u, 4);
     auto& instr = currentInstr[0];
-    if (instr.phase == 0) {
-      // fetch
-      instr.phase = 1;
+    if (instr.phase == INSTR_PHASE_FETCH) {
+      instrManip.fetch(instr);
     }
-    if (instr.phase == 1) {
+    if (instr.phase == INSTR_PHASE_DECODE) {
       instrManip.decode(val, instr);
+      regs.prev_pc = regs.pc;
     }
-    if (instr.phase == 2) {
+    if (instr.phase == INSTR_PHASE_EXECUTE) {
       instrManip.execute(instr, regs, memory);
     }
-    if (instr.phase == 3) {
-      // post execute
+    if (instr.phase == INSTR_PHASE_POSTPROC) {
       if (debugLevel >= 1) {
         if (regs.prev_pc.val.u != regs.pc.val.u) {
           instrManip.printInstr(instrCount, regs.prev_pc.val.u, instr, regs, memory);
         }
       }
-      instr.phase = 0;
+      instr.phase = INSTR_PHASE_FETCH;
     }
   }
   if (debugLevel >= 1) {
@@ -108,7 +107,7 @@ void Cpu::stepCycle()
   instrCount++;
 }
 
-void Cpu::stepInstr()
+void Cpu::stepInstruction()
 {
   auto& instr = currentInstr[0];
   while (instr.phase != 0) {

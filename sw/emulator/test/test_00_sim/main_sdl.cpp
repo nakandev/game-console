@@ -143,8 +143,8 @@ int main(int argc, char* argv[])
   io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
   // io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
   // Setup Dear ImGui style
-  // ImGui::StyleColorsDark();
-  ImGui::StyleColorsLight();
+  ImGui::StyleColorsDark();
+  // ImGui::StyleColorsLight();
   // Setup Platform/Renderer backends
   const char* glsl_version = "#version 130";
   ImGui_ImplSDL2_InitForOpenGL(window, gl_context);
@@ -152,7 +152,6 @@ int main(int argc, char* argv[])
 
   int pitch = HW_SCREEN_W * 4;
   float fps = 60.0;
-  int sec = 120;
   // int msecPerFrame[] = {33, 34, 33};  // fps 30
   int msecPerFrame[] = {17, 16, 17};  // fps 60
 

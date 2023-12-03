@@ -28,7 +28,7 @@ public:
   void requestInterruption();
   void handleInterruption();
   void stepCycle();
-  void stepInstr();
+  void stepInstruction();
   const uint32_t getPc();
   void printPc();
   const vector<string> disassembleAll();

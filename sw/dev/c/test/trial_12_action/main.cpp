@@ -14,7 +14,13 @@ extern uint8_t _binary_img_tileset_gif_pal_size;
 extern uint8_t _binary_img_tileset_gif_tile_start;
 extern uint8_t _binary_img_tileset_gif_tile_size;
 
+const uint16_t ground_map[16][2] = {
+  {4, 5}, {36, 37}, {66, 67}, {98, 99}, {66, 67}, {98, 99}, {66, 67}, {98, 99},
+  {66, 67}, {98, 99}, {66, 67}, {98, 99}, {66, 67}, {98, 99}, {66, 67}, {98, 99},
+};
+
 int32_t camera_x = 0;
+int8_t padIdleCount = 0;
 
 extern "C" void int_handler()
 {
@@ -40,8 +46,26 @@ extern "C" void int_handler()
   if (intstatus & (1<<HW_IO_INT_HBLANK)) {
   }
   if (intstatus & (1<<HW_IO_INT_VBLANK)) {
-    camera_x++;
-    int camera_bg3_x = camera_x / 8;
+    if (pad == 0) {
+      if (padIdleCount < 60 * 2) {
+        padIdleCount++;
+      } else {
+        camera_x++;
+      }
+    } else {
+      int speed = 1;
+      if (pad & (1 << HW_PAD_B)) {
+        speed = 2;
+      }
+      if (pad & (1 << HW_PAD_LEFT)) {
+        camera_x -= speed;
+      } else
+      if (pad & (1 << HW_PAD_RIGHT)) {
+        camera_x += speed;
+      }
+      padIdleCount = 0;
+    }
+    int camera_bg3_x = camera_x / 16;
     tileram.bg[2].x = -camera_x / 1 % 512;
     tileram.bg[3].x = -camera_bg3_x % 512;
 
@@ -87,10 +111,6 @@ int main()
       tileram.tilemap[1].tileIdx[x + y*HW_TILEMAP_XTILE] = x%48 + y*48;
     }
   }
-  const uint16_t ground_map[16][2] = {
-    {4, 5}, {36, 37}, {66, 67}, {98, 99}, {66, 67}, {98, 99}, {66, 67}, {98, 99},
-    {66, 67}, {98, 99}, {66, 67}, {98, 99}, {66, 67}, {98, 99}, {66, 67}, {98, 99},
-  };
   for (int y=0; y<16; y++) {
     for (int x=0; x<64; x++) {
       tileram.tilemap[2].tileIdx[x + (y+24)*HW_TILEMAP_XTILE] = ground_map[y][x%2];

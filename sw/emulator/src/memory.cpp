@@ -49,7 +49,7 @@ bool MemorySection::isin(uint32_t addr)
   return false;
 }
 
-int32_t MemorySection::read(uint32_t addr, int size)
+int32_t MemorySection::read(uint32_t addr, uint32_t size)
 {
   uint32_t relativeAddr = addr - this->addr;
   // uint8_t* bytes = data.data();
@@ -63,7 +63,7 @@ int32_t MemorySection::read(uint32_t addr, int size)
   return 0;
 }
 
-void MemorySection::write(uint32_t addr, int size, int32_t value)
+void MemorySection::write(uint32_t addr, uint32_t size, int32_t value)
 {
   uint32_t relativeAddr = addr - this->addr;
   // uint8_t* bytes = data.data();
@@ -75,7 +75,7 @@ void MemorySection::write(uint32_t addr, int size, int32_t value)
     *((int32_t*)(&data[0] + relativeAddr)) = value;
 }
 
-void MemorySection::copy(uint32_t addr, int size, uint8_t* buf)
+void MemorySection::copy(uint32_t addr, uint32_t size, uint8_t* buf)
 {
   uint32_t relativeAddr = addr - this->addr;
   // data.assign(buf + relativeAddr, buf + relativeAddr + size);
@@ -84,7 +84,7 @@ void MemorySection::copy(uint32_t addr, int size, uint8_t* buf)
   }
 }
 
-void MemorySection::set(uint32_t addr, int size, uint8_t value)
+void MemorySection::set(uint32_t addr, uint32_t size, uint8_t value)
 {
   uint32_t relativeAddr = addr - this->addr;
   for (int i=0; i<size; i++) {
@@ -92,7 +92,7 @@ void MemorySection::set(uint32_t addr, int size, uint8_t value)
   }
 }
 
-const uint8_t* MemorySection::buffer()
+uint8_t* const MemorySection::buffer()
 {
   // return data.data();
   return data;
@@ -100,8 +100,11 @@ const uint8_t* MemorySection::buffer()
 
 
 Memory::Memory()
-  :sections()
+  : sections(),
+    invalidSection(),
+    busyFlag()
 {
+  invalidSection = MemorySection("invalid", 0, 0);
   initMinimumSections();
 }
 
@@ -114,12 +117,22 @@ MemorySection& Memory::section(const string& name)
 {
   return sections[name];
 }
+MemorySection& Memory::sectionByAddr(const uint32_t addr)
+{
+  for (auto& section: sections) {
+    if (section.second.isin(addr)) {
+      return section.second;
+    }
+  }
+  return invalidSection;
+}
 void Memory::clearSection()
 {
   sections.clear();
 }
 void Memory::initMinimumSections()
 {
+  busyFlag.flag32 = 0;
   sections.clear();
   sections.insert(make_pair("program", MemorySection("program", HWREG_PROGRAM_BASEADDR    , 0x0100'0000)));
   sections.insert(make_pair("stack",   MemorySection("stack",   HWREG_WORKRAM_END - 0x0040'0000, 0x0040'0000)));
@@ -135,7 +148,45 @@ void Memory::addSection(const string& name, uint32_t addr, uint32_t size)
   sections.insert(make_pair(name, MemorySection(name, addr, size)));
 }
 
-int32_t Memory::read(uint32_t addr, int size)
+bool Memory::isBusy(uint32_t priority)
+{
+  uint32_t busyFlags = busyFlag.flag32;
+  for (int i=0; i<priority + 1; i++) {
+    busyFlags &= ~(1u << i);
+  }
+  // if (priority > 0 && busyFlags)
+  //   fmt::print("busyFlag={:08x} priority={}\n", busyFlags, priority);
+  if (busyFlags) {
+    return true;
+  }
+  return false;
+}
+void Memory::setBusy(uint32_t priority)
+{
+  busyFlag.flag32 |= (1u << priority);
+}
+void Memory::clearBusy(uint32_t priority)
+{
+  busyFlag.flag32 &= ~(1u << priority);
+}
+
+bool Memory::waitAccess(uint32_t addr, uint32_t size, bool rw, int8_t& wait)
+{
+  if (isBusy(0)) {
+    wait = 3; // set wait
+    return true;
+  }
+  if (wait < 0) {
+    wait = 3; // set wait
+    return true;
+  }
+  if (wait > 1) {
+    return true;
+  }
+  return false;
+}
+
+int32_t Memory::read(uint32_t addr, uint32_t size)
 {
   for (auto& section: sections) {
     if (section.second.isin(addr)) {
@@ -145,7 +196,7 @@ int32_t Memory::read(uint32_t addr, int size)
   return 0;
 }
 
-void Memory::write(uint32_t addr, int size, int32_t value)
+void Memory::write(uint32_t addr, uint32_t size, int32_t value)
 {
   for (auto& section: sections) {
     if (section.second.isin(addr)) {
@@ -175,7 +226,7 @@ void Memory::write(uint32_t addr, int size, int32_t value)
   return;
 }
 
-void Memory::copy(uint32_t addr, int size, uint8_t* value)
+void Memory::copy(uint32_t addr, uint32_t size, uint8_t* value)
 {
   for (auto& section: sections) {
     if (section.second.isin(addr)) {

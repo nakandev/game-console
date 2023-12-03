@@ -9,25 +9,40 @@ enum {
   HWREG_WORKRAM_END           = 0x0300'0000,
   HWREG_IORAM_BASEADDR        = 0x0300'0000,
   HWREG_VRAM_BASEADDR         = 0x0400'0000,
+  // HWREG_PALRAM_BASEADDR      = 0x0500'0000,
   HWREG_TILERAM_BASEADDR      = 0x0600'0000,
   HWREG_ARAM_BASEADDR         = 0x0700'0000,
-  HWREG_PROGRAM_BASEADDR      = 0x0800'0000,
+  // HWREG_APALRAM_BASEADDR     = 0x0800'0000,
+  HWREG_ATILERAM_BASEADDR     = 0x0900'0000,
   HWREG_SAVERAM_BASEADDR      = 0x0E00'0000,
+  HWREG_PROGRAM_BASEADDR      = 0x8000'0000,
 
-  HW_IO_SCREEN_W_ADDR = HWREG_IORAM_BASEADDR + 0x0000,
-  HW_IO_SCREEN_H_ADDR = HWREG_IORAM_BASEADDR + 0x0002,
-  HW_IO_SCANLINE_ADDR = HWREG_IORAM_BASEADDR + 0x0010,
-  HW_IO_AUDIO_XX_ADDR = HWREG_IORAM_BASEADDR + 0x0100,
-  HW_IO_PAD0_ADDR = HWREG_IORAM_BASEADDR + 0x0200,
-  HW_IO_PAD1_ADDR = HWREG_IORAM_BASEADDR + 0x0210,
-  HW_IO_KEYBOARD_ADDR = HWREG_IORAM_BASEADDR + 0x0220,
-  HW_IO_TOUCH_ADDR = HWREG_IORAM_BASEADDR + 0x0230,
-  HW_IO_DMA0_ADDR = HWREG_IORAM_BASEADDR + 0x0300,
-  HW_IO_TIMER0_ADDR = HWREG_IORAM_BASEADDR + 0x0400,
-  HW_IO_SERIAL_ADDR = HWREG_IORAM_BASEADDR + 0x0500,
-  HW_IO_INT_ENABLE_ADDR = HWREG_IORAM_BASEADDR + 0x0600,
-  HW_IO_INT_STATUS_ADDR = HWREG_IORAM_BASEADDR + 0x0604,
-  HW_IO_INT_VECTOR_ADDR = HWREG_IORAM_BASEADDR + 0x0608,
+  /* -------- IO -------- */
+  HWREG_IO_SCREEN_W_ADDR = HWREG_IORAM_BASEADDR + 0x0000,
+  HWREG_IO_SCREEN_H_ADDR = HWREG_IORAM_BASEADDR + 0x0002,
+  HWREG_IO_SCANLINE_ADDR = HWREG_IORAM_BASEADDR + 0x0010,
+  HWREG_IO_AUDIO_XX_ADDR = HWREG_IORAM_BASEADDR + 0x0100,
+  HWREG_IO_PAD0_ADDR = HWREG_IORAM_BASEADDR + 0x0200,
+  HWREG_IO_PAD1_ADDR = HWREG_IORAM_BASEADDR + 0x0210,
+  HWREG_IO_KEYBOARD_ADDR = HWREG_IORAM_BASEADDR + 0x0220,
+  HWREG_IO_TOUCH_ADDR = HWREG_IORAM_BASEADDR + 0x0230,
+  HWREG_IO_DMA0_ADDR = HWREG_IORAM_BASEADDR + 0x0300,
+  HWREG_IO_TIMER0_ADDR = HWREG_IORAM_BASEADDR + 0x0400,
+  HWREG_IO_SERIAL_ADDR = HWREG_IORAM_BASEADDR + 0x0500,
+  HWREG_IO_INT_ENABLE_ADDR = HWREG_IORAM_BASEADDR + 0x0600,
+  HWREG_IO_INT_STATUS_ADDR = HWREG_IORAM_BASEADDR + 0x0604,
+  HWREG_IO_INT_VECTOR_ADDR = HWREG_IORAM_BASEADDR + 0x0608,
+
+  // DMA
+  HW_IO_DMA_SIZE_8BIT = 0,
+  HW_IO_DMA_SIZE_16BIT = 1,
+  HW_IO_DMA_SIZE_32BIT = 2,
+  HW_IO_DMA_MODE_BURST = 0,
+  HW_IO_DMA_MODE_CYCLESTEAL = 1,
+  HW_IO_DMA_INCREMENT_INC = 0,
+  HW_IO_DMA_INCREMENT_DEC = 1,
+  HW_IO_DMA_INCREMENT_STAY = 2,
+  HW_IO_DMA_TRIGGER_IMMEDIATELY = 0,
 
   // INT_ENABLE_BIT / STATUS_BIT
   HW_IO_INT_HBLANK = 0,
@@ -64,12 +79,13 @@ enum {
   HW_PAD_LEFT,
   HW_PAD_RIGHT,
 
+  /* -------- Video -------- */
   HWCOLOR_BYTESIZE = 4,
 
   HWPALETTE_COLORNUM = 256,
   HWPALETTE_BYTESIZE = 1,
   HWREG_PALETTE_BASEADDR   = HWREG_TILERAM_BASEADDR + 0x0000'0000,
-  HWREG_PALETTE_BYTESIZE   = 0x0400,
+  HWREG_PALETTE_BYTESIZE   = 0x0400,  // 4 * 256
   HWREG_PALETTE0_ADDR    = HWREG_PALETTE_BASEADDR + HWREG_PALETTE_BYTESIZE * 0,
   HWREG_PALETTE1_ADDR    = HWREG_PALETTE_BASEADDR + HWREG_PALETTE_BYTESIZE * 1,
   HWREG_PALETTE2_ADDR    = HWREG_PALETTE_BASEADDR + HWREG_PALETTE_BYTESIZE * 2,
@@ -95,12 +111,14 @@ enum {
 
   HW_SCREEN_W = 320,
   HW_SCREEN_H = 240,
-  HW_SCREEN_XTILE = 40,
-  HW_SCREEN_YTILE = 30,
+  HW_SCREEN_HBLANK = 80,
+  HW_SCREEN_VBLANK = 80,
+  HW_SCREEN_XTILE = HW_SCREEN_W / HWTILE_W,
+  HW_SCREEN_YTILE = HW_SCREEN_H / HWTILE_H,
   HW_TILEMAP_W = 512,
   HW_TILEMAP_H = 512,
-  HW_TILEMAP_XTILE = 64,
-  HW_TILEMAP_YTILE = 64,
+  HW_TILEMAP_XTILE = HW_TILEMAP_W / HWTILE_W,
+  HW_TILEMAP_YTILE = HW_TILEMAP_H / HWTILE_H,
   HWREG_BG_BASEADDR        = HWREG_TILERAM_BASEADDR + 0x0030'0000,
   HWREG_BG_BYTESIZE        = 0x100,
   HWREG_BG0_ADDR      = HWREG_BG_BASEADDR + HWREG_BG_BYTESIZE * 0,
@@ -122,9 +140,7 @@ enum {
   HW_SPRITE_TILESIZE_32x32 = 2,
   HW_SPRITE_TILESIZE_64x64 = 3,
 
-  HW_SCREEN_HBLANK = 80,
-  HW_SCREEN_VBLANK = 80,
-
+  /* -------- Audio -------- */
   HWREG_INSTRUMENT_BASEADDR = HWREG_ARAM_BASEADDR + 0x0000'0000,
   HW_SOUNDOP_SIN = 0,
   HW_SOUNDOP_SQUARE = 1,
@@ -132,7 +148,6 @@ enum {
   HW_SOUNDOP_NOISE = 3,
   HW_SPECTRUM_MIN = 0,
   HW_SPECTRUM_MAX = 128,
-  // HW_SPECTRUM_NUM = 16,
   HW_INSTRUMENT_TIMESLICE = 16,
   HW_INSTRUMENT_NUM = 64,
   HW_MUSICNOTE_NUM = 256,
@@ -140,14 +155,12 @@ enum {
   HW_MUSICSHEET_NUM = 16,  // 8-ch * 2-slot
   HW_MUSIC_CHANNEL_NUM = 8,
   // HW_MUSIC_FREQUENCY = 32768,
-  // HW_MUSIC_FREQ_PER_FRAME = 512,
-  // HW_MUSIC_DEFAULT_NOTE_FRAME = 64,
   HW_MUSIC_FREQUENCY = 30720,
   HW_MUSIC_FREQ_PER_FRAME = 512,
   HW_MUSIC_DEFAULT_NOTE_FRAMELEN = 60,
-  // HW_MUSIC_DEFAULT_NOTE_FRAMELEN = 64,
 };
 
+/* -------- IO -------- */
 union HwPad {
   struct {
     struct {
@@ -190,15 +203,22 @@ struct HwTouch {
 struct HwDma {
   uint32_t src;
   uint32_t dst;
-  uint32_t size;
-  uint32_t enable : 1;
-  uint32_t repeat : 1;
-  uint32_t interrupt : 1;
-  uint32_t mode : 1;
-  uint32_t srcIncrement : 2;
-  uint32_t dstIncrement : 2;
-  uint32_t trigger : 4;
-  uint32_t _reserved : 4;
+  union {
+    struct {
+      uint32_t size  : 2;
+      uint32_t count : 14;
+      uint32_t enable : 1;
+      uint32_t repeat : 1;
+      uint32_t interrupt : 1;
+      uint32_t mode : 1;
+      uint32_t srcIncrement : 2;
+      uint32_t dstIncrement : 2;
+      uint32_t trigger : 4;
+      uint32_t _reserved : 4;
+    };
+    uint32_t attribute;
+  };
+  uint32_t _reserved2;
 };
 
 struct HwIoRam {
@@ -231,6 +251,7 @@ struct HwIoRam {
   } intr __attribute__((aligned(0x100)));
 };
 
+/* -------- Video -------- */
 union HwColor {
   struct {
     uint8_t a;
@@ -275,7 +296,7 @@ struct HwBG {
       uint8_t hflip     : 1;
       uint8_t layer     : 2;
       uint8_t affineEnable : 1;
-      uint8_t __padding : 1;
+      uint8_t _reserved : 1;
     };
     uint8_t data;
   } flag;
@@ -292,7 +313,7 @@ struct HwSprite {
       uint8_t hflip     : 1;
       uint8_t layer     : 2;
       uint8_t affineEnable : 1;
-      uint8_t __padding : 2;
+      uint8_t _reserved : 2;
     };
     uint8_t data;
   } flag;
@@ -317,7 +338,7 @@ struct HwTileRam {
   __attribute__((aligned(0x10'0000))) HwSP sp[0x10'0000/sizeof(HwSP)];
 };
 
-/* Audio */
+/* -------- Audio -------- */
 struct HwSoundOp {
   uint32_t func : 2;
   uint32_t arg  : 5;
@@ -325,9 +346,9 @@ struct HwSoundOp {
   uint32_t D : 6;
   uint32_t S : 6;
   uint32_t R : 7;
-  // uint32_t padding0 : 1;
+  // uint32_t _reserved0 : 1;
   int16_t amp      : 10;  // 1bit:signed, 5bit:upper, 4bit:lower.
-  int16_t padding1 : 6;
+  int16_t _reserved1 : 6;
   uint8_t ratio;
   uint8_t detune;
 };
@@ -357,7 +378,7 @@ struct HwMusic {  // BG
     struct {
       uint8_t enable   : 1;
       uint8_t loop     : 1;
-      uint8_t _padding : 6;
+      uint8_t _reserved : 6;
     };
     uint8_t data;
   } flag;
@@ -368,11 +389,11 @@ struct HwMusic {  // BG
     uint8_t enable  : 1;
     uint8_t sheetId : 7;
   } channel[HW_MUSIC_CHANNEL_NUM];
-  uint16_t _padding21to22;
-  uint8_t  _padding23;
+  uint16_t _reserved21to22;
+  uint8_t  _reserved23;
   int8_t  masterDirection;
   uint32_t masterVolume   : 16;
-  uint32_t _padding24to26 :  8;
+  uint32_t _reserved24to26 :  8;
   uint32_t noteCount      :  8;  // auto update
   uint32_t freqCount;  // auto update
 };

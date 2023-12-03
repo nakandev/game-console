@@ -137,6 +137,12 @@ InstrRV32IManipulator::~InstrRV32IManipulator()
 }
 
 void
+InstrRV32IManipulator::fetch(Instruction& instr)
+{
+  instr.phase = INSTR_PHASE_DECODE;
+}
+
+void
 InstrRV32IManipulator::decode(uint32_t bytes, Instruction& instr)
 {
   instr.waitCycle = 1;
@@ -152,7 +158,7 @@ InstrRV32IManipulator::decode(uint32_t bytes, Instruction& instr)
     instr = Instruction();
     instr.size = 4;
   }
-  instr.phase = 2;
+  instr.phase = INSTR_PHASE_EXECUTE;
 }
 
 void
@@ -182,7 +188,7 @@ InstrRV32IManipulator::decode32(uint32_t bytes, Instruction& instr)
   } else
   {
     instr = Instruction();
-    instr.size = 2;
+    instr.size = 4;
   }
 }
 
@@ -202,7 +208,6 @@ InstrRV32IManipulator::decodeTypeR(uint32_t bytes, Instruction& instr)
   instr.result.s = 0;
   instr.isJumped = false;
   instr.isWaiting = false;
-  instr.waitCycle = 1;
 
   const int instr_table_funct3_0[] = {
     INSTR_ADD,
@@ -241,6 +246,9 @@ InstrRV32IManipulator::decodeTypeR(uint32_t bytes, Instruction& instr)
   } else
   if (funct7 == 1) {
     instr.instr = instr_table_funct3_1[funct3];
+    if (funct3 >= INSTR_DIV) {
+      instr.waitCycle = 3;
+    }
   } else
   if (funct7 == 32) {
     instr.instr = instr_table_funct3_32[funct3];
@@ -263,7 +271,6 @@ InstrRV32IManipulator::decodeTypeI(uint32_t bytes, Instruction& instr)
   instr.result.s = 0;
   instr.isJumped = false;
   instr.isWaiting = false;
-  instr.waitCycle = 1;
 
   const int instr_table_funct3_ArithI[] = {
     INSTR_ADDI,
@@ -323,7 +330,7 @@ InstrRV32IManipulator::decodeTypeS(uint32_t bytes, Instruction& instr)
     instr.result.s = 0;
     instr.isJumped = false;
     instr.isWaiting = false;
-    instr.waitCycle = 3;
+    instr.waitCycle = -1;
   }
   else {
     instr.binary = bytes;
@@ -342,7 +349,7 @@ InstrRV32IManipulator::decodeTypeS(uint32_t bytes, Instruction& instr)
     instr.result.s = 0;
     instr.isJumped = false;
     instr.isWaiting = false;
-    instr.waitCycle = 3;
+    instr.waitCycle = -1;
   }
 
   const int instr_table_load[] = {
@@ -396,7 +403,6 @@ InstrRV32IManipulator::decodeTypeB(uint32_t bytes, Instruction& instr)
   instr.result.s = 0;
   instr.isJumped = false;
   instr.isWaiting = false;
-  instr.waitCycle = 1;
 
   const int instr_table_funct3[] = {
     INSTR_BEQ,
@@ -458,7 +464,6 @@ InstrRV32IManipulator::decodeTypeJ(uint32_t bytes, Instruction& instr)
   instr.result.s = 0;
   instr.isJumped = false;
   instr.isWaiting = false;
-  instr.waitCycle = 1;
 
   instr.instr = INSTR_JAL;
 }
@@ -479,7 +484,6 @@ InstrRV32IManipulator::decodeTypeSystem(uint32_t bytes, Instruction& instr)
   instr.result.s = 0;
   instr.isJumped = false;
   instr.isWaiting = false;
-  instr.waitCycle = 1;
 
   const int instr_table_funct3_csr[] = {
     INSTR_UNKNOWN,
@@ -514,26 +518,22 @@ InstrRV32IManipulator::decodeTypeSystem(uint32_t bytes, Instruction& instr)
 void
 InstrRV32IManipulator::execute(Instruction& instr, RegisterSet& regs, Memory& memory)
 {
-  instr.waitCycle--;
-  if (instr.waitCycle > 0) {
-    return;
-  }
-  regs.prev_pc = regs.pc;
   if (instr.size == 2) {
-    // executeTypeExtC(instr, regs, memory);
     (this->*(execute_tableC[instr.instr]))(instr, regs, memory);
   } else
   if (instr.size == 4) {
     (this->*(execute_tableI[instr.instr]))(instr, regs, memory);
   }
 
-  if (!instr.isJumped) {
-    regs.prev_pc.val.u = regs.pc.val.u;
-    regs.pc.val.u += instr.size;
-    instr.isJumped = false;
+  instr.waitCycle--;
+  if (instr.waitCycle > 0) {
+    return;
   }
 
-  instr.phase = 3;
+  if (!instr.isJumped) {
+    regs.pc.val.u += instr.size;
+  }
+  instr.phase = INSTR_PHASE_POSTPROC;
 }
 
 void
@@ -584,45 +584,61 @@ InstrRV32IManipulator::execute_and(Instruction& instr, RegisterSet& regs, Memory
 void
 InstrRV32IManipulator::execute_mul(Instruction& instr, RegisterSet& regs, Memory& memory)
 {
-  regs.gpr[instr.dst].val.s = regs.gpr[instr.src1].val.s * regs.gpr[instr.src2].val.s;
+  if (instr.waitCycle == 1) {
+    regs.gpr[instr.dst].val.s = regs.gpr[instr.src1].val.s * regs.gpr[instr.src2].val.s;
+  }
 }
 void
 InstrRV32IManipulator::execute_mulh(Instruction& instr, RegisterSet& regs, Memory& memory)
 {
-  int64_t val = (int64_t)regs.gpr[instr.src1].val.s * regs.gpr[instr.src2].val.s;
-  regs.gpr[instr.dst].val.s = (int32_t)(val >> 32);
+  if (instr.waitCycle == 1) {
+    int64_t val = (int64_t)regs.gpr[instr.src1].val.s * regs.gpr[instr.src2].val.s;
+    regs.gpr[instr.dst].val.s = (int32_t)(val >> 32);
+  }
 }
 void
 InstrRV32IManipulator::execute_mulhsu(Instruction& instr, RegisterSet& regs, Memory& memory)
 {
-  int64_t val = (int64_t)regs.gpr[instr.src1].val.s * regs.gpr[instr.src2].val.u;
-  regs.gpr[instr.dst].val.s = (int32_t)(val >> 32);
+  if (instr.waitCycle == 1) {
+    int64_t val = (int64_t)regs.gpr[instr.src1].val.s * regs.gpr[instr.src2].val.u;
+    regs.gpr[instr.dst].val.s = (int32_t)(val >> 32);
+  }
 }
 void
 InstrRV32IManipulator::execute_mulhu(Instruction& instr, RegisterSet& regs, Memory& memory)
 {
-  uint64_t val = (uint64_t)regs.gpr[instr.src1].val.u * regs.gpr[instr.src2].val.u;
-  regs.gpr[instr.dst].val.s = (uint32_t)(val >> 32);
+  if (instr.waitCycle == 1) {
+    uint64_t val = (uint64_t)regs.gpr[instr.src1].val.u * regs.gpr[instr.src2].val.u;
+    regs.gpr[instr.dst].val.s = (uint32_t)(val >> 32);
+  }
 }
 void
 InstrRV32IManipulator::execute_div(Instruction& instr, RegisterSet& regs, Memory& memory)
 {
-  regs.gpr[instr.dst].val.s = regs.gpr[instr.src1].val.s / regs.gpr[instr.src2].val.s;
+  if (instr.waitCycle == 1) {
+    regs.gpr[instr.dst].val.s = regs.gpr[instr.src1].val.s / regs.gpr[instr.src2].val.s;
+  }
 }
 void
 InstrRV32IManipulator::execute_divu(Instruction& instr, RegisterSet& regs, Memory& memory)
 {
-  regs.gpr[instr.dst].val.u = regs.gpr[instr.src1].val.u / regs.gpr[instr.src2].val.u;
+  if (instr.waitCycle == 1) {
+    regs.gpr[instr.dst].val.u = regs.gpr[instr.src1].val.u / regs.gpr[instr.src2].val.u;
+  }
 }
 void
 InstrRV32IManipulator::execute_rem(Instruction& instr, RegisterSet& regs, Memory& memory)
 {
-  regs.gpr[instr.dst].val.s = regs.gpr[instr.src1].val.s % regs.gpr[instr.src2].val.s;
+  if (instr.waitCycle == 1) {
+    regs.gpr[instr.dst].val.s = regs.gpr[instr.src1].val.s % regs.gpr[instr.src2].val.s;
+  }
 }
 void
 InstrRV32IManipulator::execute_remu(Instruction& instr, RegisterSet& regs, Memory& memory)
 {
-  regs.gpr[instr.dst].val.u = regs.gpr[instr.src1].val.u % regs.gpr[instr.src2].val.u;
+  if (instr.waitCycle == 1) {
+    regs.gpr[instr.dst].val.u = regs.gpr[instr.src1].val.u % regs.gpr[instr.src2].val.u;
+  }
 }
 void
 InstrRV32IManipulator::execute_sub(Instruction& instr, RegisterSet& regs, Memory& memory)
@@ -698,49 +714,65 @@ void
 InstrRV32IManipulator::execute_lb(Instruction& instr, RegisterSet& regs, Memory& memory)
 {
   uint32_t addr = regs.gpr[instr.src1].val.u + instr.imm.s;
-  regs.gpr[instr.dst].val.s = memory.read(addr, 1);
+  if (!memory.waitAccess(addr, 1, true, instr.waitCycle)) {
+    regs.gpr[instr.dst].val.s = memory.read(addr, 1);
+  }
 }
 void
 InstrRV32IManipulator::execute_lh(Instruction& instr, RegisterSet& regs, Memory& memory)
 {
   uint32_t addr = regs.gpr[instr.src1].val.u + instr.imm.s;
-  regs.gpr[instr.dst].val.s = memory.read(addr, 2);
+  if (!memory.waitAccess(addr, 2, true, instr.waitCycle)) {
+    regs.gpr[instr.dst].val.s = memory.read(addr, 2);
+  }
 }
 void
 InstrRV32IManipulator::execute_lw(Instruction& instr, RegisterSet& regs, Memory& memory)
 {
   uint32_t addr = regs.gpr[instr.src1].val.u + instr.imm.s;
-  regs.gpr[instr.dst].val.s = memory.read(addr, 4);
+  if (!memory.waitAccess(addr, 4, true, instr.waitCycle)) {
+    regs.gpr[instr.dst].val.s = memory.read(addr, 4);
+  }
 }
 void
 InstrRV32IManipulator::execute_lbu(Instruction& instr, RegisterSet& regs, Memory& memory)
 {
   uint32_t addr = regs.gpr[instr.src1].val.u + instr.imm.s;
-  regs.gpr[instr.dst].val.u = memory.read(addr, 1) & 0xffu;
+  if (!memory.waitAccess(addr, 1, true, instr.waitCycle)) {
+    regs.gpr[instr.dst].val.u = memory.read(addr, 1) & 0xffu;
+  }
 }
 void
 InstrRV32IManipulator::execute_lhu(Instruction& instr, RegisterSet& regs, Memory& memory)
 {
   uint32_t addr = regs.gpr[instr.src1].val.u + instr.imm.s;
-  regs.gpr[instr.dst].val.u = memory.read(addr, 2) & 0xffffu;
+  if (!memory.waitAccess(addr, 2, true, instr.waitCycle)) {
+    regs.gpr[instr.dst].val.u = memory.read(addr, 2) & 0xffffu;
+  }
 }
 void
 InstrRV32IManipulator::execute_sb(Instruction& instr, RegisterSet& regs, Memory& memory)
 {
   uint32_t addr = regs.gpr[instr.src1].val.u + instr.imm.s;
-  memory.write(addr, 1, regs.gpr[instr.src2].val.s);
+  if (!memory.waitAccess(addr, 1, true, instr.waitCycle)) {
+    memory.write(addr, 1, regs.gpr[instr.src2].val.s);
+  }
 }
 void
 InstrRV32IManipulator::execute_sh(Instruction& instr, RegisterSet& regs, Memory& memory)
 {
   uint32_t addr = regs.gpr[instr.src1].val.u + instr.imm.s;
-  memory.write(addr, 2, regs.gpr[instr.src2].val.s);
+  if (!memory.waitAccess(addr, 2, true, instr.waitCycle)) {
+    memory.write(addr, 2, regs.gpr[instr.src2].val.s);
+  }
 }
 void
 InstrRV32IManipulator::execute_sw(Instruction& instr, RegisterSet& regs, Memory& memory)
 {
   uint32_t addr = regs.gpr[instr.src1].val.u + instr.imm.s;
-  memory.write(addr, 4, regs.gpr[instr.src2].val.s);
+  if (!memory.waitAccess(addr, 4, true, instr.waitCycle)) {
+    memory.write(addr, 4, regs.gpr[instr.src2].val.s);
+  }
 }
 // type B
 void
@@ -888,12 +920,12 @@ InstrRV32IManipulator::execute_csrrwi(Instruction& instr, RegisterSet& regs, Mem
 void
 InstrRV32IManipulator::execute_csrrsi(Instruction& instr, RegisterSet& regs, Memory& memory)
 {
-    if (instr.dst != 0) {
-      regs.gpr[instr.dst].val.s = regs.csr[instr.imm.u].val.s;
-    }
-    if (instr.src1 != 0) {
-      regs.csr[instr.imm.u].val.s |= instr.src1;
-    }
+  if (instr.dst != 0) {
+    regs.gpr[instr.dst].val.s = regs.csr[instr.imm.u].val.s;
+  }
+  if (instr.src1 != 0) {
+    regs.csr[instr.imm.u].val.s |= instr.src1;
+  }
 }
 void
 InstrRV32IManipulator::execute_csrrci(Instruction& instr, RegisterSet& regs, Memory& memory)

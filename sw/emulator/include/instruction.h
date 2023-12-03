@@ -274,6 +274,13 @@ enum {
   FUNCT3_C_JAL = 0x01,
 };
 
+enum InstructionPhase {
+  INSTR_PHASE_FETCH = 0,
+  INSTR_PHASE_DECODE,
+  INSTR_PHASE_EXECUTE,
+  INSTR_PHASE_POSTPROC,
+};
+
 struct Instruction {
   uint32_t binary;
   uint32_t instr;
@@ -282,8 +289,8 @@ struct Instruction {
   uint8_t src1;
   uint8_t src2;
   uint8_t src3;
-  uint8_t waitCycle;
-  uint8_t phase;  // 0:fetch 1:decode 2:execute
+  int8_t waitCycle;
+  uint8_t phase;
   uint8_t pad2;
   union32_t imm;  // funct12
   union32_t result;
@@ -293,16 +300,6 @@ struct Instruction {
   bool isWaiting;
   Instruction(): waitCycle(1) {}
   virtual ~Instruction() {}
-};
-
-class InstrManipulator {
-public:
-  InstrManipulator();
-  ~InstrManipulator();
-  virtual uint32_t fetch(uint32_t bytes) = 0;
-  virtual Instruction decode(uint32_t bytes) = 0;
-  virtual void execute(Instruction& instr, RegisterSet& regs, Memory& memory) = 0;
-  virtual void writeback(Instruction& instr, RegisterSet& regs, Memory& memory) = 0;
 };
 
 class InstrRV32IManipulator {
@@ -316,6 +313,7 @@ public:
   bool checkInterruption(Instruction& instr, RegisterSet& regs, Memory& memory);
   void handleInterruption(Instruction& instr, RegisterSet& regs);
   void returnInterruption(Instruction& instr, RegisterSet& regs);
+  void fetch(Instruction& instr);
   void decode(uint32_t bytes, Instruction& instr);
   void decode32(uint32_t bytes, Instruction& instr);
   void execute(Instruction& instr, RegisterSet& regs, Memory& memory);

@@ -25,13 +25,6 @@ class Hw {
   ~Hw();
 };
 
-
-#ifdef BUILD_FOR_SIMULATOR
-extern uint8_t HwReg[0x4000'0000];
-#else
-extern uint8_t* HwReg;
-#endif
-
 extern volatile Hw hw;
 
 }; /* namespace nkx*/

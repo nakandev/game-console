@@ -1,85 +1,93 @@
-from processordesign import instruction, assembly, binary
-from processordesign import ins, rf, mem, sext
-
+from processordesign import OpCode
+from processordesign import instruction, opcode, assembly, binary
+# from processordesign import regs, RegisterGroup, Register
+from processordesign import reg_read, reg_write, imm_load, mem_read, mem_write
 
 # Base Instruction
-class addi(instruction):
-    assembly('$opc:OpCode $rd:GPR, $imm:Imm ($rs1:GPR)')
-    binary(ins.imm[11:0], ins.rs1, ins.opc[9:7], ins.rd, ins.opc[6:0])
+opc_alui = (
+    OpCode('addi'),
+    OpCode('slti'),
+    OpCode('sltiu'),
+    OpCode('andi'),
+    OpCode('ori'),
+    OpCode('xori'),
+)
 
-    def implement():
-        rf.gpr[ins.rd] = rf.gpr[ins.rs1] + sext(ins.imm)
-
-class slti(instruction):
+@instruction
+def alui():
+    opcode(opc_alui)
     ins = assembly('$opc:OpCode $rd:GPR, $imm:Imm ($rs1:GPR)')
     binary(ins.imm[11:0], ins.rs1, ins.opc[9:7], ins.rd, ins.opc[6:0])
 
-    def implement():
-        rf.gpr[ins.rd] = rf.gpr[ins.rs1] < sext(ins.imm)
+    def body():
+        if ins.opc == 'addi':
+            result = reg_read(ins.rs1) + imm_load(ins.imm)
+        elif ins.opc == 'slti':
+            result = reg_read(ins.rs1) < imm_load(ins.imm)
+        elif ins.opc == 'sltiu':
+            result = reg_read(ins.rs1) < imm_load(ins.imm)
+        elif ins.opc == 'andi':
+            result = reg_read(ins.rs1) & imm_load(ins.imm)
+        elif ins.opc == 'ori':
+            result = reg_read(ins.rs1) | imm_load(ins.imm)
+        elif ins.opc == 'xori':
+            result = reg_read(ins.rs1) ^ imm_load(ins.imm)
+        else:
+            result = 0
+        reg_write(ins.dst, result)
 
-class sltiu(instruction):
-    ins = assembly('$opc:OpCode $rd:GPR, $imm:Imm ($rs1:GPR)')
-    binary(ins.imm[11:0], ins.rs1, ins.opc[9:7], ins.rd, ins.opc[6:0])
 
-    def implement():
-        rf.gpr[ins.rd] = rf.gpr[ins.rs1].u < sext(ins.imm)
-
-class andi(instruction):
-    ins = assembly('$opc:OpCode $rd:GPR, $imm:Imm ($rs1:GPR)')
-    binary(ins.imm[11:0], ins.rs1, ins.opc[9:7], ins.rd, ins.opc[6:0])
-
-    def implement():
-        rf.gpr[ins.rd] = rf.gpr[ins.rs1] & sext(ins.imm)
-
-class ori(instruction):
-    ins = assembly('$opc:OpCode $rd:GPR, $imm:Imm ($rs1:GPR)')
-    binary(ins.imm[11:0], ins.rs1, ins.opc[9:7], ins.rd, ins.opc[6:0])
-
-    def implement():
-        rf.gpr[ins.rd] = rf.gpr[ins.rs1] | sext(ins.imm)
-
-class xori(instruction):
-    ins = assembly('$opc:OpCode $rd:GPR, $imm:Imm ($rs1:GPR)')
-    binary(ins.imm[11:0], ins.rs1, ins.opc[9:7], ins.rd, ins.opc[6:0])
-
-    def implement():
-        rf.gpr[ins.rd] = rf.gpr[ins.rs1] ^ sext(ins.imm)
-
-class slli(instruction):
-    ins = assembly('$opc:OpCode $rd:GPR, $imm:Imm ($rs1:GPR)')
-    binary(ins.imm[11:0], ins.rs1, ins.opc[9:7], ins.rd, ins.opc[6:0])  # ?
-
-    def implement():
-        rf.gpr[ins.rd] = rf.gpr[ins.rs1] << ins.imm
-
-class srli(instruction):
-    ins = assembly('$opc:OpCode $rd:GPR, $imm:Imm ($rs1:GPR)')
-    binary(ins.imm[11:0], ins.rs1, ins.opc[9:7], ins.rd, ins.opc[6:0])  # ?
-
-    def implement():
-        rf.gpr[ins.rd] = rf.gpr[ins.rs1].u >> ins.imm
-
-class srai(instruction):
-    ins = assembly('$opc:OpCode $rd:GPR, $imm:Imm ($rs1:GPR)')
-    binary(ins.imm[11:0], ins.rs1, ins.opc[9:7], ins.rd, ins.opc[6:0])  # ?
-
-    def implement():
-        rf.gpr[ins.rd] = rf.gpr[ins.rs1] >> ins.imm
-
+opc_slli = ('slli', ),
+opc_srli = ('srli', ),
+opc_srai = ('srai', ),
 
 opc_lui = ('lui', ),
 opc_auipc = ('auipc', ),
 
-opc_add = ('add', ),
-opc_slt = ('slt', ),
-opc_sltu = ('sltu', ),
-opc_and = ('and', ),
-opc_or = ('or', ),
-opc_xor = ('xor', ),
-opc_sll = ('sll', ),
-opc_srl = ('srl', ),
-opc_sub = ('sub', ),
-opc_sra = ('sra', ),
+opc_alu = (
+    OpCode('add'),
+    OpCode('slt'),
+    OpCode('sltu'),
+    OpCode('and'),
+    OpCode('or'),
+    OpCode('xor'),
+    OpCode('sll'),
+    OpCode('srl'),
+    OpCode('sub'),
+    OpCode('sra'),
+)
+
+@instruction
+def alu():
+    opcode(opc_alu)
+    ins = assembly('$opc:OpCode $rd:GPR, $imm:Imm ($rs1:GPR)')
+    binary(ins.imm[11:0], ins.rs1, ins.opc[9:7], ins.rd, ins.opc[6:0])
+
+    def body():
+        if ins.opc == 'add':
+            result = reg_read(ins.rs1) + reg_read(ins.rs2)
+        elif ins.opc == 'slt':
+            result = reg_read(ins.rs1) < reg_read(ins.rs2)
+        elif ins.opc == 'sltu':
+            result = reg_read(ins.rs1) < reg_read(ins.rs2)
+        elif ins.opc == 'and':
+            result = reg_read(ins.rs1) & reg_read(ins.rs2)
+        elif ins.opc == 'or':
+            result = reg_read(ins.rs1) | reg_read(ins.rs2)
+        elif ins.opc == 'xor':
+            result = reg_read(ins.rs1) ^ reg_read(ins.rs2)
+        elif ins.opc == 'sll':
+            result = reg_read(ins.rs1) << reg_read(ins.rs2)
+        elif ins.opc == 'srl':
+            result = reg_read(ins.rs1) >> reg_read(ins.rs2)
+        elif ins.opc == 'sub':
+            result = reg_read(ins.rs1) - reg_read(ins.rs2)
+        elif ins.opc == 'sra':
+            result = reg_read(ins.rs1) >> reg_read(ins.rs2)
+        else:
+            result = 0
+        reg_write(ins.dst, result)
+
 
 opc_nop = ('nop', ),  # alias
 
@@ -94,69 +102,16 @@ opc_bgtu = ('bgtu', ),
 opc_bge = ('bge', ),
 opc_bgeu = ('bgeu', ),
 
-class lb(instruction):
-    ins = assembly('$opc:OpCode $rd:GPR, $imm:Imm ($rs1:GPR)')
-    binary(ins.imm[11:0], ins.rs1, ins.opc[9:7], ins.rd, ins.opc[6:0])
-
-    def implement():
-        rf.gpr[ins.rd] = sext(mem[rf.gpr[ins.rs1] + ins.imm][7:0])
-
-class lh(instruction):
-    ins = assembly('$opc:OpCode $rd:GPR, $imm:Imm ($rs1:GPR)')
-    binary(ins.imm[11:0], ins.rs1, ins.opc[9:7], ins.rd, ins.opc[6:0])
-
-    def implement():
-        rf.gpr[ins.rd] = sext(mem[rf.gpr[ins.rs1] + ins.imm][15:0])
-
-class lw(instruction):
-    ins = assembly('$opc:OpCode $rd:GPR, $imm:Imm ($rs1:GPR)')
-    binary(ins.imm[11:0], ins.rs1, ins.opc[9:7], ins.rd, ins.opc[6:0])
-
-    def implement():
-        rf.gpr[ins.rd] = sext(mem[rf.gpr[ins.rs1] + ins.imm][31:0])
-
-class lbu(instruction):
-    ins = assembly('$opc:OpCode $rd:GPR, $imm:Imm ($rs1:GPR)')
-    binary(ins.imm[11:0], ins.rs1, ins.opc[9:7], ins.rd, ins.opc[6:0])
-
-    def implement():
-        rf.gpr[ins.rd] = mem[rf.gpr[ins.rs1] + ins.imm][7:0]
-
-class lhu(instruction):
-    ins = assembly('$opc:OpCode $rd:GPR, $imm:Imm ($rs1:GPR)')
-    binary(ins.imm[11:0], ins.rs1, ins.opc[9:7], ins.rd, ins.opc[6:0])
-
-    def implement():
-        rf.gpr[ins.rd] = mem[rf.gpr[ins.rs1] + ins.imm][15:0]
-
-class lwu(instruction):
-    ins = assembly('$opc:OpCode $rd:GPR, $imm:Imm ($rs1:GPR)')
-    binary(ins.imm[11:0], ins.rs1, ins.opc[9:7], ins.rd, ins.opc[6:0])
-
-    def implement():
-        rf.gpr[ins.rd] = mem[rf.gpr[ins.rs1] + ins.imm][31:0]
-
-class sb(instruction):
-    ins = assembly('$opc:OpCode $rd:GPR, $imm:Imm ($rs1:GPR)')
-    binary(ins.imm[11:0], ins.rs1, ins.opc[9:7], ins.rd, ins.opc[6:0])
-
-    def implement():
-        mem[rf.gpr[ins.rs1] + ins.imm][7:0] = rf.gpr[ins.dst]
-
-class sh(instruction):
-    ins = assembly('$opc:OpCode $rd:GPR, $imm:Imm ($rs1:GPR)')
-    binary(ins.imm[11:0], ins.rs1, ins.opc[9:7], ins.rd, ins.opc[6:0])
-
-    def implement():
-        mem[rf.gpr[ins.rs1] + ins.imm][15:0] = rf.gpr[ins.dst]
-
-class sw(instruction):
-    ins = assembly('$opc:OpCode $rd:GPR, $imm:Imm ($rs1:GPR)')
-    binary(ins.imm[11:0], ins.rs1, ins.opc[9:7], ins.rd, ins.opc[6:0])
-
-    def implement():
-        mem[rf.gpr[ins.rs1] + ins.imm][31:0] = rf.gpr[ins.dst]
-
+opc_load = (
+    OpCode('lw'),
+    OpCode('lh'),
+    OpCode('lb'),
+)
+opc_store = (
+    OpCode('sw'),
+    OpCode('sh'),
+    OpCode('sb'),
+)
 
 opc_fence = ('fence', ),
 
@@ -184,3 +139,41 @@ opc_csrrc = ('csrrc', ),
 opc_csrrwi = ('csrrwi', ),
 opc_csrrsi = ('csrrsi', ),
 opc_csrrci = ('csrrci', ),
+
+
+@instruction
+def load():
+    opcode(opc_load)
+    ins = assembly('$opc:OpCode $rd:GPR, $imm:Imm ($rs1:GPR)')
+    binary(ins.imm[11:0], ins.rs1, ins.opc[9:7], ins.rd, ins.opc[6:0])
+
+    def body():
+        addr = reg_read(ins.rs1)
+        offset = imm_load(ins.imm)
+        if ins.opc == 'lw':
+            size = 4
+        elif ins.opc == 'lh':
+            size = 2
+        else:  # 'lb'
+            size = 1
+        result = mem_read(addr + offset, size)
+        reg_write(ins.dst, result)
+
+
+@instruction
+def store():
+    opcode(opc_store)
+    ins = assembly('$opc:OpCode $rd:GPR, $imm:Imm ($rs1:GPR)')
+    binary(ins.imm[11:0], ins.rs1, ins.opc[9:7], ins.rd, ins.opc[6:0])
+
+    def body():
+        addr = reg_read(ins.rs1)
+        offset = imm_load(ins.imm)
+        if ins.opc == 'sw':
+            size = 4
+        elif ins.opc == 'sh':
+            size = 2
+        else:  # 'sb'
+            size = 1
+        result = mem_read(addr + offset, size)
+        mem_write(ins.dst, result)

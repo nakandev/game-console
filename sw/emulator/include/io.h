@@ -5,6 +5,8 @@ class Memory;
 class Cpu;
 class Ppu;
 class Apu;
+class Dma;
+class Timer;
 
 class IO {
 private:
@@ -12,12 +14,16 @@ private:
   Cpu* cpu;
   Ppu* ppu;
   Apu* apu;
+  Dma* dma;
+  Timer* timer;
 public:
   IO(Memory& memory);
   ~IO();
   void setCpu(Cpu& cpu);
   void setPpu(Ppu& ppu);
   void setApu(Apu& apu);
+  void setDma(Dma& dma);
+  void setTimer(Timer& timer);
   void pressPadButton(uint8_t button);
   void releasePadButton(uint8_t button);
   HwPad getPadStatus();

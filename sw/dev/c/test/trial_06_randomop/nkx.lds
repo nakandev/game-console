@@ -10,7 +10,7 @@ SEARCH_DIR("/home/nyalry/nakan/work/study/riscv/gcc/build/riscv64-unknown-elf/li
 MEMORY
 {
   DATARAM (!rx) : ORIGIN = 0x00000000, LENGTH = 0x08000000
-  PROGRAM (rx)  : ORIGIN = 0x08000000, LENGTH = 0x04000000
+  PROGRAM (rx)  : ORIGIN = 0x80000000, LENGTH = 0x04000000
 }
 
 SECTIONS
