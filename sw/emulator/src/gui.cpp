@@ -15,26 +15,40 @@ MainComponent::MainComponent(Board& board)
 : board(board),
   elfpath(),
   elfdir(),
-  guiDebug(false)
+  guiDebug(false),
+  debugPanel(board),
+  disasmView(board),
+  paletteView(board),
+  tileView(board),
+  mmioPanel(board),
+  ctrlTabIndex(),
+  viewTabIndex(),
+  propertyTabIndex()
 {
-  elfpath = "/home/nyalry/nakan/dev/hobby/game-console/sw/dev/c/test/trial_08_tilefile/trial_08_tilefile";
-  screenBuffer.resize(320 * 240);
-  // 800 x 600
-  screenScale = 3;
-  hMenu = 30;
-  margin = 10;
+  screenBuffer.resize(HW_SCREEN_W * HW_SCREEN_H);
+  screenScale = 1;
+  scaleMode = SCREEN_SCALE_FIT;
+  hMenu = 20;
+  margin = 8;
   thick = 10;
-  // float wSCR = io.DisplaySize.x, hSCR = io.DisplaySize.y;
-  wSCR = HW_SCREEN_W * screenScale - margin, hSCR = HW_SCREEN_H * screenScale - margin - hMenu;
-  wLC = (wSCR*0.8)-thick, hLC = (hSCR*0.8)-thick;
-  wL = (wSCR*0.2)-thick, hL = hLC;
-  wC = (wSCR*0.6)-thick, hC = hLC;
-  wR = (wSCR*0.2), hR = (hSCR*1.0);
-  wB = (wSCR*0.8)-thick, hB = (hSCR*0.2);
+  ImGuiIO& io = ImGui::GetIO(); (void)io;
+  wSCR = io.DisplaySize.x - margin*2, hSCR = io.DisplaySize.y - margin*2 - hMenu;
+  wL = 220;
+  wR = 220;
+  wC = wSCR-(wL+wR)-thick;
+  wLC = wL + wC;
+  hB = 220;
+  hR = hSCR;
+  hC = hSCR-hB-thick;
+  hLC = hC;
 }
 
 MainComponent::~MainComponent()
 {
+}
+void MainComponent::setElfPath(string path)
+{
+  elfpath = path;
 }
 
 void MainComponent::createFramebuffer()
@@ -101,7 +115,10 @@ void MainComponent::renderMenu()
       }
       if (ImGui::MenuItem("Reset", "")) {
         board.reset();
-        board.cpu.loadElf(elfpath);
+        int ret = board.cpu.loadElf(elfpath);
+        if (ret) {
+          fmt::print("cannot open ELF: {}\n", (string)elfpath);
+        }
       }
       ImGui::Separator();
       ImGui::MenuItem("Debug Mode", "", &guiDebug);
@@ -118,10 +135,10 @@ void MainComponent::renderMenu()
       string selectedDir = ImGuiFileDialog::Instance()->GetCurrentPath();
       elfpath = selectedFile;
       elfdir = selectedDir;
-      board.cpu.init();
+      board.reset();
       if(!board.cpu.loadElf(elfpath)) {
-        // disasms = board.cpu.disassembleAll();
         board.pause = false;
+        disasmView.disasmStrs = board.cpu.disassembleAll();
       }
     }
     ImGuiFileDialog::Instance()->Close();
@@ -132,86 +149,105 @@ void MainComponent::renderMainPanel()
 {
   ImVec2 winsize = ImGui::GetWindowSize();
   // fmt::print("winW={}, winH={}\n", (int)winsize.x, (int)winsize.y);
-  wSCR = winsize.x - margin, hSCR = winsize.y - margin - hMenu;
-  wLC = wSCR - wR - thick;
-  hLC = hSCR - hB - thick;
-  hR = hSCR;
-  hC = hLC;
-  ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
-  ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
-  ImGui::PushStyleVar(ImGuiStyleVar_ChildBorderSize, 1.0f);
-  DrawSplitter(false, 10, &wLC, &wR, 50, 50);
-  wC = wLC - wL - thick;
-  wB = wLC;
-  ImGui::BeginChild(ImGui::GetID((void*)0), ImVec2(wLC, hR), ImGuiWindowFlags_NoTitleBar);
-    DrawSplitter(true, 10, &hLC, &hB, 50, 50);
-    ImGui::BeginChild(ImGui::GetID((void*)1), ImVec2(wLC, hLC), ImGuiWindowFlags_NoTitleBar);
-      DrawSplitter(false, 10, &wL, &wC, 50, 50);
-      ImGui::BeginChild(ImGui::GetID((void*)2), ImVec2(wL, hLC), ImGuiWindowFlags_NoTitleBar);
-      {
-        ImGui::Text("Control Panel\n");
-        ImGui::Separator();
-        ImGui::Text("Video\n");
-        ImGui::Checkbox("BG0", &board.ppu.debug.enableBg[0].v1); ImGui::SameLine();
-        ImGui::Checkbox("BG1", &board.ppu.debug.enableBg[1].v1); ImGui::SameLine();
-        ImGui::Checkbox("BG2", &board.ppu.debug.enableBg[2].v1); ImGui::SameLine();
-        ImGui::Checkbox("BG3", &board.ppu.debug.enableBg[3].v1);
-        ImGui::Checkbox("SP ", &board.ppu.debug.enableSp.v1);
-        ImGui::Separator();
-        ImGui::Text("Audio\n");
-        ImGui::Checkbox("Ch0", &board.apu.debug.enableCh[0 ].v1); ImGui::SameLine();
-        ImGui::Checkbox("Ch1", &board.apu.debug.enableCh[1 ].v1); ImGui::SameLine();
-        ImGui::Checkbox("Ch2", &board.apu.debug.enableCh[2 ].v1); ImGui::SameLine();
-        ImGui::Checkbox("Ch3", &board.apu.debug.enableCh[3 ].v1);
-        ImGui::Checkbox("Ch4", &board.apu.debug.enableCh[4 ].v1); ImGui::SameLine();
-        ImGui::Checkbox("Ch5", &board.apu.debug.enableCh[5 ].v1); ImGui::SameLine();
-        ImGui::Checkbox("Ch6", &board.apu.debug.enableCh[6 ].v1); ImGui::SameLine();
-        ImGui::Checkbox("Ch7", &board.apu.debug.enableCh[7 ].v1);
-        ImGui::Separator();
-        ImGui::Text("Input\n");
-        HwPad hwpad = board.io.getPadStatus();
-        bool A = hwpad.A, B = hwpad.B, C = hwpad.C, D = hwpad.D;
-        bool L = hwpad.L, R = hwpad.R, S = hwpad.S, T = hwpad.T;
-        bool Up = hwpad.UP, Dw = hwpad.DOWN, Lf = hwpad.LEFT, Rt = hwpad.RIGHT;
-        ImGui::Checkbox("A", &A); ImGui::SameLine();
-        ImGui::Checkbox("B", &B); ImGui::SameLine();
-        ImGui::Checkbox("C", &C); ImGui::SameLine();
-        ImGui::Checkbox("D", &D);
-        ImGui::Checkbox("L", &L); ImGui::SameLine();
-        ImGui::Checkbox("R", &R); ImGui::SameLine();
-        ImGui::Checkbox("S", &S); ImGui::SameLine();
-        ImGui::Checkbox("T", &T);
-        ImGui::Checkbox("Up", &Up); ImGui::SameLine();
-        ImGui::Checkbox("Dw", &Dw); ImGui::SameLine();
-        ImGui::Checkbox("Lf", &Lf); ImGui::SameLine();
-        ImGui::Checkbox("Rt", &Rt);
-      }
+  wSCR = winsize.x - margin*2, hSCR = winsize.y - margin*2 - hMenu;
+  if (guiDebug) {
+    wLC = wSCR - wR - thick;
+    hLC = hSCR - hB - thick;
+    hR = hSCR;
+    hC = hLC;
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_ChildBorderSize, 1.0f);
+    DrawSplitter(false, 10, &wLC, &wR, 50, 50);
+    wC = wLC - wL - thick;
+    wB = wLC;
+    ImGui::BeginChild(ImGui::GetID((void*)0), ImVec2(wLC, hR), ImGuiWindowFlags_NoTitleBar);
+      DrawSplitter(true, 10, &hLC, &hB, 50, 50);
+      ImGui::BeginChild(ImGui::GetID((void*)1), ImVec2(wLC, hLC), ImGuiWindowFlags_NoTitleBar);
+        DrawSplitter(false, 10, &wL, &wC, 50, 50);
+        ImGui::BeginChild(ImGui::GetID((void*)2), ImVec2(wL, hLC), ImGuiWindowFlags_NoTitleBar);
+        {
+          debugPanel.update();
+        }
+        ImGui::EndChild();
+        ImGui::SameLine();
+        ImGui::BeginChild(ImGui::GetID((void*)3), ImVec2(wC, hLC), ImGuiWindowFlags_NoTitleBar);
+        {
+          renderScreen(wC, hC, false);
+        }
+        ImGui::EndChild();
       ImGui::EndChild();
-      ImGui::SameLine();
-      ImGui::BeginChild(ImGui::GetID((void*)3), ImVec2(wC, hLC), ImGuiWindowFlags_NoTitleBar);
+      ImGui::BeginChild(ImGui::GetID((void*)4), ImVec2(wB, hB), ImGuiWindowFlags_NoTitleBar);
       {
-        float gameW = wC;
-        float gameH = (float)HW_SCREEN_H / (float)HW_SCREEN_W * gameW;
-        ImGui::Image(reinterpret_cast<void *>(framebuffer), ImVec2(gameW, gameH));
+        ImGui::Text("Viewer Panel");
+        ImGui::RadioButton("Disassembly", &viewTabIndex, 0); ImGui::SameLine();
+        ImGui::RadioButton("Palette"    , &viewTabIndex, 1); ImGui::SameLine();
+        ImGui::RadioButton("Tile"       , &viewTabIndex, 2); ImGui::SameLine();
+        ImGui::RadioButton("Tilemap"    , &viewTabIndex, 3); //ImGui::SameLine();
+        if      (viewTabIndex == 0) disasmView.update();
+        else if (viewTabIndex == 1) paletteView.update();
+        else if (viewTabIndex == 2) tileView.update();
       }
       ImGui::EndChild();
     ImGui::EndChild();
-    ImGui::BeginChild(ImGui::GetID((void*)4), ImVec2(wB, hB), ImGuiWindowFlags_NoTitleBar);
+    ImGui::SameLine();
+    ImGui::BeginChild(ImGui::GetID((void*)5), ImVec2(wR, hR), ImGuiWindowFlags_NoTitleBar);
     {
-      ImGui::Text("Viewer Panel");
-      // for (auto& s: disasms) {
-      //   ImGui::Text("%s", s.c_str());
-      // }
+      ImGui::Text("Property Panel\n");
+      mmioPanel.update();
     }
     ImGui::EndChild();
-  ImGui::EndChild();
-  ImGui::SameLine();
-  ImGui::BeginChild(ImGui::GetID((void*)5), ImVec2(wR, hR), ImGuiWindowFlags_NoTitleBar);
-  {
-    ImGui::Text("Property Panel\nHwREG\n");
+    ImGui::PopStyleVar(3);
   }
-  ImGui::EndChild();
-  ImGui::PopStyleVar(3);
+  else {
+    // ImGui::BeginChild(ImGui::GetID((void*)3), ImVec2(wSCR, hSCR), ImGuiWindowFlags_NoTitleBar);
+    {
+      renderScreen(wSCR, hSCR, true);
+    }
+    // ImGui::EndChild();
+  }
+}
+
+void MainComponent::renderScreen(int w, int h, bool center)
+{
+  float aspect = (float)w / (float)h;
+  float gameW, gameH;
+  if (scaleMode == SCREEN_SCALE_FIT) {
+    float scale = 1.0;
+    if (aspect > 4.0/3.0) {
+      scale = (float)h / (float)HW_SCREEN_H;
+    } else {
+      scale = (float)w / (float)HW_SCREEN_W;
+    }
+    gameW = (float)HW_SCREEN_W * scale;
+    gameH = (float)HW_SCREEN_H * scale;
+  } else
+  if (scaleMode == SCREEN_SCALE_FIT_STRETCH) {
+    gameW = w;
+    gameH = h;
+  } else
+  if (scaleMode == SCREEN_SCALE_FIT_INT) {
+    int scale = 1;
+    if (aspect > 4.0/3.0) {
+      scale = (h / HW_SCREEN_H);
+    } else {
+      scale = (w / HW_SCREEN_W);
+    }
+    gameW = HW_SCREEN_W * scale;
+    gameH = HW_SCREEN_H * scale;
+  } else
+  {
+    gameW = HW_SCREEN_W * screenScale;
+    gameH = HW_SCREEN_H * screenScale;
+  }
+  int imgX = (w - gameW) / 2;
+  int imgY = 0;
+  if (center) {
+    imgX = (w - gameW) / 2 + margin;
+    imgY = (h - gameH) / 2 + margin + hMenu;
+  }
+  ImGui::SetCursorPos(ImVec2(imgX, imgY));
+  ImGui::Image(reinterpret_cast<void *>(framebuffer), ImVec2(gameW, gameH));
 }
 
 void MainComponent::renderFramebuffer()

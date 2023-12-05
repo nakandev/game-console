@@ -866,6 +866,7 @@ InstrRV32IManipulator::execute_ecall(Instruction& instr, RegisterSet& regs, Memo
 void
 InstrRV32IManipulator::execute_ebreak(Instruction& instr, RegisterSet& regs, Memory& memory)
 {
+  setException(instr, regs, EXCEPTION_BREAKPOINT);
   instr.isWaiting = true;
 }
 void

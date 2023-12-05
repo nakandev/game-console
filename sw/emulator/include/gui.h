@@ -1,6 +1,11 @@
 #pragma once
 #include <filesystem>
 #include <gui/main_panel.h>
+#include <gui/debug_panel.h>
+#include <gui/disasm_view.h>
+#include <gui/palette_view.h>
+#include <gui/tile_view.h>
+#include <gui/mmio_panel.h>
 
 class Board;
 
@@ -11,13 +16,30 @@ class MainComponent {
     filesystem::path elfdir;
     bool guiDebug;
 
-    // temporary
+    DebugPanel debugPanel;
+    DisasmView disasmView;
+    PaletteView paletteView;
+    TileView tileView;
+    MmioPanel mmioPanel;
+
+    int ctrlTabIndex;
+    int viewTabIndex;
+    int propertyTabIndex;
+
+    // config
     int screenScale;
-    // 800 x 600
+    bool fitScale;
+    enum {
+      SCREEN_SCALE_FIT,
+      SCREEN_SCALE_FIT_STRETCH,
+      SCREEN_SCALE_FIT_INT,
+      SCREEN_SCALE_INT,
+    } scaleMode;
+
+    // components size
     float hMenu;
     float margin;
     float thick;
-    // float wSCR = io.DisplaySize.x, hSCR = io.DisplaySize.y;
     float wSCR, hSCR;
     float wLC, hLC;
     float wL, hL;
@@ -32,9 +54,11 @@ class MainComponent {
 
     MainComponent(Board& board);
     ~MainComponent();
+    void setElfPath(string path);
     void createFramebuffer();
     void renderMenu();
     void renderMainPanel();
+    void renderScreen(int w, int h, bool center);
     void renderFramebuffer();
     void cleanup();
 };

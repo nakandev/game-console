@@ -5,16 +5,16 @@
 
 extern int debugLevel;
 
-typedef union {
+union bool8_t {
   bool v1;
   uint8_t v8;
-} bool8_t;
+};
 
-typedef union {
+union union32_t {
   int32_t s;
   uint32_t u;
   float f;
-} union32_t;
+};
 
 inline int32_t sext(int sb, uint32_t v)
 {

@@ -97,19 +97,17 @@ int main(int argc, char* argv[])
   filesystem::path elfdir = elfpath.parent_path();
 
   auto board = Board();
-  auto disasms = vector<string>();
-
-  board.cpu.setMaxCycles(10'000'000);
-  if (!board.cpu.loadElf(elfpath)) {
-    disasms= board.cpu.disassembleAll();
-  }
-
-  bool guiDebug = false;
 
   SDL_Init(
     SDL_INIT_VIDEO |
     SDL_INIT_AUDIO
   );
+
+  const char* glsl_version = "#version 130";
+  SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, 0);
+  SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+  SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+  SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
 
   SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
   SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
@@ -141,21 +139,25 @@ int main(int argc, char* argv[])
   ImGui::CreateContext();
   ImGuiIO& io = ImGui::GetIO(); (void)io;
   io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-  // io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+  io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
   // Setup Dear ImGui style
   ImGui::StyleColorsDark();
   // ImGui::StyleColorsLight();
   // Setup Platform/Renderer backends
-  const char* glsl_version = "#version 130";
   ImGui_ImplSDL2_InitForOpenGL(window, gl_context);
   ImGui_ImplOpenGL3_Init(glsl_version);
 
   auto mainComponent = MainComponent(board);
+  mainComponent.setElfPath(elfpath);
 
   int pitch = HW_SCREEN_W * 4;
   float fps = 60.0;
-  // int msecPerFrame[] = {33, 34, 33};  // fps 30
   int msecPerFrame[] = {17, 16, 17};  // fps 60
+  if (fps == 30.0) {
+    msecPerFrame[0] = 33;
+    msecPerFrame[1] = 34;
+    msecPerFrame[2] = 33;
+  }
 
   SDL_AudioSpec desired, obtained;
   desired.freq = HW_MUSIC_FREQUENCY;
@@ -173,14 +175,11 @@ int main(int argc, char* argv[])
   SDL_PauseAudioDevice(audioDev, false);
 
   /* create_framebuffer */
-  if (true) {
-    mainComponent.createFramebuffer();
-  }
+  mainComponent.createFramebuffer();
 
   board.updateFrameUntilVblank();
   board.updateFrameSinceVblank();
   uint32_t startTime, endTime;
-  // for (int i=0; i<sec*fps; i++) {
   int loopCount = 0;
   while (true) {
     startTime = SDL_GetTicks();
@@ -190,7 +189,7 @@ int main(int argc, char* argv[])
 
     // Start the Dear ImGui frame
     ImGui_ImplOpenGL3_NewFrame();
-    ImGui_ImplSDL2_NewFrame();
+    ImGui_ImplSDL2_NewFrame(window);
     ImGui::NewFrame();
 
     // update cpu, screen, audio
@@ -206,22 +205,15 @@ int main(int argc, char* argv[])
     ImGui::SetNextWindowPos(ImVec2(0, 0));
     ImGui::SetNextWindowSize(ImVec2(io.DisplaySize.x, io.DisplaySize.y));
     ImGui::Begin("Another Window", &pOpen, imguiWindowFlag);
-    { /* Menu */
-      mainComponent.renderMenu();
-    }
-    { /* Main Panel */
-      mainComponent.renderMainPanel();
-    }
+    mainComponent.renderMenu();
+    mainComponent.renderMainPanel();
     ImGui::End();
 
     // Rendering
-    ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
     ImGui::Render();
+    mainComponent.renderFramebuffer();
 
-    {
-      mainComponent.renderFramebuffer();
-    }
-
+    ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
     glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
     glClearColor(clear_color.x * clear_color.w, clear_color.y * clear_color.w, clear_color.z * clear_color.w, clear_color.w);
     glClear(GL_COLOR_BUFFER_BIT);
@@ -239,19 +231,18 @@ int main(int argc, char* argv[])
   }
 
   // Cleanup
-  if (true) {
-    mainComponent.cleanup();
-  }
+  mainComponent.cleanup();
   ImGui_ImplOpenGL3_Shutdown();
   ImGui_ImplSDL2_Shutdown();
   ImGui::DestroyContext();
-  // if (audioDev) {
-  //   SDL_PauseAudioDevice(audioDev, true);
-  //   SDL_CloseAudioDevice(audioDev);
-  // }
-  // if (window) {
-  //   SDL_DestroyWindow(window);
-  // }
+  SDL_GL_DeleteContext(gl_context);
+  if (audioDev) {
+    SDL_PauseAudioDevice(audioDev, true);
+    SDL_CloseAudioDevice(audioDev);
+  }
+  if (window) {
+    SDL_DestroyWindow(window);
+  }
   // SDL_Quit();
 
   return 0;

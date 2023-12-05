@@ -5,6 +5,8 @@
 MemorySection::MemorySection()
   :name(),  addr(), size(), data()
 {
+  // data = new uint8_t[1]();
+  data = nullptr;
 }
 
 MemorySection::MemorySection(const string& name, uint32_t addr, size_t size)
@@ -27,7 +29,7 @@ MemorySection::~MemorySection()
   size = 0;
   name = "";
   // data.clear();
-  delete[] data;
+  if (data) delete[] data;
   data = nullptr;
 }
 
@@ -36,7 +38,7 @@ void MemorySection::resize(size_t size)
   // data.resize(size);
   uint8_t* newData = new uint8_t[size]();
   for (int i=0; i<size; i++) newData[i] = data[i];
-  delete[] data;
+  if (data) delete[] data;
   data = newData;
   this->size = size;
 }
@@ -53,6 +55,7 @@ int32_t MemorySection::read(uint32_t addr, uint32_t size)
 {
   uint32_t relativeAddr = addr - this->addr;
   // uint8_t* bytes = data.data();
+  if (!data) fmt::print("data is null.\n");
   if (size == 1)
     return *((int8_t*)(&data[0] + relativeAddr));
   else if (size == 2)
@@ -104,7 +107,7 @@ Memory::Memory()
     invalidSection(),
     busyFlag()
 {
-  invalidSection = MemorySection("invalid", 0, 0);
+  invalidSection.name = "invalid";
   initMinimumSections();
 }
 
@@ -134,12 +137,12 @@ void Memory::initMinimumSections()
 {
   busyFlag.flag32 = 0;
   sections.clear();
-  sections.insert(make_pair("program", MemorySection("program", HWREG_PROGRAM_BASEADDR    , 0x0100'0000)));
-  sections.insert(make_pair("stack",   MemorySection("stack",   HWREG_WORKRAM_END - 0x0040'0000, 0x0040'0000)));
+  sections.insert(make_pair("program", MemorySection("program", HWREG_PROGRAM_BASEADDR    , 0x0010'0000)));
+  sections.insert(make_pair("stack",   MemorySection("stack",   HWREG_WORKRAM_END - 0x0001'0000, 0x0001'0000)));
   sections.insert(make_pair("tile",    MemorySection("tile",    HWREG_TILERAM_BASEADDR    , 0x0100'0000)));
-  sections.insert(make_pair("vram",    MemorySection("vram",    HWREG_VRAM_BASEADDR       , 0x0100'0000)));
+  sections.insert(make_pair("vram",    MemorySection("vram",    HWREG_VRAM_BASEADDR       , 0x0080'0000)));
   sections.insert(make_pair("ioram",   MemorySection("ioram",   HWREG_IORAM_BASEADDR      , 0x0001'0000)));
-  sections.insert(make_pair("aram",    MemorySection("aram",    HWREG_ARAM_BASEADDR       , 0x0100'0000)));
+  sections.insert(make_pair("aram",    MemorySection("aram",    HWREG_ARAM_BASEADDR       , 0x0001'0000)));
   sections.insert(make_pair("system",  MemorySection("system",  HWREG_SYSROM_BASEADDR     , 0x0001'0000)));
   sections.insert(make_pair("data",    MemorySection("data"  ,  HWREG_FASTWORKRAM_BASEADDR, 0x00C0'0000)));
 }

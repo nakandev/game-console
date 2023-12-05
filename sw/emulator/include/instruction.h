@@ -6,7 +6,7 @@ class Cpu;
 class RegisterSet;
 class Memory;
 
-typedef enum {
+enum OpType {
   OPTYPE_R = 0,
   OPTYPE_I,
   OPTYPE_S,
@@ -26,9 +26,9 @@ typedef enum {
   OPTYPE_CB2,  // c.andi, c.ori, ...
   OPTYPE_CB,
   OPTYPE_CJ,
-} OpType;
+};
 
-enum {
+enum InstructionIdI {
   INSTR_UNKNOWN = 0,
   INSTR_LUI,
   INSTR_AUIPC,
@@ -92,7 +92,7 @@ enum {
   INSTR_REMU,
 };
 
-enum {
+enum InstructionIdC {
   INSTR_CUNKNOWN = 0,
   INSTR_CADDI4SPN,
   // INSTR_CFLD,
@@ -146,7 +146,7 @@ enum {
   // INSTR_CSDSP,
 };
 
-enum {
+enum InstructionOpcode {
   OPCODE_C0 = 0x0,
   OPCODE_C1 = 0x1,
   OPCODE_C2 = 0x2,
@@ -163,7 +163,7 @@ enum {
   OPCODE_SYSTEM = (0x1C << 2) | 3,  // ECALL, EBREAK, ZiCSR
 };
 
-enum {
+enum InstructionFunctI {
   FUNCT3_JALR  = 0,
   FUNCT3_BEQ   = 0,
   FUNCT3_BNE   = 1,
@@ -216,7 +216,7 @@ enum {
   FUNCT3_REMU = 7,
 };
 
-enum {
+enum InstructionFunctC {
   // TypeCR
   FUNCT4_C_JR   = 0x04,
   FUNCT4_C_JALR = 0x04,
@@ -281,6 +281,25 @@ enum InstructionPhase {
   INSTR_PHASE_POSTPROC,
 };
 
+enum InstructionExceptionCause {
+  EXCEPTION_INSTR_ADDR_MISALIGNED = 0,
+  EXCEPTION_INSTR_ACCESS_FAULT,
+  EXCEPTION_ILLEGAL_INSTR,
+  EXCEPTION_BREAKPOINT,
+  EXCEPTION_LOAD_ADDR_MISALIGNED,
+  EXCEPTION_LOAD_ACCESS_FAULT,
+  EXCEPTION_STORE_ADDR_MISALIGNED,
+  EXCEPTION_STORE_ACCESS_FAULT,
+  EXCEPTION_ENV_CALL_FROM_UMODE,
+  EXCEPTION_ENV_CALL_FROM_SMODE,
+  EXCEPTION_RESERVED_10,
+  EXCEPTION_ENV_CALL_FROM_MMODE,
+  EXCEPTION_INSTR_PAGE_FAULT,
+  EXCEPTION_LOAD_PAGE_FAULT,
+  EXCEPTION_RESERVED_14,
+  EXCEPTION_STORE_PAGE_FAULT,
+};
+
 struct Instruction {
   uint32_t binary;
   uint32_t instr;
@@ -298,13 +317,13 @@ struct Instruction {
   OpType type;
   bool isJumped;
   bool isWaiting;
-  Instruction(): waitCycle(1) {}
+  Instruction() {}
   virtual ~Instruction() {}
 };
 
 class InstrRV32IManipulator {
-  void (InstrRV32IManipulator::*execute_tableI[1024])(Instruction& instr, RegisterSet& regs, Memory& memory);
-  void (InstrRV32IManipulator::*execute_tableC[1024])(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void (InstrRV32IManipulator::*execute_tableI[64])(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void (InstrRV32IManipulator::*execute_tableC[64])(Instruction& instr, RegisterSet& regs, Memory& memory);
 public:
   InstrRV32IManipulator();
   ~InstrRV32IManipulator();
@@ -313,6 +332,8 @@ public:
   bool checkInterruption(Instruction& instr, RegisterSet& regs, Memory& memory);
   void handleInterruption(Instruction& instr, RegisterSet& regs);
   void returnInterruption(Instruction& instr, RegisterSet& regs);
+  void setException(Instruction& instr, RegisterSet& regs, uint32_t cause);
+  void handleException(Instruction& instr, RegisterSet& regs);
   void fetch(Instruction& instr);
   void decode(uint32_t bytes, Instruction& instr);
   void decode32(uint32_t bytes, Instruction& instr);

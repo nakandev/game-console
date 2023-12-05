@@ -32,16 +32,16 @@ uint8_t Cpu::loadElf(const string& path)
   }
   elf.get()->allocMemory(memory);
   programSection = &memory.section("program");
-  auto& prg = memory.section("program");
   reset();
   return 0;
 }
 
 void Cpu::init()
 {
-  reset();
   elf = shared_ptr<Elf>();
   memory.initMinimumSections();
+  programSection = &memory.section("program");
+  reset();
 }
 
 void Cpu::reset()
@@ -52,7 +52,11 @@ void Cpu::reset()
   regs.init();
   auto& stack = memory.section("stack");
   regs.gpr[2].val.u = stack.addr + stack.size - 4;
-  regs.pc.val.u = elf.get()->getElfHeader().entry;
+  if (elf.get()) {
+    regs.pc.val.u = elf.get()->getElfHeader().entry;
+  } else {
+    regs.pc.val.u = programSection->addr;
+  }
 
   cycleCount = 0;
   instrCount = 0;

@@ -26,6 +26,11 @@ SRCS += dma.cpp
 SRCS += timer.cpp
 SRCS += elf.cpp
 SRCS += gui.cpp
+SRCS += debug_panel.cpp
+SRCS += disasm_view.cpp
+SRCS += palette_view.cpp
+SRCS += tile_view.cpp
+SRCS += mmio_panel.cpp
 OBJS = $(addsuffix .o,$(basename $(SRCS)))
 OBJD += gui.o
 OBJS += imgui.o imgui_demo.o imgui_draw.o imgui_tables.o imgui_widgets.o
@@ -81,6 +86,9 @@ main.o: $(NKX_EMU_ROOT)/src/platform/linux/main.cpp
 
 %.o: %.cpp
 	$(CXX) -c $(CXXFLAGS) -o $@ $<
+
+%.o: gui/%.cpp
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
 %.o: $(IMGUI_DIR)/%.cpp
 	$(CXX) $(CXXFLAGS) -c -o $@ $<

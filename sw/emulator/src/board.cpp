@@ -17,6 +17,12 @@ Board::Board()
   io.setApu(apu);
   io.setDma(dma);
   io.setTimer(timer);
+
+  cpu.init();
+  ppu.init();
+  apu.init();
+  dma.init();
+  timer.init();
 }
 
 Board::~Board()

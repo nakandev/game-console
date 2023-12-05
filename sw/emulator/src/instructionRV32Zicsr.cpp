@@ -47,3 +47,13 @@ void InstrRV32IManipulator::returnInterruption(Instruction& instr, RegisterSet& 
   regs.pc.val.u = regs.csr[MEPC].val.u;
   instr.isJumped = true;
 }
+
+void InstrRV32IManipulator::setException(Instruction& instr, RegisterSet& regs, uint32_t cause)
+{
+  regs.csr[MCAUSE].val.u = cause;
+}
+
+void InstrRV32IManipulator::handleException(Instruction& instr, RegisterSet& regs)
+{
+  regs.csr[MEPC].val.u = regs.pc.val.u;
+}
