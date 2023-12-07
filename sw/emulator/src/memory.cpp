@@ -137,13 +137,14 @@ void Memory::initMinimumSections()
 {
   busyFlag.flag32 = 0;
   sections.clear();
-  sections.insert(make_pair("program", MemorySection("program", HWREG_PROGRAM_BASEADDR    , 0x0010'0000)));
+  sections.insert(make_pair("program", MemorySection("program", HWREG_PROGRAM_BASEADDR    , HWREG_PROGRAM_SIZE)));
   sections.insert(make_pair("stack",   MemorySection("stack",   HWREG_WORKRAM_END - 0x0001'0000, 0x0001'0000)));
-  sections.insert(make_pair("tile",    MemorySection("tile",    HWREG_TILERAM_BASEADDR    , 0x0100'0000)));
-  sections.insert(make_pair("vram",    MemorySection("vram",    HWREG_VRAM_BASEADDR       , 0x0080'0000)));
-  sections.insert(make_pair("ioram",   MemorySection("ioram",   HWREG_IORAM_BASEADDR      , 0x0001'0000)));
-  sections.insert(make_pair("aram",    MemorySection("aram",    HWREG_ARAM_BASEADDR       , 0x0001'0000)));
-  sections.insert(make_pair("system",  MemorySection("system",  HWREG_SYSROM_BASEADDR     , 0x0001'0000)));
+  sections.insert(make_pair("tile",    MemorySection("tile",    HWREG_TILERAM_BASEADDR    , HWREG_TILERAM_SIZE)));
+  sections.insert(make_pair("vram",    MemorySection("vram",    HWREG_VRAM_BASEADDR       , HWREG_VRAM_SIZE)));
+  sections.insert(make_pair("ioram",   MemorySection("ioram",   HWREG_IORAM_BASEADDR      , HWREG_IORAM_SIZE)));
+  sections.insert(make_pair("aram",    MemorySection("aram",    HWREG_ARAM_BASEADDR       , HWREG_ARAM_SIZE)));
+  sections.insert(make_pair("atile",   MemorySection("atile",   HWREG_ATILERAM_BASEADDR   , HWREG_ATILERAM_SIZE)));
+  sections.insert(make_pair("system",  MemorySection("system",  HWREG_SYSROM_BASEADDR     , HWREG_SYSROM_SIZE)));
   sections.insert(make_pair("data",    MemorySection("data"  ,  HWREG_FASTWORKRAM_BASEADDR, 0x00C0'0000)));
 }
 void Memory::addSection(const string& name, uint32_t addr, uint32_t size)
@@ -175,13 +176,17 @@ void Memory::clearBusy(uint32_t priority)
 
 bool Memory::waitAccess(uint32_t addr, uint32_t size, bool rw, int8_t& wait)
 {
-  if (isBusy(0)) {
-    wait = 3; // set wait
-    return true;
-  }
-  if (wait < 0) {
-    wait = 3; // set wait
-    return true;
+  if (isBusy(0) || wait < 0) {
+    auto addrSection = addr >> 24;
+    if (addrSection > (HWREG_SAVERAM_BASEADDR >> 24)) {
+      wait = 5;
+    } else
+    if (addrSection == (HWREG_SLOWWORKRAM_BASEADDR >> 24)) {
+      wait = 3;
+    } else
+    {
+      wait = 1;
+    }
   }
   if (wait > 1) {
     return true;
