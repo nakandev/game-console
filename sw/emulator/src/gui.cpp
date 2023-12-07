@@ -75,6 +75,8 @@ void MainComponent::createFramebuffer()
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   glBindTexture(GL_TEXTURE_2D, 0);
   glBindRenderbuffer(GL_RENDERBUFFER, 0);
+
+  tileView.createFramebuffer();
 }
 
 void MainComponent::renderMenu()
@@ -264,6 +266,8 @@ void MainComponent::renderFramebuffer()
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0);
+
+  if (viewTabIndex == 2) tileView.renderFramebuffer();
 }
 
 void MainComponent::cleanup()
@@ -271,6 +275,8 @@ void MainComponent::cleanup()
   glDeleteRenderbuffers(1, &renderbuffer);
   glDeleteTextures(1, &texture);
   glDeleteFramebuffers(1, &framebuffer);
+
+  tileView.cleanup();
 }
 
 void DrawSplitter(int split_vertically, float thickness, float* size0, float* size1, float min_size0, float min_size1)
