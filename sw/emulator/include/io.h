@@ -3,7 +3,7 @@
 #include <memorymap.h>
 class Memory;
 class Cpu;
-class Ppu;
+class Vpu;
 class Apu;
 class Dma;
 class Timer;
@@ -12,7 +12,7 @@ class IO {
 private:
   Memory& memory;
   Cpu* cpu;
-  Ppu* ppu;
+  Vpu* vpu;
   Apu* apu;
   Dma* dma;
   Timer* timer;
@@ -20,7 +20,7 @@ public:
   IO(Memory& memory);
   ~IO();
   void setCpu(Cpu& cpu);
-  void setPpu(Ppu& ppu);
+  void setVpu(Vpu& vpu);
   void setApu(Apu& apu);
   void setDma(Dma& dma);
   void setTimer(Timer& timer);

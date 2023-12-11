@@ -230,7 +230,7 @@ int main(int argc, char* argv[])
 
     // update cpu, screen, audio
     board.updateFrameUntilVblank();
-    board.ppu.copyScreenBuffer(screenBuffer.data(), true);
+    board.vpu.copyScreenBuffer(screenBuffer.data(), true);
     if (!board.pause)
       SDL_QueueAudio(audioDev, (void*)board.apu.apuMusicData.buffer, HW_MUSIC_FREQ_PER_FRAME*2*2);
     board.updateFrameSinceVblank();

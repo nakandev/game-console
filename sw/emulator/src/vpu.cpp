@@ -1,14 +1,14 @@
-#include <ppu.h>
+#include <vpu.h>
 #include <memory.h>
 #include <io.h>
 #include <fmt/core.h>
 
-Ppu::Ppu(Memory& memory)
+Vpu::Vpu(Memory& memory)
   : _currentLineNo(),
     lineBufferBg(),
     lineBufferSp(),
     screenBuffer(),
-    ppuSprite(),
+    vpuSprite(),
     memory(memory),
     scanline(),
     debug()
@@ -20,14 +20,14 @@ Ppu::Ppu(Memory& memory)
   for (auto& buffer: lineBufferSp)
     buffer.resize(HW_SCREEN_W);
   screenBuffer.resize(HW_SCREEN_W * HW_SCREEN_H);
-  ppuSprite.resize(HW_SPRITE_NUM);
+  vpuSprite.resize(HW_SPRITE_NUM);
   debug.enableBg.resize(4);
   for (auto& enable: debug.enableBg)
     enable.v1 = true;
   debug.enableSp.v1 = true;
 }
 
-Ppu::~Ppu()
+Vpu::~Vpu()
 {
   for (auto& buffer: lineBufferBg)
     buffer.clear();
@@ -36,21 +36,21 @@ Ppu::~Ppu()
   lineBufferBg.clear();
   lineBufferSp.clear();
   screenBuffer.clear();
-  ppuSprite.clear();
+  vpuSprite.clear();
 }
 
-void Ppu::init()
+void Vpu::init()
 {
 }
 
-int Ppu::currentLineNo()
+int Vpu::currentLineNo()
 {
   return _currentLineNo;
 }
 
 static const int widthTable[] = {8, 16, 32, 64};
 static const int heightTable[] = {8, 16, 32, 64};
-static int preparePpuSprite(HwTileRam& tileram, vector<PpuSprite>& ppusp, int y)
+static int prepareVpuSprite(HwTileRam& tileram, vector<VpuSprite>& vpusp, int y)
 {
   int spriteNum = 0;
   for (int i=0; i<HW_SPRITE_NUM; i++) {
@@ -69,12 +69,12 @@ static int preparePpuSprite(HwTileRam& tileram, vector<PpuSprite>& ppusp, int y)
       endY += h / 2;
     }
     if (y < beginY || endY < y) continue;
-    ppusp[spriteNum].hwsp = sp;
-    ppusp[spriteNum].beginY = beginY;
-    ppusp[spriteNum].endY   = endY;
-    ppusp[spriteNum].beginX = beginX;
-    ppusp[spriteNum].endX   = endX;
-    ppusp[spriteNum].idx = i;
+    vpusp[spriteNum].hwsp = sp;
+    vpusp[spriteNum].beginY = beginY;
+    vpusp[spriteNum].endY   = endY;
+    vpusp[spriteNum].beginX = beginX;
+    vpusp[spriteNum].endX   = endX;
+    vpusp[spriteNum].idx = i;
     spriteNum++;
   }
   return spriteNum;
@@ -128,9 +128,9 @@ static void drawLineBGTile(HwTileRam& tileram, HwBG& bg, int x, int y, vector<ui
   buffer[x] = tileram.palette[paletteNo].color[paletteIdx].data;
 }
 
-static void drawLineSprite(HwTileRam& tileram, PpuSprite& ppusp, int x, int y, vector<uint32_t>& buffer)
+static void drawLineSprite(HwTileRam& tileram, VpuSprite& vpusp, int x, int y, vector<uint32_t>& buffer)
 {
-  HwSprite& sp = ppusp.hwsp;
+  HwSprite& sp = vpusp.hwsp;
   uint8_t tileNo = sp.tileNo;
   int32_t x0 = x - sp.x;
   int32_t y0 = y - sp.y;
@@ -171,11 +171,11 @@ static void sortLayerIndex(int idxs[4], int layers[4])
   }
 }
 
-void Ppu::drawLine(int y)
+void Vpu::drawLine(int y)
 {
   HwTileRam& tileram = *(HwTileRam*)memory.section("tile").buffer();
   uint8_t* vram = (uint8_t*)memory.section("vram").buffer();
-  int spnum = preparePpuSprite(tileram, ppuSprite, y);
+  int spnum = prepareVpuSprite(tileram, vpuSprite, y);
   for (auto& buf: lineBufferBg) {
     std::fill(buf.begin(), buf.end(), 0);
   }
@@ -203,10 +203,10 @@ void Ppu::drawLine(int y)
     for (int x=0; x<HW_SCREEN_W; x++) {
       HwSP& hwsp = tileram.sp[0];
       for (int si=0; si<spnum; si++) {
-        auto& ppusp = ppuSprite[si];
-        uint8_t layer = ppusp.hwsp.flag.layer;
-        if (x < ppusp.beginX || ppusp.endX < x) continue;
-        drawLineSprite(tileram, ppusp, x, y, lineBufferSp[layer]);
+        auto& vpusp = vpuSprite[si];
+        uint8_t layer = vpusp.hwsp.flag.layer;
+        if (x < vpusp.beginX || vpusp.endX < x) continue;
+        drawLineSprite(tileram, vpusp, x, y, lineBufferSp[layer]);
       }
     }
   }
@@ -224,14 +224,14 @@ void Ppu::drawLine(int y)
   }
 }
 
-void Ppu::drawAllLine()
+void Vpu::drawAllLine()
 {
   for (int y=0; y<HW_SCREEN_H; y++) {
     drawLine(y);
   }
 }
 
-void Ppu::copyScreenBuffer(uint32_t* buffer, bool inv)
+void Vpu::copyScreenBuffer(uint32_t* buffer, bool inv)
 {
   if (inv) {
     for (int i=0; i<HW_SCREEN_W * HW_SCREEN_H; i++) {

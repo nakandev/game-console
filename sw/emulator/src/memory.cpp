@@ -5,7 +5,6 @@
 MemorySection::MemorySection()
   :name(),  addr(), size(), data()
 {
-  // data = new uint8_t[1]();
   data = nullptr;
 }
 
@@ -133,6 +132,7 @@ void Memory::clearSection()
 {
   sections.clear();
 }
+
 void Memory::initMinimumSections()
 {
   busyFlag.flag32 = 0;
@@ -143,7 +143,7 @@ void Memory::initMinimumSections()
   sections.insert(make_pair("vram",    MemorySection("vram",    HWREG_VRAM_BASEADDR       , HWREG_VRAM_SIZE)));
   sections.insert(make_pair("ioram",   MemorySection("ioram",   HWREG_IORAM_BASEADDR      , HWREG_IORAM_SIZE)));
   sections.insert(make_pair("aram",    MemorySection("aram",    HWREG_ARAM_BASEADDR       , HWREG_ARAM_SIZE)));
-  sections.insert(make_pair("atile",   MemorySection("atile",   HWREG_ATILERAM_BASEADDR   , HWREG_ATILERAM_SIZE)));
+  sections.insert(make_pair("inst",    MemorySection("inst",    HWREG_INSTRAM_BASEADDR    , HWREG_INSTRAM_SIZE)));
   sections.insert(make_pair("system",  MemorySection("system",  HWREG_SYSROM_BASEADDR     , HWREG_SYSROM_SIZE)));
   sections.insert(make_pair("data",    MemorySection("data"  ,  HWREG_FASTWORKRAM_BASEADDR, 0x00C0'0000)));
 }
@@ -155,12 +155,11 @@ void Memory::addSection(const string& name, uint32_t addr, uint32_t size)
 bool Memory::isBusy(uint32_t priority)
 {
   uint32_t busyFlags = busyFlag.flag32;
-  for (int i=0; i<priority + 1; i++) {
-    busyFlags &= ~(1u << i);
+  if (busyFlags == 0) {
+    return false;
   }
-  // if (priority > 0 && busyFlags)
-  //   fmt::print("busyFlag={:08x} priority={}\n", busyFlags, priority);
-  if (busyFlags) {
+  uint32_t clz = __builtin_clz(busyFlags);
+  if ((32 - clz) > priority) {
     return true;
   }
   return false;
@@ -212,25 +211,6 @@ void Memory::write(uint32_t addr, uint32_t size, int32_t value)
       return;
     }
   }
-  // fmt::print("w {:08x}/n", addr);
-  // switch (addr >> 20) {
-  //   case 0x00:
-  //     sections["system"].write(addr, size, value); break;
-  //   case 0x10:
-  //     sections["data"].write(addr, size, value); break;
-  //   case 0x1C:
-  //     sections["stack"].write(addr, size, value); break;
-  //   case 0x30:
-  //     sections["ioram"].write(addr, size, value); break;
-  //   case 0x40:
-  //     sections["vram"].write(addr, size, value); break;
-  //   case 0x60:
-  //     sections["tile"].write(addr, size, value); break;
-  //   case 0x80:
-  //     sections["program"].write(addr, size, value); break;
-  //   default:
-  //     break;
-  // }
   return;
 }
 

@@ -35,10 +35,12 @@ private:
   Memory& memory;
   HwIoRam* ioram;
   vector<DmaChannel> channels;
+  int runningDma;
   void syncFromIoDma(int chIdx);
 public:
   Dma(Memory& memory);
   ~Dma();
   void init();
   void stepCpuCycle();
+  bool isRunning();
 };

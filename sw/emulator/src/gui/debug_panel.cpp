@@ -58,11 +58,11 @@ void DebugPanel::updateDebugButtons2()
 void DebugPanel::updateVideoCtrlPanel()
 {
   ImGui::Text("Video\n");
-  ImGui::Checkbox("BG0", &board.ppu.debug.enableBg[0].v1); ImGui::SameLine();
-  ImGui::Checkbox("BG1", &board.ppu.debug.enableBg[1].v1); ImGui::SameLine();
-  ImGui::Checkbox("BG2", &board.ppu.debug.enableBg[2].v1); ImGui::SameLine();
-  ImGui::Checkbox("BG3", &board.ppu.debug.enableBg[3].v1);
-  ImGui::Checkbox("SP ", &board.ppu.debug.enableSp.v1);
+  ImGui::Checkbox("BG0", &board.vpu.debug.enableBg[0].v1); ImGui::SameLine();
+  ImGui::Checkbox("BG1", &board.vpu.debug.enableBg[1].v1); ImGui::SameLine();
+  ImGui::Checkbox("BG2", &board.vpu.debug.enableBg[2].v1); ImGui::SameLine();
+  ImGui::Checkbox("BG3", &board.vpu.debug.enableBg[3].v1);
+  ImGui::Checkbox("SP ", &board.vpu.debug.enableSp.v1);
 }
 void DebugPanel::updateAudioCtrlPanel()
 {

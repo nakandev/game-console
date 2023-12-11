@@ -1,7 +1,7 @@
 #include <io.h>
 #include <memory.h>
 #include <cpu.h>
-#include <ppu.h>
+#include <vpu.h>
 #include <apu.h>
 #include <fmt/core.h>
 
@@ -18,9 +18,9 @@ void IO::setCpu(Cpu& cpu)
 {
   this->cpu = &cpu;
 }
-void IO::setPpu(Ppu& ppu)
+void IO::setVpu(Vpu& vpu)
 {
-  this->ppu = &ppu;
+  this->vpu = &vpu;
 }
 void IO::setApu(Apu& apu)
 {

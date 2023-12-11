@@ -7,7 +7,7 @@ using namespace std;
 
 class Memory;
 
-struct PpuSprite {
+struct VpuSprite {
   HwSprite hwsp;
   int16_t beginX;
   int16_t endX;
@@ -16,13 +16,13 @@ struct PpuSprite {
   uint8_t idx;
 };
 
-class Ppu {
+class Vpu {
 private:
   int _currentLineNo;
   vector<vector<uint32_t>> lineBufferBg;
   vector<vector<uint32_t>> lineBufferSp;
   vector<uint32_t> screenBuffer;
-  vector<PpuSprite> ppuSprite;
+  vector<VpuSprite> vpuSprite;
   Memory& memory;
   int scanline;
   void setHBlank(bool flag);
@@ -32,8 +32,8 @@ public:
     vector<bool8_t> enableBg;
     bool8_t enableSp;
   } debug;
-  Ppu(Memory& memory);
-  ~Ppu();
+  Vpu(Memory& memory);
+  ~Vpu();
   void init();
   int currentLineNo();
   void drawLine(int y);
