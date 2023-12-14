@@ -30,4 +30,5 @@ public:
   void reloadElf();
   void saveState(const string& path);
   void loadState(const string& path);
+  void stepCpuCycle();
 };

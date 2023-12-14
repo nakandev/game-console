@@ -32,6 +32,7 @@ uint8_t Cpu::loadElf(const string& path)
   }
   elf.get()->allocMemory(memory);
   programSection = &memory.section("program");
+  cacheAllInstruction();
   reset();
   return 0;
 }
@@ -70,8 +71,7 @@ void Cpu::requestInterruption()
 void Cpu::handleInterruption()
 {
   bool isIntrr = instrManip.checkInterruption(currentInstr[0], regs, memory);
-  if (isIntrr)
-  {
+  if (isIntrr && !memory.isBusy(0)) {
     instrManip.handleInterruption(currentInstr[0], regs);
   }
 }
@@ -81,17 +81,23 @@ void Cpu::stepCycle()
   if (currentInstr[0].isWaiting) {
   } else
   {
-    uint32_t val = programSection->read(regs.pc.val.u, 4);
     auto& instr = currentInstr[0];
     if (instr.phase == INSTR_PHASE_FETCH) {
-      instrManip.fetch(instr);
+      if (!memory.isBusy(0)) {
+        instrManip.fetch(instr);
+      }
     }
+    uint32_t val = programSection->read32(regs.pc.val.u);
     if (instr.phase == INSTR_PHASE_DECODE) {
-      instrManip.decode(val, instr);
-      regs.prev_pc = regs.pc;
+      if (regs.pc.val.s != regs.prev_pc.val.s) {
+        instrManip.decode(val, instr);
+        // instr = instrCache[regs.pc.val.u];
+        regs.prev_pc = regs.pc;
+      }
     }
     if (instr.phase == INSTR_PHASE_EXECUTE) {
       instrManip.execute(instr, regs, memory);
+      instrCount++;
     }
     if (instr.phase == INSTR_PHASE_POSTPROC) {
       if (debugLevel >= 1) {
@@ -108,7 +114,6 @@ void Cpu::stepCycle()
     }
   }
   cycleCount++;
-  instrCount++;
 }
 
 void Cpu::stepInstruction()
@@ -141,7 +146,7 @@ const vector<string> Cpu::disassembleAll()
   while (offset < size) {
     auto baseAddr = programSection->addr;
     auto pc = baseAddr + offset;
-    uint32_t val = programSection->read(pc, 4);
+    uint32_t val = programSection->read32(pc);
 
     instrManip.decode(val, instr);
     // instrManip.printInstr(icount, pc, instr, regs, memory);
@@ -160,4 +165,20 @@ const vector<string> Cpu::readRegisterAll()
     regStrs.push_back(rs);
   }
   return regStrs;
+}
+
+void Cpu::cacheAllInstruction()
+{
+  regs.pc.val.u = elf.get()->getElfHeader().entry;
+  uint32_t prgEnd = programSection->addr + programSection->size;
+  int count = 0;
+  instrCache.clear();
+  while (regs.pc.val.u < prgEnd && count < 1000000) {
+    Instruction instr;
+    uint32_t val = programSection->read32(regs.pc.val.u);
+    instrManip.decode(val, instr);
+    instrCache[regs.pc.val.u] = instr;
+    regs.pc.val.u += instr.size;
+    count++;
+  }
 }

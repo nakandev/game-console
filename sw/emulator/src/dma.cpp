@@ -1,9 +1,10 @@
 #include <dma.h>
 #include <memory.h>
+#include <io.h>
 #include <fmt/core.h>
 
-Dma::Dma(Memory& memory)
-  : memory(memory), ioram(), channels(), runningDma(-1)
+Dma::Dma(Memory& memory, IO& io)
+  : memory(memory), io(io), ioram(), channels(), runningDma(-1)
 {
   ioram = (HwIoRam*)memory.section("ioram").buffer();
   channels.resize(4);
@@ -48,17 +49,18 @@ void Dma::syncFromIoDma(int chIdx)
 
 void Dma::stepCpuCycle()
 {
-  HwIoRam& ioram = *this->ioram;
-  int bytesizeTable[4] = {1, 2, 4, 4};
-  if (runningDma < 0) {
+  if (!isRunning()) {
     return;
   }
+  HwIoRam& ioram = *this->ioram;
   int chIdx = runningDma;
   auto& ch = channels[chIdx];
   uint32_t priority = chIdx + 1;
   if (ioram.dma.dma[chIdx].enable && !ch.isRunning) {
     syncFromIoDma(chIdx);
+    memory.setBusy(priority);
   }
+  int bytesizeTable[4] = {1, 2, 4, 4};
   uint8_t bytesize = bytesizeTable[ch.size];
   if (ch.count > 0) {
     if (!ch.isWrite) {
@@ -87,7 +89,10 @@ void Dma::stepCpuCycle()
     ioram.dma.dma[chIdx].enable = false;
     ioram.dma.dma[chIdx].count = 0;
     runningDma = -1;
-    // occur interruption
+    memory.clearBusy(priority);
+    uint32_t intno = HW_IO_INT_DMA0 + chIdx;
+    io.setIntStatus(intno);
+    io.requestInt(intno);
   }
 }
 

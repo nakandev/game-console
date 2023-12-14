@@ -6,13 +6,15 @@
 using namespace std;
 
 class Memory;
+class IO;
 
 class Timer {
 private:
   Memory& memory;
+  IO& io;
   HwIoRam* ioram;
 public:
-  Timer(Memory& memory);
+  Timer(Memory& memory, IO& io);
   ~Timer();
   void init();
   void stepCpuCycle();

@@ -65,6 +65,7 @@ void IO::requestInt(uint8_t intno)
   uint32_t status = memory.read(HWREG_IO_INT_STATUS_ADDR, 4);
   if ((enable & (1u << intno)) && (status & (1u << intno))) {
     cpu->requestInterruption();
+    cpu->handleInterruption();
   }
 }
 
@@ -84,10 +85,5 @@ void IO::clearIntStatus(uint8_t intno)
 
 void IO::updateScanlineNumber(uint16_t y)
 {
-  // uint32_t line = memory.read(HWREG_IO_SCANLINE_ADDR, 2);
-  // uint32_t screenH = memory.read(HWREG_IO_SCREEN_H_ADDR, 2);
-  // line++;
-  // if (line == screenH) line = 0;
-  // memory.write(HWREG_IO_SCANLINE_ADDR, 2, line);
   memory.write(HWREG_IO_SCANLINE_ADDR, 2, y);
 }

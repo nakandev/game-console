@@ -6,6 +6,7 @@
 using namespace std;
 
 class Memory;
+class IO;
 
 struct DmaChannel {
   uint32_t src;
@@ -33,12 +34,13 @@ struct DmaChannel {
 class Dma {
 private:
   Memory& memory;
+  IO& io;
   HwIoRam* ioram;
   vector<DmaChannel> channels;
   int runningDma;
   void syncFromIoDma(int chIdx);
 public:
-  Dma(Memory& memory);
+  Dma(Memory& memory, IO& io);
   ~Dma();
   void init();
   void stepCpuCycle();

@@ -54,7 +54,7 @@ int32_t MemorySection::read(uint32_t addr, uint32_t size)
 {
   uint32_t relativeAddr = addr - this->addr;
   // uint8_t* bytes = data.data();
-  if (!data) fmt::print("data is null.\n");
+  // if (!data) fmt::print("data is null.\n");
   if (size == 1)
     return *((int8_t*)(&data[0] + relativeAddr));
   else if (size == 2)
@@ -63,6 +63,24 @@ int32_t MemorySection::read(uint32_t addr, uint32_t size)
     return *((int32_t*)(&data[0] + relativeAddr));
 
   return 0;
+}
+
+int8_t MemorySection::read8(uint32_t addr)
+{
+  uint32_t relativeAddr = addr - this->addr;
+  return *((int8_t*)(&data[0] + relativeAddr));
+}
+
+int16_t MemorySection::read16(uint32_t addr)
+{
+  uint32_t relativeAddr = addr - this->addr;
+  return *((int16_t*)(&data[0] + relativeAddr));
+}
+
+int32_t MemorySection::read32(uint32_t addr)
+{
+  uint32_t relativeAddr = addr - this->addr;
+  return *((int32_t*)(&data[0] + relativeAddr));
 }
 
 void MemorySection::write(uint32_t addr, uint32_t size, int32_t value)
@@ -75,6 +93,24 @@ void MemorySection::write(uint32_t addr, uint32_t size, int32_t value)
     *((int16_t*)(&data[0] + relativeAddr)) = value & 0xffff;
   else if (size == 4)
     *((int32_t*)(&data[0] + relativeAddr)) = value;
+}
+
+void MemorySection::write8(uint32_t addr, int8_t value)
+{
+  uint32_t relativeAddr = addr - this->addr;
+  *((int8_t*)(&data[0] + relativeAddr)) = value & 0xff;
+}
+
+void MemorySection::write16(uint32_t addr, int16_t value)
+{
+  uint32_t relativeAddr = addr - this->addr;
+  *((int16_t*)(&data[0] + relativeAddr)) = value & 0xffff;
+}
+
+void MemorySection::write32(uint32_t addr, int32_t value)
+{
+  uint32_t relativeAddr = addr - this->addr;
+  *((int32_t*)(&data[0] + relativeAddr)) = value;
 }
 
 void MemorySection::copy(uint32_t addr, uint32_t size, uint8_t* buf)
@@ -203,11 +239,74 @@ int32_t Memory::read(uint32_t addr, uint32_t size)
   return 0;
 }
 
+int8_t Memory::read8(uint32_t addr)
+{
+  for (auto& section: sections) {
+    if (section.second.isin(addr)) {
+      return section.second.read8(addr);
+    }
+  }
+  return 0;
+}
+
+int16_t Memory::read16(uint32_t addr)
+{
+  for (auto& section: sections) {
+    if (section.second.isin(addr)) {
+      return section.second.read16(addr);
+    }
+  }
+  return 0;
+}
+
+int32_t Memory::read32(uint32_t addr)
+{
+  for (auto& section: sections) {
+    if (section.second.isin(addr)) {
+      return section.second.read32(addr);
+    }
+  }
+  return 0;
+}
+
 void Memory::write(uint32_t addr, uint32_t size, int32_t value)
 {
   for (auto& section: sections) {
     if (section.second.isin(addr)) {
       section.second.write(addr, size, value);
+      return;
+    }
+  }
+  return;
+}
+
+void Memory::write8(uint32_t addr, int8_t value)
+{
+  for (auto& section: sections) {
+    if (section.second.isin(addr)) {
+      section.second.write8(addr, value);
+      return;
+    }
+  }
+  return;
+}
+
+void Memory::write16(uint32_t addr, int16_t value)
+{
+  for (auto& section: sections) {
+    if (section.second.isin(addr)) {
+      section.second.write16(addr, value);
+      return;
+    }
+  }
+  return;
+}
+
+void Memory::write32(uint32_t addr, int32_t value)
+{
+  for (auto& section: sections) {
+    if (section.second.isin(addr)) {
+      section.second.write32(addr, value);
       return;
     }
   }

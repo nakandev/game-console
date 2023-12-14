@@ -4,6 +4,7 @@
 #include <instruction.h>
 #include <memory.h>
 #include <elf.h>
+#include <unordered_map>
 
 class Cpu {
 private:
@@ -16,6 +17,7 @@ private:
   int64_t instrCount;
   RegisterSet regs;
   Memory& memory;
+  unordered_map<uint32_t, Instruction> instrCache;
 protected:
   void setEntrypoint(uint32_t entry);
 public:
@@ -31,6 +33,7 @@ public:
   void stepInstruction();
   const uint32_t getPc();
   void printPc();
+  void cacheAllInstruction();
   const vector<string> disassembleAll();
   const vector<string> readRegisterAll();
 };

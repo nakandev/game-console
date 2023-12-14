@@ -27,6 +27,9 @@ class MemorySection {
     int16_t read16(uint32_t addr);
     int32_t read32(uint32_t addr);
     void write(uint32_t addr, uint32_t size, int32_t value);
+    void write8(uint32_t addr, int8_t value);
+    void write16(uint32_t addr, int16_t value);
+    void write32(uint32_t addr, int32_t value);
     void copy(uint32_t addr, uint32_t size, uint8_t* buf);
     void set(uint32_t addr, uint32_t size, uint8_t value);
     uint8_t* const buffer();
@@ -66,6 +69,9 @@ class Memory {
     int16_t read16(uint32_t addr);
     int32_t read32(uint32_t addr);
     void write(uint32_t addr, uint32_t size, int32_t value);
+    void write8(uint32_t addr, int8_t value);
+    void write16(uint32_t addr, int16_t value);
+    void write32(uint32_t addr, int32_t value);
     void copy(uint32_t addr, uint32_t size, uint8_t* value);
     void dmatransfer(uint32_t src, uint32_t dst, uint8_t direction, uint8_t len, uint32_t count);
     void checkDma();

@@ -8,8 +8,8 @@ Board::Board()
   cpu(memory),
   vpu(memory),
   apu(memory),
-  dma(memory),
-  timer(memory),
+  dma(memory, io),
+  timer(memory, io),
   pause(true)
 {
   io.setCpu(cpu);
@@ -44,25 +44,16 @@ void Board::updateFrameUntilVblank()
 {
   if (pause) return;
   for (int y=0; y<HW_SCREEN_H; y++) {
-    for (int i=0; i<HW_SCREEN_W; i++) {
-      if (dma.isRunning())
-        dma.stepCpuCycle();
-      else
-        cpu.stepCycle();
-      timer.stepCpuCycle();
+    for (int i=0; i<HW_SCREEN_W*HW_VPU_CPUCYCLE_RATIO; i++) {
+      stepCpuCycle();
     }
     vpu.drawLine(y);
     if (y != HW_SCREEN_H - 1) {
       io.setIntStatus(HW_IO_INT_HBLANK);
       io.requestInt(HW_IO_INT_HBLANK);
-      cpu.handleInterruption();
     }
-    for (int i=0; i<HW_SCREEN_HBLANK; i++) {
-      if (dma.isRunning())
-        dma.stepCpuCycle();
-      else
-        cpu.stepCycle();
-      timer.stepCpuCycle();
+    for (int i=0; i<HW_SCREEN_HBLANK*HW_VPU_CPUCYCLE_RATIO; i++) {
+      stepCpuCycle();
     }
     if (y != HW_SCREEN_H - 1) {
       io.clearIntStatus(HW_IO_INT_HBLANK);
@@ -76,13 +67,15 @@ void Board::updateFrameSinceVblank()
   if (pause) return;
   io.setIntStatus(HW_IO_INT_VBLANK);
   io.requestInt(HW_IO_INT_VBLANK);
-  cpu.handleInterruption();
-  for (int i=0; i<HW_SCREEN_VBLANK * (HW_SCREEN_W + HW_SCREEN_HBLANK); i++) {
-    if (dma.isRunning())
-      dma.stepCpuCycle();
-    else
-      cpu.stepCycle();
-    timer.stepCpuCycle();
+  for (int i=0; i<HW_SCREEN_VBLANK * (HW_SCREEN_W + HW_SCREEN_HBLANK)*HW_VPU_CPUCYCLE_RATIO; i++) {
+    stepCpuCycle();
   }
   io.clearIntStatus(HW_IO_INT_VBLANK);
+}
+
+void Board::stepCpuCycle()
+{
+  timer.stepCpuCycle();
+  dma.stepCpuCycle();
+  cpu.stepCycle();
 }

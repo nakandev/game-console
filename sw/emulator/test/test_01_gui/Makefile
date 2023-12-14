@@ -1,6 +1,7 @@
 TARGET = riscv-game-console
 EXESUFFIX = .exe
 TARGETS = $(TARGET)$(EXESUFFIX)
+TARGETS_PROF = prof-$(TARGET)$(EXESUFFIX)
 
 NKX_ROOT = /home/nyalry/nakan/dev/hobby/game-console
 NKX_HWSPEC = $(NKX_ROOT)/hw/spec
@@ -32,10 +33,10 @@ SRCS += palette_view.cpp
 SRCS += tile_view.cpp
 SRCS += mmio_panel.cpp
 OBJS = $(addsuffix .o,$(basename $(SRCS)))
-OBJD += gui.o
 OBJS += imgui.o imgui_demo.o imgui_draw.o imgui_tables.o imgui_widgets.o
 OBJS += ImGuiFileDialog.o
 OBJS += imgui_impl_sdl2.o imgui_impl_opengl3.o
+OBJS_PROF = $(addprefix prof_,$(OBJS))
 
 # INPUT_ELF_NAME = trial_02_tileram
 # INPUT_ELF_NAME = trial_03_sprite
@@ -58,11 +59,11 @@ CXX = g++
 CXXFLAGS = -std=c++20 -I$(NKX_EMU_ROOT)/include
 CXXFLAGS += -I$(IMGUI_DIR) -I$(IMGUI_FILE_DIR)
 CXXFLAGS += -I$(IMGUI_DIR)/backends
-CXXFLAGS += -g -O3
-# CXXFLAGS += -pg
+CXXFLAGS += -g -O3 -flto
+CXXFLAGS_PROF = -pg $(CXXFLAGS)
 LDFLAGS =
-LDFLAGS += -g -O3
-# LDFLAGS += -pg
+LDFLAGS += -g -O3 -flto
+LDFLAGS_PROF = -pg $(LDFLAGS)
 LIBS = -lfmt
 LIBS_SDL = `sdl2-config --libs` -lGL -lGLEW
 # -lfmt: sudo apt install libfmt-dev
@@ -73,10 +74,13 @@ vpath %.cpp $(NKX_EMU_ROOT)/src
 
 .PHONY: all clean run cui sdl
 
-all: $(NKX_EMU_ROOT)/include/memorymap.h $(TARGETS)
+all: $(NKX_EMU_ROOT)/include/memorymap.h $(TARGETS) $(TARGETS_PROF)
 
 $(TARGETS): $(OBJS)
 	$(CXX) $(LDFLAGS) -o $@ $^ $(LIBS) $(LIBS_SDL)
+
+$(TARGETS_PROF): $(OBJS_PROF)
+	$(CXX) $(LDFLAGS_PROF) -o $@ $^ $(LIBS) $(LIBS_SDL)
 
 $(NKX_EMU_ROOT)/include/memorymap.h: $(NKX_HWSPEC)/memorymap.h
 	cp -f $< $@
@@ -84,7 +88,7 @@ $(NKX_EMU_ROOT)/include/memorymap.h: $(NKX_HWSPEC)/memorymap.h
 main.o: $(NKX_EMU_ROOT)/src/platform/linux/main.cpp
 	$(CXX) -c $(CXXFLAGS) `sdl2-config --cflags` -o $@ $<
 
-%.o: %.cpp
+%.o: %.cpp $(NKX_EMU_ROOT)/include/memorymap.h
 	$(CXX) -c $(CXXFLAGS) -o $@ $<
 
 %.o: gui/%.cpp
@@ -99,13 +103,32 @@ main.o: $(NKX_EMU_ROOT)/src/platform/linux/main.cpp
 %.o: $(IMGUI_FILE_DIR)/%.cpp
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
+prof_main.o: $(NKX_EMU_ROOT)/src/platform/linux/main.cpp
+	$(CXX) -c $(CXXFLAGS_PROF) `sdl2-config --cflags` -o $@ $<
+
+prof_%.o: %.cpp $(NKX_EMU_ROOT)/include/memorymap.h
+	$(CXX) -c $(CXXFLAGS_PROF) -o $@ $<
+
+prof_%.o: gui/%.cpp
+	$(CXX) $(CXXFLAGS_PROF) -c -o $@ $<
+
+prof_%.o: $(IMGUI_DIR)/%.cpp
+	$(CXX) $(CXXFLAGS_PROF) -c -o $@ $<
+
+prof_%.o: $(IMGUI_DIR)/backends/%.cpp
+	$(CXX) $(CXXFLAGS_PROF) -c -o $@ $<
+
+prof_%.o: $(IMGUI_FILE_DIR)/%.cpp
+	$(CXX) $(CXXFLAGS_PROF) -c -o $@ $<
+
 run:
 	./$(TARGETS) $(INPUT_ELF)
 
 prof:
-	./$(TARGETS) $(INPUT_ELF)
-	gprof ./$(TARGETS) gmon.out > gmon.log
+	./$(TARGETS_PROF) $(INPUT_ELF)
+	gprof ./$(TARGETS_PROF) gmon.out > gmon.log
 
 clean:
-	rm -f $(OBJS) $(TARGETS) gmon.*
+	rm -f $(OBJS) $(TARGETS)
+	rm -f $(OBJS_PROF) $(TARGETS_PROF) gmon.*
 

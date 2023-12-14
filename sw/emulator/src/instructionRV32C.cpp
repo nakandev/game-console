@@ -469,7 +469,7 @@ void InstrRV32IManipulator::execute_clwsp(Instruction& instr, RegisterSet& regs,
   uint32_t addr = regs.gpr[2].val.u + instr.imm.s;
   if (!memory.waitAccess(addr, 4, true, instr.waitCycle)) {
     if (instr.dst != 0) {
-      regs.gpr[instr.dst].val.s = memory.read(addr, 4);
+      regs.gpr[instr.dst].val.s = memory.read32(addr);
     }
   }
 }
@@ -514,7 +514,7 @@ void InstrRV32IManipulator::execute_cswsp(Instruction& instr, RegisterSet& regs,
 {
   uint32_t addr = regs.gpr[2].val.u + instr.imm.s;
   if (!memory.waitAccess(addr, 4, true, instr.waitCycle)) {
-    memory.write(addr, 4, regs.gpr[instr.src2].val.s);
+    memory.write32(addr, regs.gpr[instr.src2].val.s);
   }
 }
 // type CIW
@@ -527,7 +527,7 @@ void InstrRV32IManipulator::execute_clw(Instruction& instr, RegisterSet& regs, M
 {
   uint32_t addr = regs.gpr[tbl[instr.src1]].val.u + instr.imm.s;
   if (!memory.waitAccess(addr, 4, true, instr.waitCycle)) {
-    regs.gpr[tbl[instr.dst]].val.s = memory.read(addr, 4);
+    regs.gpr[tbl[instr.dst]].val.s = memory.read32(addr);
   }
 }
 // type CS
@@ -535,7 +535,7 @@ void InstrRV32IManipulator::execute_csw(Instruction& instr, RegisterSet& regs, M
 {
   uint32_t addr = regs.gpr[tbl[instr.src1]].val.u + instr.imm.s;
   if (!memory.waitAccess(addr, 4, true, instr.waitCycle)) {
-    memory.write(addr, 4, regs.gpr[tbl[instr.src2]].val.s);
+    memory.write32(addr, regs.gpr[tbl[instr.src2]].val.s);
   }
 }
 // type CA

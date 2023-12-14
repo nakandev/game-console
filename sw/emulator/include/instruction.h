@@ -16,7 +16,7 @@ enum OpType {
   OPTYPE_SYSTEM,
   OPTYPE_ZICSR,
 
-  OPTYPE_CR = 0,
+  OPTYPE_CR,
   OPTYPE_CI,
   OPTYPE_CSS,
   OPTYPE_CIW,
@@ -324,6 +324,7 @@ struct Instruction {
 class InstrRV32IManipulator {
   void (InstrRV32IManipulator::*execute_tableI[64])(Instruction& instr, RegisterSet& regs, Memory& memory);
   void (InstrRV32IManipulator::*execute_tableC[64])(Instruction& instr, RegisterSet& regs, Memory& memory);
+  map<uint32_t, Instruction> instrCache;
 public:
   InstrRV32IManipulator();
   ~InstrRV32IManipulator();

@@ -1,4 +1,5 @@
 #include <memory>
+#include <algorithm>
 #include <common.h>
 #include <cpu.h>
 #include <instruction.h>
@@ -7,6 +8,8 @@
 #include <fmt/core.h>
 
 InstrRV32IManipulator::InstrRV32IManipulator()
+: execute_tableI(), execute_tableC(),
+  instrCache()
 {
   initI();
   initC();
@@ -145,26 +148,41 @@ InstrRV32IManipulator::fetch(Instruction& instr)
 void
 InstrRV32IManipulator::decode(uint32_t bytes, Instruction& instr)
 {
-  instr.waitCycle = 1;
-  if ((bytes & 0x3) != 3) {
-    // 16-bits instruction
-    decode16(bytes, instr);
-  } else 
-  if (((bytes >> 2) & 0x7) != 7) {
-    // 32-bits instruction
-    decode32(bytes, instr);
-  } else
-  {
-    instr = Instruction();
-    instr.size = 4;
-  }
-  instr.phase = INSTR_PHASE_EXECUTE;
+  // // cache hit
+  // if (instrCache.contains(bytes)) {
+  //   instr = instrCache[bytes];
+  // }
+  // // cache miss
+  // else {
+    instr.waitCycle = 1;
+    if ((bytes & 0x3) != 3) {
+      // 16-bits instruction
+      decode16(bytes, instr);
+    } else 
+    if (((bytes >> 2) & 0x7) != 7) {
+      // 32-bits instruction
+      decode32(bytes, instr);
+    } else
+    {
+      instr = Instruction();
+      instr.size = 4;
+    }
+    instr.phase = INSTR_PHASE_EXECUTE;
+  //   // write cache
+  //   if (instrCache.size() == 8192) {
+  //     instrCache.erase(instrCache.begin());
+  //   }
+  //   instrCache[bytes] = instr;
+  // }
 }
 
 void
 InstrRV32IManipulator::decode32(uint32_t bytes, Instruction& instr)
 {
   uint8_t opcode = bytes & 0x7Fu;
+  if (opcode == OPCODE_JAL) {
+    decodeTypeJ(bytes, instr);
+  } else
   if (opcode == OPCODE_LOAD || opcode == OPCODE_STORE) {
     decodeTypeS(bytes, instr);
   } else
@@ -174,17 +192,14 @@ InstrRV32IManipulator::decode32(uint32_t bytes, Instruction& instr)
   if (opcode == OPCODE_Arith) {
     decodeTypeR(bytes, instr);
   } else
+  if (opcode == OPCODE_SYSTEM) {
+    decodeTypeSystem(bytes, instr);
+  } else
   if (opcode == OPCODE_BRANCH) {
     decodeTypeB(bytes, instr);
   } else
   if (opcode == OPCODE_LUI || opcode == OPCODE_AUIPC) {
     decodeTypeU(bytes, instr);
-  } else
-  if (opcode == OPCODE_JAL) {
-    decodeTypeJ(bytes, instr);
-  } else
-  if (opcode == OPCODE_SYSTEM) {
-    decodeTypeSystem(bytes, instr);
   } else
   {
     instr = Instruction();
@@ -192,6 +207,7 @@ InstrRV32IManipulator::decode32(uint32_t bytes, Instruction& instr)
   }
 }
 
+__attribute__((noinline))
 void
 InstrRV32IManipulator::decodeTypeR(uint32_t bytes, Instruction& instr)
 {
@@ -255,6 +271,7 @@ InstrRV32IManipulator::decodeTypeR(uint32_t bytes, Instruction& instr)
   }
 }
 
+__attribute__((noinline))
 void
 InstrRV32IManipulator::decodeTypeI(uint32_t bytes, Instruction& instr)
 {
@@ -310,6 +327,7 @@ InstrRV32IManipulator::decodeTypeI(uint32_t bytes, Instruction& instr)
   }
 }
 
+__attribute__((noinline))
 void
 InstrRV32IManipulator::decodeTypeS(uint32_t bytes, Instruction& instr)
 {
@@ -382,6 +400,7 @@ InstrRV32IManipulator::decodeTypeS(uint32_t bytes, Instruction& instr)
   }
 }
 
+__attribute__((noinline))
 void
 InstrRV32IManipulator::decodeTypeB(uint32_t bytes, Instruction& instr)
 {
@@ -418,6 +437,7 @@ InstrRV32IManipulator::decodeTypeB(uint32_t bytes, Instruction& instr)
   instr.instr = instr_table_funct3[funct3];
 }
 
+__attribute__((noinline))
 void
 InstrRV32IManipulator::decodeTypeU(uint32_t bytes, Instruction& instr)
 {
@@ -444,6 +464,7 @@ InstrRV32IManipulator::decodeTypeU(uint32_t bytes, Instruction& instr)
   }
 }
 
+__attribute__((noinline))
 void
 InstrRV32IManipulator::decodeTypeJ(uint32_t bytes, Instruction& instr)
 {
@@ -468,6 +489,7 @@ InstrRV32IManipulator::decodeTypeJ(uint32_t bytes, Instruction& instr)
   instr.instr = INSTR_JAL;
 }
 
+__attribute__((noinline))
 void
 InstrRV32IManipulator::decodeTypeSystem(uint32_t bytes, Instruction& instr)
 {
@@ -715,7 +737,7 @@ InstrRV32IManipulator::execute_lb(Instruction& instr, RegisterSet& regs, Memory&
 {
   uint32_t addr = regs.gpr[instr.src1].val.u + instr.imm.s;
   if (!memory.waitAccess(addr, 1, true, instr.waitCycle)) {
-    regs.gpr[instr.dst].val.s = memory.read(addr, 1);
+    regs.gpr[instr.dst].val.s = memory.read8(addr);
   }
 }
 void
@@ -723,7 +745,7 @@ InstrRV32IManipulator::execute_lh(Instruction& instr, RegisterSet& regs, Memory&
 {
   uint32_t addr = regs.gpr[instr.src1].val.u + instr.imm.s;
   if (!memory.waitAccess(addr, 2, true, instr.waitCycle)) {
-    regs.gpr[instr.dst].val.s = memory.read(addr, 2);
+    regs.gpr[instr.dst].val.s = memory.read16(addr);
   }
 }
 void
@@ -731,7 +753,7 @@ InstrRV32IManipulator::execute_lw(Instruction& instr, RegisterSet& regs, Memory&
 {
   uint32_t addr = regs.gpr[instr.src1].val.u + instr.imm.s;
   if (!memory.waitAccess(addr, 4, true, instr.waitCycle)) {
-    regs.gpr[instr.dst].val.s = memory.read(addr, 4);
+    regs.gpr[instr.dst].val.s = memory.read32(addr);
   }
 }
 void
@@ -739,7 +761,7 @@ InstrRV32IManipulator::execute_lbu(Instruction& instr, RegisterSet& regs, Memory
 {
   uint32_t addr = regs.gpr[instr.src1].val.u + instr.imm.s;
   if (!memory.waitAccess(addr, 1, true, instr.waitCycle)) {
-    regs.gpr[instr.dst].val.u = memory.read(addr, 1) & 0xffu;
+    regs.gpr[instr.dst].val.u = memory.read8(addr) & 0xffu;
   }
 }
 void
@@ -747,7 +769,7 @@ InstrRV32IManipulator::execute_lhu(Instruction& instr, RegisterSet& regs, Memory
 {
   uint32_t addr = regs.gpr[instr.src1].val.u + instr.imm.s;
   if (!memory.waitAccess(addr, 2, true, instr.waitCycle)) {
-    regs.gpr[instr.dst].val.u = memory.read(addr, 2) & 0xffffu;
+    regs.gpr[instr.dst].val.u = memory.read16(addr) & 0xffffu;
   }
 }
 void
@@ -755,7 +777,7 @@ InstrRV32IManipulator::execute_sb(Instruction& instr, RegisterSet& regs, Memory&
 {
   uint32_t addr = regs.gpr[instr.src1].val.u + instr.imm.s;
   if (!memory.waitAccess(addr, 1, true, instr.waitCycle)) {
-    memory.write(addr, 1, regs.gpr[instr.src2].val.s);
+    memory.write8(addr, regs.gpr[instr.src2].val.s);
   }
 }
 void
@@ -763,7 +785,7 @@ InstrRV32IManipulator::execute_sh(Instruction& instr, RegisterSet& regs, Memory&
 {
   uint32_t addr = regs.gpr[instr.src1].val.u + instr.imm.s;
   if (!memory.waitAccess(addr, 2, true, instr.waitCycle)) {
-    memory.write(addr, 2, regs.gpr[instr.src2].val.s);
+    memory.write16(addr, regs.gpr[instr.src2].val.s);
   }
 }
 void
@@ -771,7 +793,7 @@ InstrRV32IManipulator::execute_sw(Instruction& instr, RegisterSet& regs, Memory&
 {
   uint32_t addr = regs.gpr[instr.src1].val.u + instr.imm.s;
   if (!memory.waitAccess(addr, 4, true, instr.waitCycle)) {
-    memory.write(addr, 4, regs.gpr[instr.src2].val.s);
+    memory.write32(addr, regs.gpr[instr.src2].val.s);
   }
 }
 // type B

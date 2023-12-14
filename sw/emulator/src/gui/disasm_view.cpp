@@ -22,10 +22,10 @@ DisasmView::~DisasmView()
 
 void DisasmView::update()
 {
-  // disasmStrs = board.cpu.disassembleAll();
-  // board.pause = false;
-
+  ImGui::Text("%08x", board.cpu.getPc());
+  ImGui::BeginChild(ImGui::GetID((void*)10), ImVec2(-1, -1), ImGuiWindowFlags_NoTitleBar);
   for (auto& s: disasmStrs) {
     ImGui::Text("%s", s.c_str());
   }
+  ImGui::EndChild();
 }
