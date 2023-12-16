@@ -4,15 +4,36 @@
 #include <sstream>
 #include <fmt/core.h>
 
+static vector<string> splitCommandString(const string& cmdstr)
+{
+  char delim = ' ';
+  vector<string> cmds;
+  int begin = 0, end = 0;
+  while (begin < cmdstr.size()) {
+    for (end=begin; end<cmdstr.size(); ++end) {
+      if (cmdstr[end] == delim) break;
+    }
+    auto cmd = cmdstr.substr(begin, end - begin);
+    cmds.push_back(cmd);
+    for (begin=end; begin<cmdstr.size(); ++begin) {
+      if (cmdstr[begin] != delim) break;
+    }
+  }
+  return std::move(cmds);
+}
+
 Debugger::Debugger()
-: commandStrings(), breakPoints(),
+: response(), commandStrings(),
+  currentBreakPointId(), breakPoints(),
   cpu(nullptr)
 {
 }
 
 Debugger::~Debugger()
 {
+  response = "";
   commandStrings.clear();
+  currentBreakPointId = 0;
   breakPoints.clear();
   cpu = nullptr;
 }
@@ -95,13 +116,16 @@ Debugger::exec_command()
 int
 Debugger::breakpoint_set(const string& label)
 {
+  auto bp = BreakPoint{currentBreakPointId, -1, -1, "notitle"};
   if (label.starts_with("0x")) {
-    uint32_t point;
+    uint32_t value;
     stringstream ss(label.substr(2));
-    ss >> hex >> point;
-    breakPoints.push_back(point);
-    fmt::print("added breakpoint: pc=0x{:08x}\n", point);
+    ss >> hex >> value;
+    fmt::print("added breakpoint: pc=0x{:08x}\n", value);
+    bp.pc = value;
+    breakPoints.push_back(std::move(bp));
   }
+  ++currentBreakPointId;
   return 0;
 }
 
@@ -117,7 +141,7 @@ int
 Debugger::disassemble_pc()
 {
   if (!cpu) return 1;
-  cpu->printPc();
+  fmt::print("pc:{:08x}\n", cpu->getPc());
   return 0;
 }
 
@@ -149,8 +173,8 @@ Debugger::process_launch()
     bool _break = false;
     for (auto& bp: breakPoints) {
       auto pc = cpu->getPc();
-      if (pc == bp) {
-        fmt::print("pc={:08x} bp={:08x}\n", pc, bp);
+      if (pc == bp.pc) {
+        fmt::print("pc={:08x} bp={:08x}\n", pc, bp.pc);
         _break = true;
         break;
       }

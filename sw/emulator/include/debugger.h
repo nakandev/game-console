@@ -9,9 +9,18 @@ using namespace std;
 
 class Cpu;
 
+struct BreakPoint {
+  uint32_t id;
+  int64_t pc;
+  int64_t line;
+  string name;
+};
+
 class Debugger {
+  string response;
   vector<string> commandStrings;
-  vector<uint32_t> breakPoints;
+  uint32_t currentBreakPointId;
+  vector<BreakPoint> breakPoints;
   Cpu* cpu;
 public:
   Debugger();

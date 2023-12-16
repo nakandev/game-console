@@ -1,13 +1,13 @@
 #include <memory>
 #include <common.h>
 #include <cpu.h>
-#include <instruction.h>
+#include <cpuisa.h>
 #include <memory.h>
 
 #include <fmt/core.h>
 
 void
-InstrRV32IManipulator::decode16(uint32_t bytes, Instruction& instr)
+CpuIsaRV32I::decode16(uint32_t bytes, Instruction& instr)
 {
   uint16_t bytes16 = bytes & 0xFFFFu;
   uint8_t opcode = bytes16 & 0x3u;
@@ -59,7 +59,7 @@ static const uint8_t tbl[8] = {
 };
 
 void
-InstrRV32IManipulator::decodeTypeCR(uint32_t bytes, Instruction& instr)
+CpuIsaRV32I::decodeTypeCR(uint32_t bytes, Instruction& instr)
 {
   instr.binary = bytes;
   uint8_t opcode = (uint8_t)((bytes >>  0) & 0x03u);
@@ -101,7 +101,7 @@ InstrRV32IManipulator::decodeTypeCR(uint32_t bytes, Instruction& instr)
 }
 
 void
-InstrRV32IManipulator::decodeTypeCI(uint32_t bytes, Instruction& instr)
+CpuIsaRV32I::decodeTypeCI(uint32_t bytes, Instruction& instr)
 {
   instr.binary = bytes;
   uint8_t opcode = (uint8_t)((bytes >>  0) & 0x03u);
@@ -181,7 +181,7 @@ InstrRV32IManipulator::decodeTypeCI(uint32_t bytes, Instruction& instr)
 }
 
 void
-InstrRV32IManipulator::decodeTypeCSS(uint32_t bytes, Instruction& instr)
+CpuIsaRV32I::decodeTypeCSS(uint32_t bytes, Instruction& instr)
 {
   instr.binary = bytes;
   uint8_t opcode = (uint8_t)((bytes >>  0) & 0x03u);
@@ -211,7 +211,7 @@ InstrRV32IManipulator::decodeTypeCSS(uint32_t bytes, Instruction& instr)
 }
 
 void
-InstrRV32IManipulator::decodeTypeCIW(uint32_t bytes, Instruction& instr)
+CpuIsaRV32I::decodeTypeCIW(uint32_t bytes, Instruction& instr)
 {
   instr.binary = bytes;
   uint8_t opcode = (uint8_t)((bytes >>  0) & 0x00u);
@@ -230,7 +230,7 @@ InstrRV32IManipulator::decodeTypeCIW(uint32_t bytes, Instruction& instr)
 }
 
 void
-InstrRV32IManipulator::decodeTypeCL(uint32_t bytes, Instruction& instr)
+CpuIsaRV32I::decodeTypeCL(uint32_t bytes, Instruction& instr)
 {
   instr.binary = bytes;
   uint8_t opcode = (uint8_t)((bytes >>  0) & 0x03u);
@@ -265,7 +265,7 @@ InstrRV32IManipulator::decodeTypeCL(uint32_t bytes, Instruction& instr)
 }
 
 void
-InstrRV32IManipulator::decodeTypeCS(uint32_t bytes, Instruction& instr)
+CpuIsaRV32I::decodeTypeCS(uint32_t bytes, Instruction& instr)
 {
   instr.binary = bytes;
   uint8_t opcode = (uint8_t)((bytes >>  0) & 0x03u);
@@ -299,7 +299,7 @@ InstrRV32IManipulator::decodeTypeCS(uint32_t bytes, Instruction& instr)
 }
 
 void
-InstrRV32IManipulator::decodeTypeCA(uint32_t bytes, Instruction& instr)
+CpuIsaRV32I::decodeTypeCA(uint32_t bytes, Instruction& instr)
 {
   instr.binary = bytes;
   instr.opcode = (uint8_t)((bytes >>  0) & 0x03u);
@@ -331,7 +331,7 @@ InstrRV32IManipulator::decodeTypeCA(uint32_t bytes, Instruction& instr)
 }
 
 void
-InstrRV32IManipulator::decodeTypeCB2(uint32_t bytes, Instruction& instr)
+CpuIsaRV32I::decodeTypeCB2(uint32_t bytes, Instruction& instr)
 {
   instr.binary = bytes;
   uint8_t opcode = (uint8_t)((bytes >>  0) & 0x03u);
@@ -363,7 +363,7 @@ InstrRV32IManipulator::decodeTypeCB2(uint32_t bytes, Instruction& instr)
 }
 
 void
-InstrRV32IManipulator::decodeTypeCB(uint32_t bytes, Instruction& instr)
+CpuIsaRV32I::decodeTypeCB(uint32_t bytes, Instruction& instr)
 {
   instr.binary = bytes;
   uint8_t opcode = (uint8_t)((bytes >>  0) & 0x03u);
@@ -394,7 +394,7 @@ InstrRV32IManipulator::decodeTypeCB(uint32_t bytes, Instruction& instr)
 }
 
 void
-InstrRV32IManipulator::decodeTypeCJ(uint32_t bytes, Instruction& instr)
+CpuIsaRV32I::decodeTypeCJ(uint32_t bytes, Instruction& instr)
 {
   instr.binary = bytes;
   uint8_t opcode = (uint8_t)((bytes >>  0) & 0x03u);
@@ -427,12 +427,12 @@ InstrRV32IManipulator::decodeTypeCJ(uint32_t bytes, Instruction& instr)
   }
 }
 
-void InstrRV32IManipulator::execute_cunknown(Instruction& instr, RegisterSet& regs, Memory& memory)
+void CpuIsaRV32I::execute_cunknown(Instruction& instr, RegisterSet& regs, Memory& memory)
 {
 }
 // type CR
 void
-InstrRV32IManipulator::execute_cjr(Instruction& instr, RegisterSet& regs, Memory& memory)
+CpuIsaRV32I::execute_cjr(Instruction& instr, RegisterSet& regs, Memory& memory)
 {
   if (instr.src1 != 0) {
     regs.pc.val.s = regs.gpr[instr.src1].val.s + 0;
@@ -440,18 +440,18 @@ InstrRV32IManipulator::execute_cjr(Instruction& instr, RegisterSet& regs, Memory
   }
 }
 void
-InstrRV32IManipulator::execute_cmv(Instruction& instr, RegisterSet& regs, Memory& memory)
+CpuIsaRV32I::execute_cmv(Instruction& instr, RegisterSet& regs, Memory& memory)
 {
   if (instr.dst != 0) {
     regs.gpr[instr.dst].val.s = regs.gpr[instr.src2].val.s;
   }
 }
 void
-InstrRV32IManipulator::execute_cebreak(Instruction& instr, RegisterSet& regs, Memory& memory)
+CpuIsaRV32I::execute_cebreak(Instruction& instr, RegisterSet& regs, Memory& memory)
 {
 }
 void
-InstrRV32IManipulator::execute_cjalr(Instruction& instr, RegisterSet& regs, Memory& memory)
+CpuIsaRV32I::execute_cjalr(Instruction& instr, RegisterSet& regs, Memory& memory)
 {
   auto tmp = regs.gpr[instr.src1].val.s;
   regs.gpr[1].val.u = regs.pc.val.u + 2;
@@ -459,12 +459,12 @@ InstrRV32IManipulator::execute_cjalr(Instruction& instr, RegisterSet& regs, Memo
   instr.isJumped = true;
 }
 void
-InstrRV32IManipulator::execute_cadd(Instruction& instr, RegisterSet& regs, Memory& memory)
+CpuIsaRV32I::execute_cadd(Instruction& instr, RegisterSet& regs, Memory& memory)
 {
   regs.gpr[instr.dst].val.s = regs.gpr[instr.src1].val.s + regs.gpr[instr.src2].val.s;
 }
 // type CI
-void InstrRV32IManipulator::execute_clwsp(Instruction& instr, RegisterSet& regs, Memory& memory)
+void CpuIsaRV32I::execute_clwsp(Instruction& instr, RegisterSet& regs, Memory& memory)
 {
   uint32_t addr = regs.gpr[2].val.u + instr.imm.s;
   if (!memory.waitAccess(addr, 4, true, instr.waitCycle)) {
@@ -473,24 +473,24 @@ void InstrRV32IManipulator::execute_clwsp(Instruction& instr, RegisterSet& regs,
     }
   }
 }
-void InstrRV32IManipulator::execute_cslli(Instruction& instr, RegisterSet& regs, Memory& memory)
+void CpuIsaRV32I::execute_cslli(Instruction& instr, RegisterSet& regs, Memory& memory)
 {
   regs.gpr[instr.dst].val.s = regs.gpr[instr.src1].val.s << instr.imm.s;
 }
-void InstrRV32IManipulator::execute_cli(Instruction& instr, RegisterSet& regs, Memory& memory)
+void CpuIsaRV32I::execute_cli(Instruction& instr, RegisterSet& regs, Memory& memory)
 {
   int32_t imm = instr.imm.s;
   if (instr.dst != 0) {
     regs.gpr[instr.dst].val.s = imm;
   }
 }
-void InstrRV32IManipulator::execute_caddi16sp(Instruction& instr, RegisterSet& regs, Memory& memory)
+void CpuIsaRV32I::execute_caddi16sp(Instruction& instr, RegisterSet& regs, Memory& memory)
 {
   int32_t imm = instr.imm.s;
   // regs.gpr[instr.dst].val.s = regs.gpr[instr.src1].val.s + imm;
   regs.gpr[2].val.s = regs.gpr[2].val.s + imm;
 }
-void InstrRV32IManipulator::execute_clui(Instruction& instr, RegisterSet& regs, Memory& memory)
+void CpuIsaRV32I::execute_clui(Instruction& instr, RegisterSet& regs, Memory& memory)
 {
   int32_t imm = instr.imm.s;
   if (imm != 0) {
@@ -500,17 +500,17 @@ void InstrRV32IManipulator::execute_clui(Instruction& instr, RegisterSet& regs, 
     // error: imm can be non-zero value.
   }
 }
-void InstrRV32IManipulator::execute_caddi(Instruction& instr, RegisterSet& regs, Memory& memory)
+void CpuIsaRV32I::execute_caddi(Instruction& instr, RegisterSet& regs, Memory& memory)
 {
   int32_t imm = instr.imm.s;
   int32_t newimm = imm;
   regs.gpr[instr.dst].val.s = regs.gpr[instr.src1].val.s + newimm;
 }
-void InstrRV32IManipulator::execute_cnop(Instruction& instr, RegisterSet& regs, Memory& memory)
+void CpuIsaRV32I::execute_cnop(Instruction& instr, RegisterSet& regs, Memory& memory)
 {
 }
 // type CSS
-void InstrRV32IManipulator::execute_cswsp(Instruction& instr, RegisterSet& regs, Memory& memory)
+void CpuIsaRV32I::execute_cswsp(Instruction& instr, RegisterSet& regs, Memory& memory)
 {
   uint32_t addr = regs.gpr[2].val.u + instr.imm.s;
   if (!memory.waitAccess(addr, 4, true, instr.waitCycle)) {
@@ -518,12 +518,12 @@ void InstrRV32IManipulator::execute_cswsp(Instruction& instr, RegisterSet& regs,
   }
 }
 // type CIW
-void InstrRV32IManipulator::execute_caddi4spn(Instruction& instr, RegisterSet& regs, Memory& memory)
+void CpuIsaRV32I::execute_caddi4spn(Instruction& instr, RegisterSet& regs, Memory& memory)
 {
   regs.gpr[tbl[instr.dst]].val.s = regs.gpr[2].val.s + instr.imm.u * 4;
 }
 // type CL
-void InstrRV32IManipulator::execute_clw(Instruction& instr, RegisterSet& regs, Memory& memory)
+void CpuIsaRV32I::execute_clw(Instruction& instr, RegisterSet& regs, Memory& memory)
 {
   uint32_t addr = regs.gpr[tbl[instr.src1]].val.u + instr.imm.s;
   if (!memory.waitAccess(addr, 4, true, instr.waitCycle)) {
@@ -531,7 +531,7 @@ void InstrRV32IManipulator::execute_clw(Instruction& instr, RegisterSet& regs, M
   }
 }
 // type CS
-void InstrRV32IManipulator::execute_csw(Instruction& instr, RegisterSet& regs, Memory& memory)
+void CpuIsaRV32I::execute_csw(Instruction& instr, RegisterSet& regs, Memory& memory)
 {
   uint32_t addr = regs.gpr[tbl[instr.src1]].val.u + instr.imm.s;
   if (!memory.waitAccess(addr, 4, true, instr.waitCycle)) {
@@ -539,36 +539,36 @@ void InstrRV32IManipulator::execute_csw(Instruction& instr, RegisterSet& regs, M
   }
 }
 // type CA
-void InstrRV32IManipulator::execute_csub(Instruction& instr, RegisterSet& regs, Memory& memory)
+void CpuIsaRV32I::execute_csub(Instruction& instr, RegisterSet& regs, Memory& memory)
 {
   regs.gpr[tbl[instr.dst]].val.s = regs.gpr[tbl[instr.src1]].val.s - regs.gpr[tbl[instr.src2]].val.s;
 }
-void InstrRV32IManipulator::execute_cxor(Instruction& instr, RegisterSet& regs, Memory& memory)
+void CpuIsaRV32I::execute_cxor(Instruction& instr, RegisterSet& regs, Memory& memory)
 {
   regs.gpr[tbl[instr.dst]].val.s = regs.gpr[tbl[instr.src1]].val.s ^ regs.gpr[tbl[instr.src2]].val.s;
 }
-void InstrRV32IManipulator::execute_cor(Instruction& instr, RegisterSet& regs, Memory& memory)
+void CpuIsaRV32I::execute_cor(Instruction& instr, RegisterSet& regs, Memory& memory)
 {
   regs.gpr[tbl[instr.dst]].val.s = regs.gpr[tbl[instr.src1]].val.s | regs.gpr[tbl[instr.src2]].val.s;
 }
-void InstrRV32IManipulator::execute_cand(Instruction& instr, RegisterSet& regs, Memory& memory)
+void CpuIsaRV32I::execute_cand(Instruction& instr, RegisterSet& regs, Memory& memory)
 {
   regs.gpr[tbl[instr.dst]].val.s = regs.gpr[tbl[instr.src1]].val.s & regs.gpr[tbl[instr.src2]].val.s;
 }
 // type CB2
-void InstrRV32IManipulator::execute_csrli(Instruction& instr, RegisterSet& regs, Memory& memory)
+void CpuIsaRV32I::execute_csrli(Instruction& instr, RegisterSet& regs, Memory& memory)
 {
   regs.gpr[tbl[instr.dst]].val.u = regs.gpr[tbl[instr.src1]].val.u >> instr.imm.s;
 }
-void InstrRV32IManipulator::execute_csrai(Instruction& instr, RegisterSet& regs, Memory& memory)
+void CpuIsaRV32I::execute_csrai(Instruction& instr, RegisterSet& regs, Memory& memory)
 {
   regs.gpr[tbl[instr.dst]].val.s = regs.gpr[tbl[instr.src1]].val.s >> instr.imm.s;
 }
-void InstrRV32IManipulator::execute_candi(Instruction& instr, RegisterSet& regs, Memory& memory)
+void CpuIsaRV32I::execute_candi(Instruction& instr, RegisterSet& regs, Memory& memory)
 {
   regs.gpr[tbl[instr.dst]].val.s = regs.gpr[tbl[instr.src1]].val.s & instr.imm.s;
 }
-void InstrRV32IManipulator::execute_cbeqz(Instruction& instr, RegisterSet& regs, Memory& memory)
+void CpuIsaRV32I::execute_cbeqz(Instruction& instr, RegisterSet& regs, Memory& memory)
 {
   bool cond = false;
   cond = regs.gpr[tbl[instr.src1]].val.s == 0;
@@ -577,7 +577,7 @@ void InstrRV32IManipulator::execute_cbeqz(Instruction& instr, RegisterSet& regs,
     instr.isJumped = true;
   }
 }
-void InstrRV32IManipulator::execute_cbnez(Instruction& instr, RegisterSet& regs, Memory& memory)
+void CpuIsaRV32I::execute_cbnez(Instruction& instr, RegisterSet& regs, Memory& memory)
 {
   bool cond = false;
   cond = regs.gpr[tbl[instr.src1]].val.s != 0;
@@ -587,13 +587,13 @@ void InstrRV32IManipulator::execute_cbnez(Instruction& instr, RegisterSet& regs,
   }
 }
 // type CJ
-void InstrRV32IManipulator::execute_cjal(Instruction& instr, RegisterSet& regs, Memory& memory)
+void CpuIsaRV32I::execute_cjal(Instruction& instr, RegisterSet& regs, Memory& memory)
 {
   regs.gpr[1].val.u = regs.pc.val.u + 2;
   regs.pc.val.u = regs.pc.val.u + instr.imm.s;
   instr.isJumped = true;
 }
-void InstrRV32IManipulator::execute_cj(Instruction& instr, RegisterSet& regs, Memory& memory)
+void CpuIsaRV32I::execute_cj(Instruction& instr, RegisterSet& regs, Memory& memory)
 {
   regs.pc.val.u = regs.pc.val.u + instr.imm.s;
   instr.isJumped = true;

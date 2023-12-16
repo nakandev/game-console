@@ -1,7 +1,7 @@
 #pragma once
 #include <memory>
 #include <register.h>
-#include <instruction.h>
+#include <cpuisa.h>
 #include <memory.h>
 #include <elf.h>
 #include <unordered_map>
@@ -10,7 +10,7 @@ class Cpu {
 private:
   MemorySection* programSection;
   shared_ptr<Elf> elf;
-  InstrRV32IManipulator instrManip;
+  CpuIsaRV32I isa;
   vector<Instruction> currentInstr;
   int64_t maxCycles;
   int64_t cycleCount;
@@ -32,7 +32,6 @@ public:
   void stepCycle();
   void stepInstruction();
   const uint32_t getPc();
-  void printPc();
   void cacheAllInstruction();
   const vector<string> disassembleAll();
   const vector<string> readRegisterAll();

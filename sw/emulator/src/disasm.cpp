@@ -1,13 +1,13 @@
 #include <memory>
 #include <common.h>
 #include <cpu.h>
-#include <instruction.h>
+#include <cpuisa.h>
 #include <memory.h>
 
 #include <fmt/core.h>
 
 const string
-InstrRV32IManipulator::instrToStr(int64_t icount, uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory)
+CpuIsaRV32I::instrToStr(int64_t icount, uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory)
 {
   auto op = disassemble(pc, instr, regs, memory);
   auto reginfo = fmt::format("x{:02d}={:08x} x{:02d}={:08x} x{:02d}={:08x} imm={:08x}",
@@ -39,14 +39,14 @@ InstrRV32IManipulator::instrToStr(int64_t icount, uint32_t pc, Instruction& inst
 }
 
 void
-InstrRV32IManipulator::printInstr(int64_t icount, uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory)
+CpuIsaRV32I::printInstr(int64_t icount, uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory)
 {
   string s = instrToStr(icount, pc, instr, regs, memory);
   fmt::print("{}", s);
 }
 
 string
-InstrRV32IManipulator::disassemble(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory)
+CpuIsaRV32I::disassemble(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory)
 {
   string op = "???";
   if (instr.size == 2) {
@@ -114,7 +114,7 @@ InstrRV32IManipulator::disassemble(uint32_t pc, Instruction& instr, RegisterSet&
 }
 
 string
-InstrRV32IManipulator::disassembleTypeR(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory)
+CpuIsaRV32I::disassembleTypeR(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory)
 {
   string dst = fmt::format("x{}", instr.dst);
   string src1 = fmt::format("x{}", instr.src1);
@@ -146,7 +146,7 @@ InstrRV32IManipulator::disassembleTypeR(uint32_t pc, Instruction& instr, Registe
 }
 
 string
-InstrRV32IManipulator::disassembleTypeI(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory)
+CpuIsaRV32I::disassembleTypeI(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory)
 {
   string dst = fmt::format("x{}", instr.dst);
   string src1 = fmt::format("x{}", instr.src1);
@@ -170,7 +170,7 @@ InstrRV32IManipulator::disassembleTypeI(uint32_t pc, Instruction& instr, Registe
 }
 
 string
-InstrRV32IManipulator::disassembleTypeS(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory)
+CpuIsaRV32I::disassembleTypeS(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory)
 {
   string dst = fmt::format("x{}", instr.dst);
   string src1 = fmt::format("x{}", instr.src1);
@@ -192,7 +192,7 @@ InstrRV32IManipulator::disassembleTypeS(uint32_t pc, Instruction& instr, Registe
 }
 
 string
-InstrRV32IManipulator::disassembleTypeU(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory)
+CpuIsaRV32I::disassembleTypeU(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory)
 {
   string dst = fmt::format("x{}", instr.dst);
   string imm = fmt::format("0x{:x}<{}>", instr.imm.u, instr.imm.u);
@@ -207,7 +207,7 @@ InstrRV32IManipulator::disassembleTypeU(uint32_t pc, Instruction& instr, Registe
 }
 
 string
-InstrRV32IManipulator::disassembleTypeB(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory)
+CpuIsaRV32I::disassembleTypeB(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory)
 {
   string src1 = fmt::format("x{}", instr.src1);
   string src2 = fmt::format("x{}", instr.src2);
@@ -227,7 +227,7 @@ InstrRV32IManipulator::disassembleTypeB(uint32_t pc, Instruction& instr, Registe
 }
 
 string
-InstrRV32IManipulator::disassembleTypeJ(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory)
+CpuIsaRV32I::disassembleTypeJ(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory)
 {
   string dst = fmt::format("x{}", instr.dst);
   string src1 = fmt::format("x{}", instr.src1);
@@ -242,7 +242,7 @@ InstrRV32IManipulator::disassembleTypeJ(uint32_t pc, Instruction& instr, Registe
 }
 
 string
-InstrRV32IManipulator::disassembleTypeSystem(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory)
+CpuIsaRV32I::disassembleTypeSystem(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory)
 {
   string opcode = "<typeSystem>";
   if (instr.instr == INSTR_ECALL) {
@@ -279,7 +279,7 @@ static const uint8_t tbl[8] = {
 };
 
 string
-InstrRV32IManipulator::disassembleTypeCR(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory)
+CpuIsaRV32I::disassembleTypeCR(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory)
 {
   string dst = fmt::format("x{}", instr.dst);
   string src1 = fmt::format("x{}", instr.src1);
@@ -297,7 +297,7 @@ InstrRV32IManipulator::disassembleTypeCR(uint32_t pc, Instruction& instr, Regist
   return std::move(op);
 }
 string
-InstrRV32IManipulator::disassembleTypeCI(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory)
+CpuIsaRV32I::disassembleTypeCI(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory)
 {
   string dst = fmt::format("x{}", instr.dst);
   string src1 = fmt::format("x{}", instr.src1);
@@ -324,7 +324,7 @@ InstrRV32IManipulator::disassembleTypeCI(uint32_t pc, Instruction& instr, Regist
   return std::move(op);
 }
 string
-InstrRV32IManipulator::disassembleTypeCSS(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory)
+CpuIsaRV32I::disassembleTypeCSS(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory)
 {
   string dst = fmt::format("x{}", 2);
   string src2 = fmt::format("x{}", instr.src2);
@@ -338,7 +338,7 @@ InstrRV32IManipulator::disassembleTypeCSS(uint32_t pc, Instruction& instr, Regis
   return std::move(op);
 }
 string
-InstrRV32IManipulator::disassembleTypeCIW(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory)
+CpuIsaRV32I::disassembleTypeCIW(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory)
 {
   string dst = fmt::format("x{}", tbl[instr.dst]);
   string src1 = fmt::format("x{}", 2);
@@ -352,7 +352,7 @@ InstrRV32IManipulator::disassembleTypeCIW(uint32_t pc, Instruction& instr, Regis
   return std::move(op);
 }
 string
-InstrRV32IManipulator::disassembleTypeCL(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory)
+CpuIsaRV32I::disassembleTypeCL(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory)
 {
   string src1 = fmt::format("x{}", tbl[instr.src1]);
   string dst = fmt::format("x{}", tbl[instr.dst]);
@@ -366,7 +366,7 @@ InstrRV32IManipulator::disassembleTypeCL(uint32_t pc, Instruction& instr, Regist
   return std::move(op);
 }
 string
-InstrRV32IManipulator::disassembleTypeCS(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory)
+CpuIsaRV32I::disassembleTypeCS(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory)
 {
   string src1 = fmt::format("x{}", tbl[instr.src1]);
   string src2 = fmt::format("x{}", tbl[instr.src2]);
@@ -380,7 +380,7 @@ InstrRV32IManipulator::disassembleTypeCS(uint32_t pc, Instruction& instr, Regist
   return std::move(op);
 }
 string
-InstrRV32IManipulator::disassembleTypeCA(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory)
+CpuIsaRV32I::disassembleTypeCA(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory)
 {
   string dst = fmt::format("x{}", tbl[instr.dst]);
   string src1 = fmt::format("x{}", tbl[instr.src1]);
@@ -397,7 +397,7 @@ InstrRV32IManipulator::disassembleTypeCA(uint32_t pc, Instruction& instr, Regist
   return std::move(op);
 }
 string
-InstrRV32IManipulator::disassembleTypeCB2(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory)
+CpuIsaRV32I::disassembleTypeCB2(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory)
 {
   string dst = fmt::format("x{}", tbl[instr.dst]);
   string src1 = fmt::format("x{}", tbl[instr.src1]);
@@ -413,7 +413,7 @@ InstrRV32IManipulator::disassembleTypeCB2(uint32_t pc, Instruction& instr, Regis
   return std::move(op);
 }
 string
-InstrRV32IManipulator::disassembleTypeCB(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory)
+CpuIsaRV32I::disassembleTypeCB(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory)
 {
   string dst = fmt::format("x{}", tbl[instr.dst]);
   string src1 = fmt::format("x{}", tbl[instr.src1]);
@@ -428,7 +428,7 @@ InstrRV32IManipulator::disassembleTypeCB(uint32_t pc, Instruction& instr, Regist
   return std::move(op);
 }
 string
-InstrRV32IManipulator::disassembleTypeCJ(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory)
+CpuIsaRV32I::disassembleTypeCJ(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory)
 {
   uint8_t dstreg = instr.instr == INSTR_CJAL ? 1 : 0;
   string dst = fmt::format("x{}", dstreg);

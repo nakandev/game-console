@@ -9,7 +9,7 @@ void int_handler()
 {
   HwTileRam& hwTileRam = *(HwTileRam*)HWREG_TILERAM_BASEADDR;
   HwARam& hwARam = *(HwARam*)HWREG_ARAM_BASEADDR;
-  volatile uint32_t pad = (*(uint32_t*)HW_IO_PAD0_ADDR);
+  volatile uint32_t pad = (*(uint32_t*)HWREG_IO_PAD0_ADDR);
   if (pad & 0x4000u) {  // left
     if (hwARam.music[0].masterDirection > -16) {
       hwARam.music[0].masterDirection--;

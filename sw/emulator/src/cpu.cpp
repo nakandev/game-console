@@ -7,7 +7,7 @@ int debugLevel = 0;
 
 Cpu::Cpu(Memory& memory)
   : programSection(),
-    elf(), instrManip(), currentInstr(),
+    elf(), isa(), currentInstr(),
     maxCycles(5000), cycleCount(), instrCount(),
     regs(),
     memory(memory)
@@ -70,9 +70,9 @@ void Cpu::requestInterruption()
 
 void Cpu::handleInterruption()
 {
-  bool isIntrr = instrManip.checkInterruption(currentInstr[0], regs, memory);
+  bool isIntrr = isa.checkInterruption(currentInstr[0], regs, memory);
   if (isIntrr && !memory.isBusy(0)) {
-    instrManip.handleInterruption(currentInstr[0], regs);
+    isa.handleInterruption(currentInstr[0], regs);
   }
 }
 
@@ -84,25 +84,25 @@ void Cpu::stepCycle()
     auto& instr = currentInstr[0];
     if (instr.phase == INSTR_PHASE_FETCH) {
       if (!memory.isBusy(0)) {
-        instrManip.fetch(instr);
+        isa.fetch(instr);
       }
     }
     uint32_t val = programSection->read32(regs.pc.val.u);
     if (instr.phase == INSTR_PHASE_DECODE) {
       if (regs.pc.val.s != regs.prev_pc.val.s) {
-        instrManip.decode(val, instr);
+        isa.decode(val, instr);
         // instr = instrCache[regs.pc.val.u];
         regs.prev_pc = regs.pc;
       }
     }
     if (instr.phase == INSTR_PHASE_EXECUTE) {
-      instrManip.execute(instr, regs, memory);
+      isa.execute(instr, regs, memory);
       instrCount++;
     }
     if (instr.phase == INSTR_PHASE_POSTPROC) {
       if (debugLevel >= 1) {
         if (regs.prev_pc.val.u != regs.pc.val.u) {
-          instrManip.printInstr(instrCount, regs.prev_pc.val.u, instr, regs, memory);
+          isa.printInstr(instrCount, regs.prev_pc.val.u, instr, regs, memory);
         }
       }
       instr.phase = INSTR_PHASE_FETCH;
@@ -129,11 +129,6 @@ const uint32_t Cpu::getPc()
   return regs.pc.val.u;
 }
 
-void Cpu::printPc()
-{
-  fmt::print("pc:{:08x}\n", regs.pc.val.u);
-}
-
 const vector<string> Cpu::disassembleAll()
 {
   const uint8_t* buffer = programSection->buffer();
@@ -148,9 +143,9 @@ const vector<string> Cpu::disassembleAll()
     auto pc = baseAddr + offset;
     uint32_t val = programSection->read32(pc);
 
-    instrManip.decode(val, instr);
-    // instrManip.printInstr(icount, pc, instr, regs, memory);
-    disasms.push_back(instrManip.instrToStr(icount, pc, instr, regs, memory));
+    isa.decode(val, instr);
+    // isa.printInstr(icount, pc, instr, regs, memory);
+    disasms.push_back(isa.instrToStr(icount, pc, instr, regs, memory));
     offset += instr.size;
     icount++;
   }
@@ -176,7 +171,7 @@ void Cpu::cacheAllInstruction()
   while (regs.pc.val.u < prgEnd && count < 1000000) {
     Instruction instr;
     uint32_t val = programSection->read32(regs.pc.val.u);
-    instrManip.decode(val, instr);
+    isa.decode(val, instr);
     instrCache[regs.pc.val.u] = instr;
     regs.pc.val.u += instr.size;
     count++;

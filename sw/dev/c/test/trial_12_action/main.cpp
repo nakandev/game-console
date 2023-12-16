@@ -25,9 +25,9 @@ int8_t padIdleCount = 0;
 extern "C" void int_handler()
 {
   HwTileRam& tileram = (*(HwTileRam*)HWREG_TILERAM_BASEADDR);
-  volatile uint32_t intstatus = (*(volatile uint32_t*)HW_IO_INT_STATUS_ADDR);
-  volatile uint16_t scanline = (*(volatile uint16_t*)HW_IO_SCANLINE_ADDR);
-  volatile uint32_t pad = (*(volatile uint32_t*)HW_IO_PAD0_ADDR);
+  volatile uint32_t intstatus = (*(volatile uint32_t*)HWREG_IO_INT_STATUS_ADDR);
+  volatile uint16_t scanline = (*(volatile uint16_t*)HWREG_IO_SCANLINE_ADDR);
+  volatile uint32_t pad = (*(volatile uint32_t*)HWREG_IO_PAD0_ADDR);
   // if (pad & (1 << HW_PAD_A)) {
   //   mode = 0;
   // } else

@@ -18,8 +18,8 @@ OBJDUMP = $(TOOLCHAIN_PREFIX)objdump
 OBJCOPY = $(TOOLCHAIN_PREFIX)objcopy
 
 CFLAGS = -std=c++20 -I$(NKX_C_ROOT)/include
-CFLAGS += -march=rv32im -mabi=ilp32
-# CFLAGS += -march=rv32imc -mabi=ilp32
+# CFLAGS += -march=rv32im -mabi=ilp32
+CFLAGS += -march=rv32imc -mabi=ilp32
 CFLAGS += -fno-use-cxa-atexit
 CFLAGS += -O2
 # CFLAGS += -DBUILD_FOR_SIMULATOR

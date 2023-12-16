@@ -321,13 +321,13 @@ struct Instruction {
   virtual ~Instruction() {}
 };
 
-class InstrRV32IManipulator {
-  void (InstrRV32IManipulator::*execute_tableI[64])(Instruction& instr, RegisterSet& regs, Memory& memory);
-  void (InstrRV32IManipulator::*execute_tableC[64])(Instruction& instr, RegisterSet& regs, Memory& memory);
+class CpuIsaRV32I {
+  void (CpuIsaRV32I::*execute_tableI[64])(Instruction& instr, RegisterSet& regs, Memory& memory);
+  void (CpuIsaRV32I::*execute_tableC[64])(Instruction& instr, RegisterSet& regs, Memory& memory);
   map<uint32_t, Instruction> instrCache;
 public:
-  InstrRV32IManipulator();
-  ~InstrRV32IManipulator();
+  CpuIsaRV32I();
+  ~CpuIsaRV32I();
   void initI();
   void initC();
   bool checkInterruption(Instruction& instr, RegisterSet& regs, Memory& memory);
