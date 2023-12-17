@@ -230,14 +230,13 @@ string
 CpuIsaRV32I::disassembleTypeJ(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory)
 {
   string dst = fmt::format("x{}", instr.dst);
-  string src1 = fmt::format("x{}", instr.src1);
-  string src2 = fmt::format("x{}", instr.src2);
+  string imm = fmt::format("0x{:x}<{}>", instr.imm.u, instr.imm.u);
   string opcode = "<typeJ>";
   switch (instr.instr) {
     case INSTR_JAL   : opcode = "jal"; break;
     default: break;
   }
-  string op = fmt::format("{} {}, {}, {}", opcode, dst, src1, src2);
+  string op = fmt::format("{} {}, {}", opcode, dst, imm);
   return std::move(op);
 }
 
