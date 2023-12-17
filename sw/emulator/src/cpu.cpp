@@ -83,9 +83,9 @@ void Cpu::stepCycle()
   {
     auto& instr = currentInstr[0];
     if (instr.phase == INSTR_PHASE_FETCH) {
-      if (!memory.isBusy(0)) {
+      // if (!memory.isBusy(0)) {
         isa.fetch(instr);
-      }
+      // }
     }
     uint32_t val = programSection->read32(regs.pc.val.u);
     if (instr.phase == INSTR_PHASE_DECODE) {

@@ -737,6 +737,7 @@ CpuIsaRV32I::execute_lb(Instruction& instr, RegisterSet& regs, Memory& memory)
 {
   uint32_t addr = regs.gpr[instr.src1].val.u + instr.imm.s;
   if (!memory.waitAccess(addr, 1, true, instr.waitCycle)) {
+    // regs.gpr[instr.dst].val.s = memory.read(addr, 1);
     regs.gpr[instr.dst].val.s = memory.read8(addr);
   }
 }
@@ -745,6 +746,7 @@ CpuIsaRV32I::execute_lh(Instruction& instr, RegisterSet& regs, Memory& memory)
 {
   uint32_t addr = regs.gpr[instr.src1].val.u + instr.imm.s;
   if (!memory.waitAccess(addr, 2, true, instr.waitCycle)) {
+    // regs.gpr[instr.dst].val.s = memory.read(addr, 2);
     regs.gpr[instr.dst].val.s = memory.read16(addr);
   }
 }
@@ -753,6 +755,7 @@ CpuIsaRV32I::execute_lw(Instruction& instr, RegisterSet& regs, Memory& memory)
 {
   uint32_t addr = regs.gpr[instr.src1].val.u + instr.imm.s;
   if (!memory.waitAccess(addr, 4, true, instr.waitCycle)) {
+    // regs.gpr[instr.dst].val.s = memory.read(addr, 4);
     regs.gpr[instr.dst].val.s = memory.read32(addr);
   }
 }
@@ -761,6 +764,7 @@ CpuIsaRV32I::execute_lbu(Instruction& instr, RegisterSet& regs, Memory& memory)
 {
   uint32_t addr = regs.gpr[instr.src1].val.u + instr.imm.s;
   if (!memory.waitAccess(addr, 1, true, instr.waitCycle)) {
+    // regs.gpr[instr.dst].val.u = memory.read(addr, 1) & 0xffu;
     regs.gpr[instr.dst].val.u = memory.read8(addr) & 0xffu;
   }
 }
@@ -769,6 +773,7 @@ CpuIsaRV32I::execute_lhu(Instruction& instr, RegisterSet& regs, Memory& memory)
 {
   uint32_t addr = regs.gpr[instr.src1].val.u + instr.imm.s;
   if (!memory.waitAccess(addr, 2, true, instr.waitCycle)) {
+    // regs.gpr[instr.dst].val.u = memory.read(addr, 2) & 0xffffu;
     regs.gpr[instr.dst].val.u = memory.read16(addr) & 0xffffu;
   }
 }
@@ -777,6 +782,7 @@ CpuIsaRV32I::execute_sb(Instruction& instr, RegisterSet& regs, Memory& memory)
 {
   uint32_t addr = regs.gpr[instr.src1].val.u + instr.imm.s;
   if (!memory.waitAccess(addr, 1, true, instr.waitCycle)) {
+    // memory.write(addr, 1, regs.gpr[instr.src2].val.s);
     memory.write8(addr, regs.gpr[instr.src2].val.s);
   }
 }
@@ -785,6 +791,7 @@ CpuIsaRV32I::execute_sh(Instruction& instr, RegisterSet& regs, Memory& memory)
 {
   uint32_t addr = regs.gpr[instr.src1].val.u + instr.imm.s;
   if (!memory.waitAccess(addr, 2, true, instr.waitCycle)) {
+    // memory.write(addr, 2, regs.gpr[instr.src2].val.s);
     memory.write16(addr, regs.gpr[instr.src2].val.s);
   }
 }
@@ -793,6 +800,7 @@ CpuIsaRV32I::execute_sw(Instruction& instr, RegisterSet& regs, Memory& memory)
 {
   uint32_t addr = regs.gpr[instr.src1].val.u + instr.imm.s;
   if (!memory.waitAccess(addr, 4, true, instr.waitCycle)) {
+    // memory.write(addr, 4, regs.gpr[instr.src2].val.s);
     memory.write32(addr, regs.gpr[instr.src2].val.s);
   }
 }

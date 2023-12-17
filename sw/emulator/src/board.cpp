@@ -76,6 +76,10 @@ void Board::updateFrameSinceVblank()
 void Board::stepCpuCycle()
 {
   timer.stepCpuCycle();
-  dma.stepCpuCycle();
-  cpu.stepCycle();
+  if (dma.isRunning()) {
+    dma.stepCpuCycle();
+  }
+  else {
+    cpu.stepCycle();
+  }
 }

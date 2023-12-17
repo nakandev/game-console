@@ -6,6 +6,7 @@
 using namespace std;
 
 class Memory;
+class IoRamSection;
 class IO;
 
 struct DmaChannel {
@@ -36,6 +37,7 @@ private:
   Memory& memory;
   IO& io;
   HwIoRam* ioram;
+  IoRamSection* ioramSection;
   vector<DmaChannel> channels;
   int runningDma;
   void syncFromIoDma(int chIdx);
