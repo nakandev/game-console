@@ -28,20 +28,6 @@ extern "C" void int_handler()
   volatile uint32_t intstatus = (*(volatile uint32_t*)HWREG_IO_INT_STATUS_ADDR);
   volatile uint16_t scanline = (*(volatile uint16_t*)HWREG_IO_SCANLINE_ADDR);
   volatile uint32_t pad = (*(volatile uint32_t*)HWREG_IO_PAD0_ADDR);
-  // if (pad & (1 << HW_PAD_A)) {
-  //   mode = 0;
-  // } else
-  // if (pad & (1 << HW_PAD_B)) {
-  //   mode = 1;
-  // }
-  // 
-  // if (mode == 0) {
-  //   tileram.bg[0].x = nkx::sin((scanline + radV) & 0xffu) / 8;
-  //   tileram.bg[0].y = 0;
-  // } else {
-  //   tileram.bg[0].x = 0;
-  //   tileram.bg[0].y = nkx::sin((scanline + radV) & 0xffu) / 8;
-  // }
 
   if (intstatus & (1<<HW_IO_INT_HBLANK)) {
   }

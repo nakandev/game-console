@@ -2,6 +2,7 @@
   .extern int_handler
 _int_handler:
   /* Save only Caller-Saved Regs, bucause Callee-Saved Regs will be saved by function. */
+  csrrwi zero, mie, 0x000
   addi sp, sp, -64
   sw ra,  0(sp);
   sw t0,  4(sp);
@@ -39,4 +40,5 @@ _int_handler:
   lw t5, 56(sp);
   lw t6, 60(sp);
   addi sp, sp, 64
+  csrrwi zero, mie, 0x008
   mret

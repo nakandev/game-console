@@ -13,7 +13,7 @@ enum {
   HWREG_TILERAM_BASEADDR      = 0x0600'0000,    HWREG_TILERAM_SIZE      = 8*1024*1024,  // fix to 1*1024*1024
   HWREG_ARAM_BASEADDR         = 0x0700'0000,    HWREG_ARAM_SIZE         = 1*1024,
   // HWREG_APALRAM_BASEADDR     = 0x0800'0000,  // HWREG_APALRAM_SIZE      = 32*1024,
-  HWREG_INSTRAM_BASEADDR      = 0x0900'0000,    HWREG_INSTRAM_SIZE     = 64*1024,
+  HWREG_INSTRAM_BASEADDR      = 0x0900'0000,    HWREG_INSTRAM_SIZE     = 1024*1024,
   HWREG_SAVERAM_BASEADDR      = 0x0E00'0000,    HWREG_SAVERAM_SIZE      = 1*1024,  // Max 512*1024*1024
   HWREG_PROGRAM_BASEADDR      = 0x8000'0000,    HWREG_PROGRAM_SIZE      = 1*1024*1024,  // Max 2*1024*1024*1024
 };
@@ -452,9 +452,9 @@ struct HwMusic {  // BG
   uint32_t freqCount;  // auto update
 };
 
-struct HwARam {
-  __attribute__((aligned(0x00'4000))) HwSoundOp soundOp[0x00'1000/sizeof(HwSoundOp)];  // 128*4*8 (soundOpNum*4module*struct)
-  __attribute__((aligned(0x00'4000))) HwInstrument instrument[0x00'0800/sizeof(HwInstrument)];  // 256*8=0x800 (instNum*struct)
-  __attribute__((aligned(0x01'0000))) HwMusicsheet musicsheet[0x01'0000/sizeof(HwMusicsheet)];  // 32*256*8 (sheets*notes*struct)
+struct HwInstRam {
+  __attribute__((aligned(0x00'1000))) HwSoundOp soundOp[0x00'1000/sizeof(HwSoundOp)];  // 128*4*8 (soundOpNum*4module*struct)
+  __attribute__((aligned(0x00'1000))) HwInstrument instrument[0x00'0800/sizeof(HwInstrument)];  // 256*8=0x800 (instNum*struct)
+  __attribute__((aligned(0x00'8000))) HwMusicsheet musicsheet[0x01'0000/sizeof(HwMusicsheet)];  // 32*256*8 (sheets*notes*struct)
   __attribute__((aligned(0x00'1000))) HwMusic music[0x00'1000/sizeof(HwMusic)];  // 8*32 (musics*struct)
 };

@@ -143,24 +143,24 @@ SECTIONS
 
   PROVIDE (__stack_top = ORIGIN(DATARAM) + LENGTH(DATARAM));
 
-  .ioram :
-  {
-    *(.ioram)
-  } >IORAM
+  /* .ioram :      */
+  /* {             */
+  /*   *(.ioram)   */
+  /* } >IORAM      */
 
-  .vram :
-  {
-    *(.vram)
-  } >VRAM
+  /* .vram :       */
+  /* {             */
+  /*   *(.vram)    */
+  /* } >VRAM       */
 
-  .tileram :
-  {
-    *(.tileram)
-  } >TILERAM
+  /* .tileram :    */
+  /* {             */
+  /*   *(.tileram) */
+  /* } >TILERAM    */
 
-  .aram :
-  {
-    *(.aram)
-  } >ARAM
+  /* .aram :       */
+  /* {             */
+  /*   *(.aram)    */
+  /* } >ARAM       */
 }
 

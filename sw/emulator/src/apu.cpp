@@ -140,7 +140,7 @@ static FLOAT signalFunc(HwSoundOp& op, int scale, int length, FLOAT time, FLOAT 
   return y;
 }
 
-static FLOAT algorithm0(HwARam& aram, HwMusicNote& note, uint32_t time)
+static FLOAT algorithm0(HwInstRam& aram, HwMusicNote& note, uint32_t time)
 {
   /* [3 > 2 > 1 > 0 > [OUT] */
   auto instId = note.instrumentId;
@@ -159,7 +159,7 @@ static FLOAT algorithm0(HwARam& aram, HwMusicNote& note, uint32_t time)
   return y[0];
 }
 
-static FLOAT algorithm1(HwARam& aram, HwMusicNote& note, uint32_t time)
+static FLOAT algorithm1(HwInstRam& aram, HwMusicNote& note, uint32_t time)
 {
   /* [3 +        */
   /*  2 +> 1 > 0 > [OUT] */
@@ -179,7 +179,7 @@ static FLOAT algorithm1(HwARam& aram, HwMusicNote& note, uint32_t time)
   return y[0];
 }
 
-static FLOAT algorithm2(HwARam& aram, HwMusicNote& note, uint32_t time)
+static FLOAT algorithm2(HwInstRam& aram, HwMusicNote& note, uint32_t time)
 {
   /*    [3 +        */
   /* 2 > 1 +> 0 > [OUT] */
@@ -199,7 +199,7 @@ static FLOAT algorithm2(HwARam& aram, HwMusicNote& note, uint32_t time)
   return y[0];
 }
 
-static FLOAT algorithm3(HwARam& aram, HwMusicNote& note, uint32_t time)
+static FLOAT algorithm3(HwInstRam& aram, HwMusicNote& note, uint32_t time)
 {
   /* [3 > 2 +            */
   /*      1 +> 0 > [OUT] */
@@ -219,7 +219,7 @@ static FLOAT algorithm3(HwARam& aram, HwMusicNote& note, uint32_t time)
   return y[2] + y[0];
 }
 
-static FLOAT algorithm4(HwARam& aram, HwMusicNote& note, uint32_t time)
+static FLOAT algorithm4(HwInstRam& aram, HwMusicNote& note, uint32_t time)
 {
   /* 3 > 2 +        */
   /* 1 > 0 +> [OUT] */
@@ -239,7 +239,7 @@ static FLOAT algorithm4(HwARam& aram, HwMusicNote& note, uint32_t time)
   return y[2] + y[0];
 }
 
-static FLOAT algorithm5(HwARam& aram, HwMusicNote& note, uint32_t time)
+static FLOAT algorithm5(HwInstRam& aram, HwMusicNote& note, uint32_t time)
 {
   /* [3 > 2 +        */
   /*    > 1 +        */
@@ -260,7 +260,7 @@ static FLOAT algorithm5(HwARam& aram, HwMusicNote& note, uint32_t time)
   return y[2] + y[1] + y[0];
 }
 
-static FLOAT algorithm6(HwARam& aram, HwMusicNote& note, uint32_t time)
+static FLOAT algorithm6(HwInstRam& aram, HwMusicNote& note, uint32_t time)
 {
   /* [3 > 2 +        */
   /*      1 +        */
@@ -281,7 +281,7 @@ static FLOAT algorithm6(HwARam& aram, HwMusicNote& note, uint32_t time)
   return y[2] + y[1] + y[0];
 }
 
-static FLOAT algorithm7(HwARam& aram, HwMusicNote& note, uint32_t time)
+static FLOAT algorithm7(HwInstRam& aram, HwMusicNote& note, uint32_t time)
 {
   /* [3 +        */
   /*  2 +        */
@@ -303,7 +303,7 @@ static FLOAT algorithm7(HwARam& aram, HwMusicNote& note, uint32_t time)
   return y[3] + y[2] + y[1] + y[0];
 }
 
-FLOAT (* const algorithms[])(HwARam&, HwMusicNote&, uint32_t) = {
+FLOAT (* const algorithms[])(HwInstRam&, HwMusicNote&, uint32_t) = {
   &algorithm0,
   &algorithm1,
   &algorithm2,
@@ -316,13 +316,13 @@ FLOAT (* const algorithms[])(HwARam&, HwMusicNote&, uint32_t) = {
 
 void Apu::updateMusicBuffer()
 {
-  HwARam& aram = *(HwARam*)memory.section("aram").buffer();
+  HwInstRam& aram = *(HwInstRam*)memory.section("inst").buffer();
   auto& music = aram.music[0];
-  auto& noteCount = apuMusicData.noteCount;
-  auto& frameCount = apuMusicData.frameCount;
   if (!music.flag.enable) {
     return;
   }
+  auto& noteCount = apuMusicData.noteCount;
+  auto& frameCount = apuMusicData.frameCount;
   if (frameCount == 0) {
     for (int ch=0; ch<8; ch++) {
       noteBuffer[ch].noteIdx = 0;

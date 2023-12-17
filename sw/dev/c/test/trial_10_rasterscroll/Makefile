@@ -2,8 +2,8 @@ TARGET = trial_10_rasterscroll
 
 NKX_C_ROOT = /home/nyalry/nakan/dev/hobby/game-console/sw/dev/c
 
-SRCS += crt0.S
-SRCS += interrupt.S
+SRCS += crt0.s
+SRCS += interrupt.s
 SRCS += startup.cpp
 SRCS += main.cpp
 OBJS = $(addsuffix .o,$(basename $(SRCS)))

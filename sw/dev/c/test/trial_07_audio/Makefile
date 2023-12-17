@@ -14,7 +14,9 @@ OBJDUMP = $(TOOLCHAIN_PREFIX)objdump
 
 CFLAGS = -std=c++20 -I$(NKX_C_ROOT)/include
 CFLAGS += -march=rv32im -mabi=ilp32
-CFLAGS += -fno-use-cxa-atexit -fno-builtin -fno-builtin-function
+# CFLAGS += -march=rv32imc -mabi=ilp32
+CFLAGS += -fno-use-cxa-atexit
+# CFLAGS += -fno-use-cxa-atexit -fno-builtin -fno-builtin-function
 CFLAGS += -O2
 # CFLAGS += -DBUILD_FOR_SIMULATOR
 LDFLAGS = -nostdlib -L$(NKX_C_ROOT)/lib
@@ -27,9 +29,11 @@ vpath %.cpp $(NKX_C_ROOT)/src/nkx/util
 
 .PHONY: all clean run
 
-all: $(OBJS)
+all: $(TARGET).exe
+
+$(TARGET).exe: $(OBJS)
 	$(CXX) $(LDFLAGS) -o $(TARGET).exe $^ $(LIBS)
-	$(OBJDUMP) -d -C $(TARGET).exe > $(TARGET).dis
+	$(OBJDUMP) -D -C $(TARGET).exe > $(TARGET).dis
 	# $(OBJDUMP) -S $(TARGET).exe > $(TARGET).dis
 
 startup.o: startup.cpp
