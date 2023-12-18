@@ -18,6 +18,6 @@ void Timer::init()
 {
 }
 
-void Timer::stepCpuCycle()
+void Timer::stepCycle()
 {
 }

@@ -45,6 +45,6 @@ public:
   Dma(Memory& memory, IO& io);
   ~Dma();
   void init();
-  void stepCpuCycle();
+  void stepCycle();
   bool isRunning();
 };

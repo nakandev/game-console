@@ -48,7 +48,7 @@ void Dma::syncFromIoDma(int chIdx)
   channels[chIdx].enable = true;
 }
 
-void Dma::stepCpuCycle()
+void Dma::stepCycle()
 {
   // if (!isRunning()) {
   //   return;

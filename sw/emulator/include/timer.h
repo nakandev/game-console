@@ -17,5 +17,5 @@ public:
   Timer(Memory& memory, IO& io);
   ~Timer();
   void init();
-  void stepCpuCycle();
+  void stepCycle();
 };
