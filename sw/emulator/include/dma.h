@@ -7,7 +7,7 @@ using namespace std;
 
 class Memory;
 class IoRamSection;
-class IO;
+class IntrrCtrl;
 
 struct DmaChannel {
   uint32_t src;
@@ -35,14 +35,14 @@ struct DmaChannel {
 class Dma {
 private:
   Memory& memory;
-  IO& io;
+  IntrrCtrl& intrrCtrl;
   HwIoRam* ioram;
   IoRamSection* ioramSection;
   vector<DmaChannel> channels;
   int runningDma;
   void syncFromIoDma(int chIdx);
 public:
-  Dma(Memory& memory, IO& io);
+  Dma(Memory& memory, IntrrCtrl& intrrCtrl);
   ~Dma();
   void init();
   void stepCycle();

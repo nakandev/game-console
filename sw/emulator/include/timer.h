@@ -6,16 +6,17 @@
 using namespace std;
 
 class Memory;
-class IO;
+class IntrrCtrl;
 
 class Timer {
 private:
   Memory& memory;
-  IO& io;
+  IntrrCtrl& intrrCtrl;
   HwIoRam* ioram;
 public:
-  Timer(Memory& memory, IO& io);
+  Timer(Memory& memory, IntrrCtrl& intrrCtrl);
   ~Timer();
   void init();
   void stepCycle();
 };
+

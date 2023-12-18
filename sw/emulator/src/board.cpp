@@ -4,12 +4,13 @@
 Board::Board()
 : masterClock(30*1024*1024),
   memory(),
-  io(memory),
   cpu(memory),
+  intrrCtrl(memory, cpu),
   vpu(memory),
   apu(memory),
-  dma(memory, io),
-  timer(memory, io),
+  dma(memory, intrrCtrl),
+  timer(memory, intrrCtrl),
+  io(memory),
   pause(true)
 {
   io.setCpu(cpu);
@@ -40,7 +41,7 @@ Board::reset()
   pause = false;
 }
 
-void Board::updateFrameUntilVblank()
+void Board::updateFrame()
 {
   if (pause) return;
   for (int y=0; y<HW_SCREEN_H; y++) {
@@ -49,28 +50,25 @@ void Board::updateFrameUntilVblank()
     }
     vpu.drawLine(y);
     if (y != HW_SCREEN_H - 1) {
-      io.setIntStatus(HW_IO_INT_HBLANK);
-      io.requestInt(HW_IO_INT_HBLANK);
+      intrrCtrl.setIntStatus(HW_IO_INT_HBLANK);
+      intrrCtrl.requestInt(HW_IO_INT_HBLANK);
     }
     for (int i=0; i<HW_SCREEN_HBLANK*HW_VPU_CPUCYCLE_RATIO; i++) {
       stepCpuCycle();
     }
     if (y != HW_SCREEN_H - 1) {
-      io.clearIntStatus(HW_IO_INT_HBLANK);
+      intrrCtrl.clearIntStatus(HW_IO_INT_HBLANK);
     }
     io.updateScanlineNumber(y);
   }
   apu.updateMusicBuffer();
-}
-void Board::updateFrameSinceVblank()
-{
-  if (pause) return;
-  io.setIntStatus(HW_IO_INT_VBLANK);
-  io.requestInt(HW_IO_INT_VBLANK);
+
+  intrrCtrl.setIntStatus(HW_IO_INT_VBLANK);
+  intrrCtrl.requestInt(HW_IO_INT_VBLANK);
   for (int i=0; i<HW_SCREEN_VBLANK * (HW_SCREEN_W + HW_SCREEN_HBLANK)*HW_VPU_CPUCYCLE_RATIO; i++) {
     stepCpuCycle();
   }
-  io.clearIntStatus(HW_IO_INT_VBLANK);
+  intrrCtrl.clearIntStatus(HW_IO_INT_VBLANK);
 }
 
 void Board::stepCpuCycle()

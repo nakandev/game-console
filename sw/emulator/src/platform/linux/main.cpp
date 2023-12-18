@@ -177,8 +177,7 @@ int main(int argc, char* argv[])
   /* create_framebuffer */
   mainComponent.createFramebuffer();
 
-  board.updateFrameUntilVblank();
-  board.updateFrameSinceVblank();
+  board.updateFrame();
   uint32_t startTime, endTime;
   int loopCount = 0;
   while (true) {
@@ -193,11 +192,12 @@ int main(int argc, char* argv[])
     ImGui::NewFrame();
 
     // update cpu, screen, audio
-    board.updateFrameUntilVblank();
+    // board.updateFrameUntilVblank();
+    // board.updateFrameSinceVblank();
+    board.updateFrame();
     board.vpu.copyScreenBuffer(mainComponent.screenBuffer.data(), true);
     if (!board.pause)
       SDL_QueueAudio(audioDev, (void*)board.apu.apuMusicData.buffer, HW_MUSIC_FREQ_PER_FRAME*2*2);
-    board.updateFrameSinceVblank();
 
     auto imguiWindowFlag = 
       ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;

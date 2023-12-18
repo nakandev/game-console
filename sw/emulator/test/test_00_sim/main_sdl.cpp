@@ -212,8 +212,7 @@ int main(int argc, char* argv[])
   float wR = (wSCR*0.2), hR = (hSCR*1.0);
   float wB = (wSCR*0.8)-thick, hB = (hSCR*0.2);
 
-  board.updateFrameUntilVblank();
-  board.updateFrameSinceVblank();
+  board.updateFrame();
   uint32_t startTime, endTime;
   // for (int i=0; i<sec*fps; i++) {
   int loopCount = 0;
@@ -229,11 +228,10 @@ int main(int argc, char* argv[])
     ImGui::NewFrame();
 
     // update cpu, screen, audio
-    board.updateFrameUntilVblank();
+    board.updateFrame();
     board.vpu.copyScreenBuffer(screenBuffer.data(), true);
     if (!board.pause)
       SDL_QueueAudio(audioDev, (void*)board.apu.apuMusicData.buffer, HW_MUSIC_FREQ_PER_FRAME*2*2);
-    board.updateFrameSinceVblank();
 
     auto imguiWindowFlag = 
       ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;

@@ -43,8 +43,7 @@ int main_emulator(int argc, char* argv[])
   {
     auto beginTime = high_resolution_clock::now();
 
-    board.updateFrameUntilVblank();
-    board.updateFrameSinceVblank();
+    board.updateFrame();
 
     auto endTime = high_resolution_clock::now();
     auto procTime = duration_cast<microseconds>(endTime - beginTime);

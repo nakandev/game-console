@@ -1,10 +1,10 @@
 #include <dma.h>
 #include <memory.h>
-#include <io.h>
+#include <intrrctrl.h>
 #include <fmt/core.h>
 
-Dma::Dma(Memory& memory, IO& io)
-  : memory(memory), io(io), ioram(), ioramSection(), channels(), runningDma(-1)
+Dma::Dma(Memory& memory, IntrrCtrl& intrrCtrl)
+: memory(memory), intrrCtrl(intrrCtrl), ioram(), ioramSection(), channels(), runningDma(-1)
 {
   ioram = (HwIoRam*)memory.section("ioram").buffer();
   channels.resize(4);
@@ -111,8 +111,8 @@ void Dma::stepCycle()
     memory.clearBusy(priority);
     if (ioram.dma.dma[chIdx].interrupt) {
       uint32_t intno = HW_IO_INT_DMA0 + chIdx;
-      io.setIntStatus(intno);
-      io.requestInt(intno);
+      intrrCtrl.setIntStatus(intno);
+      intrrCtrl.requestInt(intno);
     }
   }
 }
