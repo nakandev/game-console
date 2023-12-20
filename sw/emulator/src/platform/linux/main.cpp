@@ -28,8 +28,9 @@ static uint nearPow2(int n)
   return ret;
 }
 
-bool handleInput(Board& board)
+bool handleInput(MainComponent& mainComponent)
 {
+  Board& board = mainComponent.board;
   // handle events
   SDL_Event event;
   while (SDL_PollEvent(&event)) {
@@ -77,6 +78,33 @@ bool handleInput(Board& board)
       break;
     }
   }
+  for (int i=0; i<SDL_NumJoysticks(); i++) {
+    auto &padInfo = mainComponent.inputConfigDialog.padInfo;
+    if (!SDL_IsGameController(i)) continue;
+    if (padInfo.deviceId != i) continue;
+    if (!padInfo.device) continue;
+    // SDL_GameController* controller = SDL_GameControllerOpen(i);
+    // if (!controller) continue;
+    auto gameControllerOnOff = [&](int x) {
+      if (SDL_GameControllerGetButton(padInfo.device, static_cast<SDL_GameControllerButton>(padInfo.keyAsigns[x])))
+        board.io.pressPadButton(x);
+      else
+        board.io.releasePadButton(x);
+    };
+    gameControllerOnOff(HW_PAD_A);
+    gameControllerOnOff(HW_PAD_B);
+    gameControllerOnOff(HW_PAD_C);
+    gameControllerOnOff(HW_PAD_D);
+    gameControllerOnOff(HW_PAD_L);
+    gameControllerOnOff(HW_PAD_R);
+    gameControllerOnOff(HW_PAD_S);
+    gameControllerOnOff(HW_PAD_T);
+    gameControllerOnOff(HW_PAD_UP);
+    gameControllerOnOff(HW_PAD_DOWN);
+    gameControllerOnOff(HW_PAD_LEFT);
+    gameControllerOnOff(HW_PAD_RIGHT);
+    // SDL_GameControllerClose(controller);
+  }
   return false;
 }
 
@@ -100,7 +128,8 @@ int main(int argc, char* argv[])
 
   SDL_Init(
     SDL_INIT_VIDEO |
-    SDL_INIT_AUDIO
+    SDL_INIT_AUDIO |
+    SDL_INIT_JOYSTICK
   );
 
   const char* glsl_version = "#version 130";
@@ -138,10 +167,10 @@ int main(int argc, char* argv[])
   IMGUI_CHECKVERSION();
   ImGui::CreateContext();
   ImGuiIO& io = ImGui::GetIO(); (void)io;
-  io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-  io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+  // io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+  // io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
   // Setup Dear ImGui style
-  ImGui::StyleColorsDark();
+  // ImGui::StyleColorsDark();
   // ImGui::StyleColorsLight();
   // Setup Platform/Renderer backends
   ImGui_ImplSDL2_InitForOpenGL(window, gl_context);
@@ -182,7 +211,7 @@ int main(int argc, char* argv[])
   int loopCount = 0;
   while (true) {
     startTime = SDL_GetTicks();
-    if (handleInput(board)) {
+    if (handleInput(mainComponent)) {
       break;
     }
 
@@ -200,7 +229,11 @@ int main(int argc, char* argv[])
       SDL_QueueAudio(audioDev, (void*)board.apu.apuMusicData.buffer, HW_MUSIC_FREQ_PER_FRAME*2*2);
 
     auto imguiWindowFlag = 
-      ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
+      ImGuiWindowFlags_MenuBar |
+      ImGuiWindowFlags_NoTitleBar |
+      ImGuiWindowFlags_NoResize |
+      ImGuiWindowFlags_NoMove |
+      ImGuiWindowFlags_NoNav;
     auto pOpen = true;
     ImGui::SetNextWindowPos(ImVec2(0, 0));
     ImGui::SetNextWindowSize(ImVec2(io.DisplaySize.x, io.DisplaySize.y));

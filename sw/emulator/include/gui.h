@@ -6,12 +6,17 @@
 #include <gui/palette_view.h>
 #include <gui/tile_view.h>
 #include <gui/mmio_panel.h>
+#include <gui/input_config_dialog.h>
+#include <gui/video_config_dialog.h>
+#include <gui/audio_config_dialog.h>
+#include <gui/network_config_dialog.h>
 
 class Board;
 
 class MainComponent {
-  private:
+  public:
     Board& board;
+  private:
     filesystem::path elfpath;
     filesystem::path elfdir;
     bool guiDebug;
@@ -21,20 +26,15 @@ class MainComponent {
     PaletteView paletteView;
     TileView tileView;
     MmioPanel mmioPanel;
-
+  public:
+    InputConfigDialog inputConfigDialog;
+    VideoConfigDialog videoConfigDialog;
+    AudioConfigDialog audioConfigDialog;
+    NetworkConfigDialog networkConfigDialog;
+  private:
     int ctrlTabIndex;
     int viewTabIndex;
     int propertyTabIndex;
-
-    // config
-    int screenScale;
-    bool fitScale;
-    enum {
-      SCREEN_SCALE_FIT,
-      SCREEN_SCALE_FIT_STRETCH,
-      SCREEN_SCALE_FIT_INT,
-      SCREEN_SCALE_INT,
-    } scaleMode;
 
     // components size
     float hMenu;

@@ -1,14 +1,15 @@
 #pragma once
 #include <gui/component.h>
+
 class Board;
 
-class ScreenView : GuiComponent {
+class MainPanel : GuiComponent {
   private:
-    Board* board;
+    Board& board;
     float scale;
   public:
-    ScreenView();
-    ~ScreenView();
+    MainPanel(Board& board);
+    ~MainPanel();
     void update();
 };
 

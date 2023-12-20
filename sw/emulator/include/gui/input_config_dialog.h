@@ -1,18 +1,32 @@
 #pragma once
-
 #include <gui/component.h>
+#include <string>
+#include <vector>
+#include <SDL2/SDL.h>
+
+using namespace std;
+
 class Board;
+
+struct PadInfo {
+  SDL_GameController* device;
+  int deviceId;
+  string name;
+  vector<int> keyAsigns;
+};
 
 class InputConfigDialog : GuiComponent {
   private:
-    Board* board;
+    Board& board;
     int phase;
   public:
-    int padDeviceId;
-    vector<int> padKeyAsignments;
-    InputConfigDialog();
+    bool enable;
+    string inputConfigPath;
+    PadInfo padInfo;
+    InputConfigDialog(Board& board);
     ~InputConfigDialog();
     void update();
+    void draw();
     void selectPadDevice();
     void setupPadKey();
     void setupPadKeyAll();

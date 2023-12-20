@@ -21,13 +21,17 @@ MainComponent::MainComponent(Board& board)
   paletteView(board),
   tileView(board),
   mmioPanel(board),
+  inputConfigDialog(board),
+  videoConfigDialog(board),
+  audioConfigDialog(board),
+  networkConfigDialog(board),
   ctrlTabIndex(),
   viewTabIndex(),
   propertyTabIndex()
 {
   screenBuffer.resize(HW_SCREEN_W * HW_SCREEN_H);
-  screenScale = 1;
-  scaleMode = SCREEN_SCALE_FIT;
+  // screenScale = 1;
+  // scaleMode = SCREEN_SCALE_FIT;
   hMenu = 20;
   margin = 8;
   thick = 10;
@@ -96,10 +100,18 @@ void MainComponent::renderMenu()
       ImGui::EndMenu();
     }
     if (ImGui::BeginMenu("Config")) {
-      ImGui::MenuItem("Input", "");
-      ImGui::MenuItem("Video", "");
-      ImGui::MenuItem("Audio", "");
-      ImGui::MenuItem("Network", "");
+      if (ImGui::MenuItem("Input", "")) {
+        inputConfigDialog.enable = true;
+      }
+      if (ImGui::MenuItem("Video", "")) {
+        videoConfigDialog.enable = true;
+      }
+      if (ImGui::MenuItem("Audio", "")) {
+        audioConfigDialog.enable = true;
+      }
+      if (ImGui::MenuItem("Network", "")) {
+        networkConfigDialog.enable = true;
+      }
       ImGui::EndMenu();
     }
     if (ImGui::BeginMenu("Emulator")) {
@@ -145,6 +157,10 @@ void MainComponent::renderMenu()
     }
     ImGuiFileDialog::Instance()->Close();
   }
+  inputConfigDialog.update();
+  videoConfigDialog.update();
+  audioConfigDialog.update();
+  networkConfigDialog.update();
 }
 
 void MainComponent::renderMainPanel()
@@ -214,7 +230,7 @@ void MainComponent::renderScreen(int w, int h, bool center)
 {
   float aspect = (float)w / (float)h;
   float gameW, gameH;
-  if (scaleMode == SCREEN_SCALE_FIT) {
+  if (videoConfigDialog.scaleMode == videoConfigDialog.SCREEN_SCALE_FIT) {
     float scale = 1.0;
     if (aspect > 4.0/3.0) {
       scale = (float)h / (float)HW_SCREEN_H;
@@ -224,11 +240,11 @@ void MainComponent::renderScreen(int w, int h, bool center)
     gameW = (float)HW_SCREEN_W * scale;
     gameH = (float)HW_SCREEN_H * scale;
   } else
-  if (scaleMode == SCREEN_SCALE_FIT_STRETCH) {
+  if (videoConfigDialog.scaleMode == videoConfigDialog.SCREEN_SCALE_FIT_STRETCH) {
     gameW = w;
     gameH = h;
   } else
-  if (scaleMode == SCREEN_SCALE_FIT_INT) {
+  if (videoConfigDialog.scaleMode == videoConfigDialog.SCREEN_SCALE_FIT_INT) {
     int scale = 1;
     if (aspect > 4.0/3.0) {
       scale = (h / HW_SCREEN_H);
@@ -239,8 +255,8 @@ void MainComponent::renderScreen(int w, int h, bool center)
     gameH = HW_SCREEN_H * scale;
   } else
   {
-    gameW = HW_SCREEN_W * screenScale;
-    gameH = HW_SCREEN_H * screenScale;
+    gameW = HW_SCREEN_W * videoConfigDialog.screenScale;
+    gameH = HW_SCREEN_H * videoConfigDialog.screenScale;
   }
   int imgX = (w - gameW) / 2;
   int imgY = 0;

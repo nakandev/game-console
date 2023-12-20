@@ -1,5 +1,6 @@
 #pragma once
 #include <gui/component.h>
+
 class Board;
 
 class DisasmView : GuiComponent {

@@ -1,14 +1,14 @@
 #pragma once
-
 #include <gui/component.h>
+
 class Board;
 
 class NetworkConfigDialog : GuiComponent {
   private:
-    Board* board;
-    float scale;
+    Board& board;
   public:
-    NetworkConfigDialog();
+    bool enable;
+    NetworkConfigDialog(Board& board);
     ~NetworkConfigDialog();
     void update();
 };

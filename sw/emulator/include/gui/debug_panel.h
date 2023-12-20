@@ -1,6 +1,6 @@
 #pragma once
-
 #include <gui/component.h>
+
 class Board;
 
 class DebugPanel : public GuiComponent {
