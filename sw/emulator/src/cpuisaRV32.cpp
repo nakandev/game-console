@@ -884,7 +884,7 @@ CpuIsaRV32I::execute_jal(Instruction& instr, RegisterSet& regs, Memory& memory)
 {
   if (instr.dst != 0)
     regs.gpr[instr.dst].val.u = regs.pc.val.u + 4;
-  regs.pc.val.u += instr.imm.u;
+  regs.pc.val.u = regs.pc.val.u + instr.imm.s;
   instr.isJumped = true;
 }
 // type System

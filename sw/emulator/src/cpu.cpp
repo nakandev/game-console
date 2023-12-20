@@ -129,7 +129,7 @@ const uint32_t Cpu::getPc()
   return regs.pc.val.u;
 }
 
-const vector<string> Cpu::disassembleAll()
+const map<uint32_t, string> Cpu::disassembleAll()
 {
   const uint8_t* buffer = programSection->buffer();
   size_t offset = 0;
@@ -137,7 +137,8 @@ const vector<string> Cpu::disassembleAll()
   auto icount = 0;
   auto size = elf->getSection(".init")->size;
   size += elf->getSection(".text")->size;
-  vector<string> disasms;
+  // vector<string> disasms;
+  map<uint32_t, string> disasms;
   while (offset < size) {
     auto baseAddr = programSection->addr;
     auto pc = baseAddr + offset;
@@ -145,7 +146,8 @@ const vector<string> Cpu::disassembleAll()
 
     isa.decode(val, instr);
     // isa.printInstr(icount, pc, instr, regs, memory);
-    disasms.push_back(isa.instrToStr(icount, pc, instr, regs, memory));
+    // disasms.push_back(isa.instrToStr(icount, pc, instr, regs, memory));
+    disasms[pc] = isa.instrToStr(icount, pc, instr, regs, memory);
     offset += instr.size;
     icount++;
   }

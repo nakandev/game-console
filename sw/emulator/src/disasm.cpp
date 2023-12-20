@@ -230,7 +230,7 @@ string
 CpuIsaRV32I::disassembleTypeJ(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory)
 {
   string dst = fmt::format("x{}", instr.dst);
-  string imm = fmt::format("0x{:x}<{}>", instr.imm.u, instr.imm.u);
+  string imm = fmt::format("0x{:x}<{}>", pc + instr.imm.s, pc + instr.imm.s);
   string opcode = "<typeJ>";
   switch (instr.instr) {
     case INSTR_JAL   : opcode = "jal"; break;
@@ -431,7 +431,7 @@ CpuIsaRV32I::disassembleTypeCJ(uint32_t pc, Instruction& instr, RegisterSet& reg
 {
   uint8_t dstreg = instr.instr == INSTR_CJAL ? 1 : 0;
   string dst = fmt::format("x{}", dstreg);
-  string imm = fmt::format("0x{:x}<{}>", instr.imm.s, instr.imm.s);
+  string imm = fmt::format("0x{:x}<{}>", pc + instr.imm.s, pc + instr.imm.s);
   string opcode = "<typeCJ>";
   switch (instr.instr) {
     case INSTR_CJAL : opcode = "c.jal"; break;

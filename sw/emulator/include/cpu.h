@@ -33,7 +33,7 @@ public:
   void stepInstruction();
   const uint32_t getPc();
   void cacheAllInstruction();
-  const vector<string> disassembleAll();
+  const map<uint32_t, string> disassembleAll();
   const vector<string> readRegisterAll();
 };
 

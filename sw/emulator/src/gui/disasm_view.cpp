@@ -25,7 +25,10 @@ void DisasmView::update()
   ImGui::Text("%08x", board.cpu.getPc());
   ImGui::BeginChild(ImGui::GetID((void*)10), ImVec2(-1, -1), ImGuiWindowFlags_NoTitleBar);
   for (auto& s: disasmStrs) {
-    ImGui::Text("%s", s.c_str());
+    ImGui::Text("%s", s.second.c_str());
+    if (s.first == board.cpu.getPc()) {
+      ImGui::SetScrollHereY(0.5);
+    }
   }
   ImGui::EndChild();
 }
