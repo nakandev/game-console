@@ -238,7 +238,7 @@ CpuIsaRV32I::decodeTypeCL(uint32_t bytes, Instruction& instr)
   instr.dst    = (uint8_t)((bytes >>  2) & 0x07u);
   instr.src1   = (uint8_t)((bytes >>  7) & 0x07u);
   instr.src2   = 0;
-  instr.imm.s    = sext(6,
+  instr.imm.s    = (6,
       (((bytes >> 10) & 0x07u) << 3) |
       (((bytes >>  6) & 0x01u) << 2) |
       (((bytes >>  5) & 0x01u) << 6)
@@ -273,7 +273,7 @@ CpuIsaRV32I::decodeTypeCS(uint32_t bytes, Instruction& instr)
   instr.dst    = 0;
   instr.src1   = (uint8_t)((bytes >>  7) & 0x07u);
   instr.src2   = (uint8_t)((bytes >>  2) & 0x07u);
-  instr.imm.s    = sext(6,
+  instr.imm.s    = (6,
       (((bytes >> 10) & 0x07u) << 3) |
       (((bytes >>  6) & 0x01u) << 2) |
       (((bytes >>  5) & 0x01u) << 6)
