@@ -200,7 +200,6 @@ struct HwIoRam {
 };
 
 /* -------- Video -------- */
-
 // Color
 enum {
   HWCOLOR_BYTESIZE = 4,
@@ -262,7 +261,14 @@ enum {
 };
 
 struct HwTilemap {
-  uint16_t tileIdx[HWBG_TILENUM];
+  union {
+    struct {
+      uint16_t idx   : 14;
+      uint16_t flipX : 1;
+      uint16_t flipY : 1;
+    };
+    uint16_t data;
+  } tileIdx[HWBG_TILENUM];
 };
 
 // BG
@@ -297,10 +303,16 @@ struct HwMatrix2d {
   int16_t y;
 };
 
+union HwPaletteInfo {
+  struct {
+    uint8_t mode: 1;
+    uint8_t bank: 3;
+    uint8_t no  : 4;
+  };
+  uint8_t info;
+};
+
 struct HwBG {
-  uint8_t paletteNo;
-  uint8_t tileNo;
-  uint8_t tilemapNo;
   union {
     struct {
       uint8_t enable    : 1;
@@ -313,6 +325,9 @@ struct HwBG {
     };
     uint8_t data;
   } flag;
+  HwPaletteInfo paletteInfo;
+  uint8_t tileNo;
+  uint8_t tilemapNo;
   int16_t x;
   int16_t y;
   HwMatrix2d affineInv;
@@ -345,10 +360,11 @@ struct HwSprite {
     };
     uint8_t data;
   } flag;
-  uint8_t paletteNo : 4;
-  uint8_t tileNo    : 4;
+  HwPaletteInfo paletteInfo;
   uint8_t tileIdx;
-  uint8_t tileSize;
+  uint8_t tileNo     : 4;
+  uint8_t tileSize   : 2;
+  uint8_t _reserved2 : 2;
   int16_t x;
   int16_t y;
   HwMatrix2d affineInv;
@@ -360,7 +376,7 @@ struct HwSP {
 
 // TILERAM
 struct HwTileRam {
-  __attribute__((aligned(0x10'0000))) HwPalette palette[0x10'0000/sizeof(HwPalette)];
+  __attribute__((aligned(0x10'0000))) HwPalette palette[2];
   __attribute__((aligned(0x10'0000))) HwTile tile[16][0x10'0000/sizeof(HwTile)/16];
   __attribute__((aligned(0x10'0000))) HwTilemap tilemap[0x10'0000/sizeof(HwTilemap)];
   __attribute__((aligned(0x10'0000))) HwBG bg[0x10'0000/sizeof(HwBG)];

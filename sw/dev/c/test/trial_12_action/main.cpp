@@ -2,7 +2,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <nkx/hw/nkx_hw.h>
-#include <nkx/sw/nkx_sw.h>
+#include <nkx/mw/nkx_mw.h>
 
 extern uint8_t _binary_img_back_gif_pal_start;
 extern uint8_t _binary_img_back_gif_pal_size;
@@ -59,7 +59,7 @@ extern "C" void int_handler()
       auto tilemapNo = tileram.bg[3].tilemapNo;
       int tileX = (camera_bg3_x + HW_SCREEN_W) % 512 / 8;
       int texX = (camera_bg3_x + HW_SCREEN_W) % 384 / 8;
-      tileram.tilemap[tilemapNo].tileIdx[tileX + y*HW_TILEMAP_XTILE] = texX + y*48;
+      tileram.tilemap[tilemapNo].tileIdx[tileX + y*HW_TILEMAP_XTILE].data = texX + y*48;
     }
   }
 }
@@ -72,11 +72,11 @@ int main()
   HwTileRam& tileram = *(HwTileRam*)HWREG_TILERAM_BASEADDR;
 
   /* palette settings */
-  nkx::setPalette(1, 0,
+  nkx::setPalette(0, 1, 0,
     (uint32_t*)&_binary_img_back_gif_pal_start,
     (size_t)   &_binary_img_back_gif_pal_size
   );
-  nkx::setPalette(2, 0,
+  nkx::setPalette(0, 2, 0,
     (uint32_t*)&_binary_img_tileset_gif_pal_start,
     (size_t)   &_binary_img_tileset_gif_pal_size
   );
@@ -92,28 +92,36 @@ int main()
   );
 
   /* tilemap settings */
-  for (int y=0; y<30; y++) {
-    for (int x=0; x<64; x++) {
-      tileram.tilemap[1].tileIdx[x + y*HW_TILEMAP_XTILE] = x%48 + y*48;
-    }
-  }
-  for (int y=0; y<16; y++) {
-    for (int x=0; x<64; x++) {
-      tileram.tilemap[2].tileIdx[x + (y+24)*HW_TILEMAP_XTILE] = ground_map[y][x%2];
-    }
-  }
+  nkx::setTilemap2DLambda(1,
+      HW_TILEMAP_XTILE, HW_TILEMAP_YTILE,
+      0, 0,
+      [](int32_t x, int32_t y){return (uint16_t)(x + y*48);},
+      48, 48,
+      0, 0, 64, 30
+  );
+  nkx::setTilemap2D(2,
+      HW_TILEMAP_XTILE, HW_TILEMAP_YTILE,
+      0, 24,
+      (const uint16_t*)ground_map,
+      2, 16,
+      0, 0, 64, 16
+  );
 
   /* BG settings */
   tileram.bg[3].flag.enable = true;
   // tileram.bg[2].flag.layer = 2;
-  tileram.bg[3].paletteNo = 1;
+  tileram.bg[3].paletteInfo.mode = 1;
+  tileram.bg[3].paletteInfo.bank = 0;
+  tileram.bg[3].paletteInfo.no = 1;
   tileram.bg[3].tileNo = 1;
   tileram.bg[3].tilemapNo = 1;
   tileram.bg[3].x = 0;
   tileram.bg[3].y = 0;
   tileram.bg[2].flag.enable = true;
   // tileram.bg[2].flag.layer = 3;
-  tileram.bg[2].paletteNo = 2;
+  tileram.bg[2].paletteInfo.mode = 1;
+  tileram.bg[2].paletteInfo.bank = 0;
+  tileram.bg[2].paletteInfo.no = 2;
   tileram.bg[2].tileNo = 3;
   tileram.bg[2].tilemapNo = 2;
   tileram.bg[2].x = 0;

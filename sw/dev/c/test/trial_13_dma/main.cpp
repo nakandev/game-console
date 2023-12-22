@@ -2,7 +2,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <nkx/hw/nkx_hw.h>
-#include <nkx/sw/nkx_sw.h>
+#include <nkx/mw/nkx_mw.h>
 
 extern "C" void int_handler()
 {

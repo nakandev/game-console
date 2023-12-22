@@ -1,8 +1,10 @@
 SUBDIRS  = ./hw
+SUBDIRS += ./mw
 SUBDIRS += ./sw
 
 all : $(SUBDIRS)
 	mv -f hw/lib*.a .
+	mv -f mw/lib*.a .
 	mv -f sw/lib*.a .
 
 clean : $(SUBDIRS)

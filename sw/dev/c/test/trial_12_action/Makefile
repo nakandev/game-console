@@ -26,7 +26,7 @@ CFLAGS += -O2
 LDFLAGS = -nostdlib -L$(NKX_C_ROOT)/lib
 LDFLAGS += -T nkx.lds
 LDFLAGS += -Wl,-Map=$(TARGET).map
-LIBS = -static -lnkxhw -lnkxsw
+LIBS = -static -lnkxhw -lnkxmw
 
 OBJCOPY_FLAGS = -I binary -O elf32-littleriscv
 OBJCOPY_FLAGS +=

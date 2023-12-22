@@ -2,7 +2,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <nkx/hw/nkx_hw.h>
-#include <nkx/sw/nkx_sw.h>
+#include <nkx/mw/nkx_mw.h>
 
 extern uint8_t _binary_riscv_logo_gif_pal_start;
 extern uint8_t _binary_riscv_logo_gif_pal_size;
@@ -79,11 +79,11 @@ int main()
   HwTileRam& tileram = *(HwTileRam*)HWREG_TILERAM_BASEADDR;
 
   /* palette settings */
-  nkx::setPalette(1, 0,
+  nkx::setPalette(0, 1, 0,
     (uint32_t*)&_binary_riscv_logo_gif_pal_start,
     (size_t)   &_binary_riscv_logo_gif_pal_size
   );
-  tileram.palette[1].color[0] = {.a=0xff, .b=0xff, .g=0xff, .r=0xff};
+  tileram.palette[0].color[1*16] = {.a=0xff, .b=0xff, .g=0xff, .r=0xff};
 
   /* tile settings */
   nkx::setTile(1, 0,
@@ -92,18 +92,19 @@ int main()
   );
 
   /* tilemap settings */
-  const int tmapid = 1;
-  for (int y=0; y<25; y++) {
-    for (int x=0; x<32; x++) {
-      auto x1 = x + 4;
-      auto y1 = y + 2;
-      tileram.tilemap[tmapid].tileIdx[x1 + y1*HW_TILEMAP_XTILE] = x + y*32;
-    }
-  }
+  nkx::setTilemap2DLambda(1,
+      HW_TILEMAP_XTILE, HW_TILEMAP_YTILE,
+      4, 2,
+      [](int32_t x, int32_t y){return (uint16_t)(x + y*32);},
+      32, 32,
+      0, 0, 32, 25
+  );
 
   /* BG settings */
   tileram.bg[0].flag.enable = true;
-  tileram.bg[0].paletteNo = 1;
+  tileram.bg[0].paletteInfo.mode = 1;
+  tileram.bg[0].paletteInfo.bank = 0;
+  tileram.bg[0].paletteInfo.no = 1;
   tileram.bg[0].tileNo = 1;
   tileram.bg[0].tilemapNo = 1;
   tileram.bg[0].x = 0;

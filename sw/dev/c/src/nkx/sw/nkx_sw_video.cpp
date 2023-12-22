@@ -45,7 +45,7 @@ void setAsciiFontBG(uint8_t bgNo, uint8_t palNo, uint8_t tileNo, uint8_t tilemap
 {
   HwTileRam& tileram = *(HwTileRam*)HWREG_TILERAM_BASEADDR;
   tileram.bg[0].flag.enable = true;
-  tileram.bg[bgNo].paletteNo = palNo;
+  tileram.bg[bgNo].paletteInfo.no = palNo;
   tileram.bg[bgNo].tileNo = tileNo;
   tileram.bg[bgNo].tilemapNo = tilemapNo;
 }
@@ -56,7 +56,7 @@ void putsBG(uint8_t bg, uint16_t x, uint16_t y, const char* str, uint8_t n)
   HwBG& hwbg = tileram.bg[bg];
   int tilemapOffset = x + y * HW_TILEMAP_XTILE;
   for (int i=0; i<strlen(str, n); i++) {
-    tileram.tilemap[hwbg.tilemapNo].tileIdx[tilemapOffset + i] = str[i];
+    tileram.tilemap[hwbg.tilemapNo].tileIdx[tilemapOffset + i].data = str[i];
   }
 }
 }; /* namespace nkx*/

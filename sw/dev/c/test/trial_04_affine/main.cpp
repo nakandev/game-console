@@ -1,5 +1,5 @@
 #include <nkx/hw/nkx_hw.h>
-#include <nkx/sw/nkx_sw.h>
+#include <nkx/mw/nkx_mw.h>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -78,7 +78,7 @@ int main()
   asm("nop");
   asm("nop");
   /* palette settings */
-  nkx::setPalette(1, 0,
+  nkx::setPalette(0, 1, 0,
     (uint32_t*)&_binary_tile_gif_pal_start,
     (size_t)   &_binary_tile_gif_pal_size
   );
@@ -99,10 +99,12 @@ int main()
     hwTileRam.tile[0][tileno].data[y][7] = 5;
   }
   /* tilemap settings */
-  hwTileRam.tilemap[1].tileIdx[1] = tileno;
-  hwTileRam.tilemap[1].tileIdx[3] = tileno;
+  hwTileRam.tilemap[1].tileIdx[1].data = tileno;
+  hwTileRam.tilemap[1].tileIdx[3].data = tileno;
   /* BG settings */
-  hwTileRam.bg[0].paletteNo = 0;
+  hwTileRam.bg[0].paletteInfo.mode = 1;
+  hwTileRam.bg[0].paletteInfo.bank = 0;
+  hwTileRam.bg[0].paletteInfo.no = 0;
   hwTileRam.bg[0].tileNo = 0;
   hwTileRam.bg[0].tilemapNo = 0;
   hwTileRam.bg[0].x = 0;
@@ -125,7 +127,9 @@ int main()
   /* SP tile settings */
   /* SP sprite settings */
   hwTileRam.sp[0].sprite[0].flag.enable = true;
-  hwTileRam.sp[0].sprite[0].paletteNo = 1;
+  hwTileRam.sp[0].sprite[0].paletteInfo.mode = 1;
+  hwTileRam.sp[0].sprite[0].paletteInfo.bank = 0;
+  hwTileRam.sp[0].sprite[0].paletteInfo.no = 1;
   hwTileRam.sp[0].sprite[0].tileNo = 1;
   hwTileRam.sp[0].sprite[0].tileIdx = 0;
   hwTileRam.sp[0].sprite[0].tileSize = HW_SPRITE_TILESIZE_64x64;
@@ -136,7 +140,9 @@ int main()
   hwTileRam.sp[0].sprite[0].affineInv.y = 64 / 2;
 
   hwTileRam.sp[0].sprite[1].flag.enable = true;
-  hwTileRam.sp[0].sprite[1].paletteNo = 1;
+  hwTileRam.sp[0].sprite[1].paletteInfo.mode = 1;
+  hwTileRam.sp[0].sprite[1].paletteInfo.bank = 0;
+  hwTileRam.sp[0].sprite[1].paletteInfo.no = 1;
   hwTileRam.sp[0].sprite[1].tileNo = 1;
   hwTileRam.sp[0].sprite[1].tileIdx = 0;
   hwTileRam.sp[0].sprite[1].tileSize = HW_SPRITE_TILESIZE_64x64;
@@ -147,7 +153,9 @@ int main()
   hwTileRam.sp[0].sprite[1].affineInv.y = 64 / 2;
 
   hwTileRam.sp[0].sprite[2].flag.enable = true;
-  hwTileRam.sp[0].sprite[2].paletteNo = 1;
+  hwTileRam.sp[0].sprite[2].paletteInfo.mode = 1;
+  hwTileRam.sp[0].sprite[2].paletteInfo.bank = 0;
+  hwTileRam.sp[0].sprite[2].paletteInfo.no = 1;
   hwTileRam.sp[0].sprite[2].tileNo = 1;
   hwTileRam.sp[0].sprite[2].tileIdx = 0;
   hwTileRam.sp[0].sprite[2].tileSize = HW_SPRITE_TILESIZE_64x64;

@@ -105,7 +105,8 @@ static void drawLineBGTile(HwTileRam& tileram, HwBG& bg, int x, int y, vector<ui
 {
   uint8_t tilemapNo = bg.tilemapNo;
   uint8_t tileNo = bg.tileNo;
-  uint8_t paletteNo = bg.paletteNo;
+  uint8_t paletteBank = bg.paletteInfo.bank;
+  uint8_t paletteNo = bg.paletteInfo.no;
   int32_t x0 = x - bg.x;
   int32_t y0 = y - bg.y;
   if (bg.flag.affineEnable) {
@@ -123,9 +124,9 @@ static void drawLineBGTile(HwTileRam& tileram, HwBG& bg, int x, int y, vector<ui
   uint32_t tx0 = ((uint32_t)x0) % HW_TILEMAP_W;
   uint32_t ty0 = ((uint32_t)y0) % HW_TILEMAP_H;
   uint16_t offset = (tx0 / HWTILE_W) + (ty0 / HWTILE_H) * HW_TILEMAP_XTILE;
-  uint16_t tileIdx = tileram.tilemap[tilemapNo].tileIdx[offset];
+  uint16_t tileIdx = tileram.tilemap[tilemapNo].tileIdx[offset].data;
   uint8_t paletteIdx = tileram.tile[tileNo][tileIdx].data[ty0 % HWTILE_H][tx0 % HWTILE_W];
-  buffer[x] = tileram.palette[paletteNo].color[paletteIdx].data;
+  buffer[x] = tileram.palette[paletteBank].color[paletteIdx + paletteNo * 16].data;
 }
 
 static void drawLineSprite(HwTileRam& tileram, VpuSprite& vpusp, int x, int y, vector<uint32_t>& buffer)
@@ -148,11 +149,12 @@ static void drawLineSprite(HwTileRam& tileram, VpuSprite& vpusp, int x, int y, v
   }
   uint8_t offset = (x0 / HWTILE_W) + (y0 / HWTILE_H) * (widthTable[sp.tileSize] / HWTILE_W);
   uint8_t tileIdx = sp.tileIdx + offset;
-  uint8_t paletteNo = sp.paletteNo;
+  uint8_t paletteBank = sp.paletteInfo.bank;
+  uint8_t paletteNo = sp.paletteInfo.no;
   uint32_t tilex = ((uint32_t)x0) % HW_TILEMAP_W % HWTILE_W;
   uint32_t tiley = ((uint32_t)y0) % HW_TILEMAP_H % HWTILE_H;
   uint8_t paletteIdx = tileram.tile[tileNo][tileIdx].data[tiley][tilex];
-  HwColor spColor = tileram.palette[paletteNo].color[paletteIdx];
+  HwColor spColor = tileram.palette[paletteBank].color[paletteIdx + paletteNo * 16];
   HwColor bufColor = {.data = buffer[x]};
   color_merge(bufColor, spColor);
   buffer[x] = bufColor.data;
