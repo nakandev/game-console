@@ -4,9 +4,9 @@
 #include <fmt/core.h>
 
 Dma::Dma(Memory& memory, IntrrCtrl& intrrCtrl)
-: memory(memory), intrrCtrl(intrrCtrl), ioram(), ioramSection(), channels(), runningDma(-1)
+: Processor(), MemorySection("dma", HWREG_IO_DMA_ADDR, 0x100),
+  memory(memory), intrrCtrl(intrrCtrl), channels(), runningDma(-1)
 {
-  ioram = (HwIoRam*)memory.section("ioram").buffer();
   channels.resize(4);
   init();
 }
@@ -18,9 +18,8 @@ Dma::~Dma()
 
 void Dma::init()
 {
-  this->ioram = (HwIoRam*)memory.section("ioram").buffer();
-  HwIoRam& ioram = *this->ioram;
-  ioramSection = (IoRamSection*)&memory.section("ioram");
+  memory.addSection<Dma>(*this);
+  HwIoDma& dmaram = *(HwIoDma*)this->data;
   for (auto& ch: channels) {
     ch.src = 0;
     ch.dst = 0;
@@ -29,7 +28,7 @@ void Dma::init()
     ch.isWrite = false;
     ch.isRunning = false;
   }
-  for (auto& dma: ioram.dma.dma) {
+  for (auto& dma: dmaram.dma) {
     dma.src = 0;
     dma.dst = 0;
     dma.attribute = 0;
@@ -39,10 +38,10 @@ void Dma::init()
 
 void Dma::syncFromIoDma(int chIdx)
 {
-  HwIoRam& ioram = *this->ioram;
-  channels[chIdx].src          = ioram.dma.dma[chIdx].src         ;
-  channels[chIdx].dst          = ioram.dma.dma[chIdx].dst         ;
-  channels[chIdx].attribute    = ioram.dma.dma[chIdx].attribute   ;
+  HwIoDma& dma = *(HwIoDma*)this->data;
+  channels[chIdx].src          = dma.dma[chIdx].src         ;
+  channels[chIdx].dst          = dma.dma[chIdx].dst         ;
+  channels[chIdx].attribute    = dma.dma[chIdx].attribute   ;
   channels[chIdx].isWrite = false;
   channels[chIdx].isRunning = true;
   channels[chIdx].enable = true;
@@ -50,14 +49,11 @@ void Dma::syncFromIoDma(int chIdx)
 
 void Dma::stepCycle()
 {
-  // if (!isRunning()) {
-  //   return;
-  // }
-  HwIoRam& ioram = *this->ioram;
+  HwIoDma& dma = *(HwIoDma*)this->data;
   int chIdx = runningDma;
   auto& ch = channels[chIdx];
   uint32_t priority = chIdx + 1;
-  if (ioram.dma.dma[chIdx].enable && !ch.isRunning) {
+  if (dma.dma[chIdx].enable && !ch.isRunning) {
     syncFromIoDma(chIdx);
     memory.setBusy(priority);
   }
@@ -66,29 +62,29 @@ void Dma::stepCycle()
   if (ch.count > 0) {
     if (!ch.isWrite) {
       switch (ch.size) {
-        case  1: ch.data = memory.read8(ch.src); break;
-        case  2: ch.data = memory.read16(ch.src); break;
+        case HW_IO_DMA_SIZE_8BIT:  ch.data = memory.read8(ch.src); break;
+        case HW_IO_DMA_SIZE_16BIT: ch.data = memory.read16(ch.src); break;
         default: ch.data = memory.read32(ch.src); break;
       }
       // ch.data = memory.read(ch.src, bytesize);
     } else {
       switch (ch.size) {
-        case  1: memory.write8(ch.dst, ch.data); break;
-        case  2: memory.write16(ch.dst, ch.data); break;
+        case HW_IO_DMA_SIZE_8BIT:  memory.write8(ch.dst, ch.data); break;
+        case HW_IO_DMA_SIZE_16BIT: memory.write16(ch.dst, ch.data); break;
         default: memory.write32(ch.dst, ch.data); break;
       }
       // memory.write(ch.dst, bytesize, ch.data);
       ch.count--;
       switch (ch.srcIncrement) {
-        case 0: ch.src += bytesize; break;
-        case 1: ch.src -= bytesize; break;
-        // case 2: break;
+        case HW_IO_DMA_INCREMENT_INC: ch.src += bytesize; break;
+        case HW_IO_DMA_INCREMENT_DEC: ch.src -= bytesize; break;
+        // case HW_IO_DMA_INCREMENT_STAY: break;
         default: break;
       }
       switch (ch.dstIncrement) {
-        case 0: ch.dst += bytesize; break;
-        case 1: ch.dst -= bytesize; break;
-        // case 2: break;
+        case HW_IO_DMA_INCREMENT_INC: ch.dst += bytesize; break;
+        case HW_IO_DMA_INCREMENT_DEC: ch.dst -= bytesize; break;
+        // case HW_IO_DMA_INCREMENT_STAY: break;
         default: break;
       }
     }
@@ -97,34 +93,63 @@ void Dma::stepCycle()
   if (ch.count == 0) {
     ch.enable = false;
     ch.isRunning = false;
-    ioram.dma.dma[chIdx].enable = false;
-    ioram.dma.dma[chIdx].count = 0;
+    dma.dma[chIdx].enable = false;
+    dma.dma[chIdx].count = 0;
     runningDma = -1;
     for (int i=3; i>=0; i--) {
-      auto& ch = ioram.dma.dma[i];
+      auto& ch = dma.dma[i];
       if (ch.enable) {
         runningDma = i;
         break;
       }
     }
-    ioramSection->runningDma = runningDma;
+    if (runningDma == -1) {
+      memory.processor = this;
+    }
     memory.clearBusy(priority);
-    if (ioram.dma.dma[chIdx].interrupt) {
-      uint32_t intno = HW_IO_INT_DMA0 + chIdx;
-      intrrCtrl.setIntStatus(intno);
-      intrrCtrl.requestInt(intno);
+    memory.processor = nullptr;
+    if (dma.dma[chIdx].interrupt) {
+      if (dma.dma[chIdx].trigger == HW_IO_DMA_TRIGGER_IMMEDIATELY) {
+        uint32_t intno = HW_IO_INT_DMA0 + chIdx;
+        intrrCtrl.setIntStatus(intno);
+        intrrCtrl.requestInt(intno);
+      }
     }
   }
 }
 
-bool Dma::isRunning()
+void Dma::write8(uint32_t addr, int8_t value)
 {
-  if (ioramSection->runningDma >= 0) {
-    runningDma = ioramSection->runningDma;
-  }
-  return runningDma >= 0;
-};
+  MemorySection::write8(addr, value);
+  updateRunningDma(addr, value);
+}
+void Dma::write16(uint32_t addr, int16_t value)
+{
+  MemorySection::write16(addr, value);
+  updateRunningDma(addr, value);
+}
+void Dma::write32(uint32_t addr, int32_t value)
+{
+  MemorySection::write32(addr, value);
+  updateRunningDma(addr, value);
+}
 
-void Memory::checkDma()
+void Dma::write(uint32_t addr, uint32_t size, int32_t value)
 {
+  MemorySection::write(addr, size, value);
+  updateRunningDma(addr, value);
+}
+
+void Dma::updateRunningDma(uint32_t addr, int32_t value)
+{
+  HwIoDma& dma = *(HwIoDma*)this->data;
+  runningDma = -1;
+  if (dma.dma[0].enable) runningDma = 0;
+  if (dma.dma[1].enable) runningDma = 1;
+  if (dma.dma[2].enable) runningDma = 2;
+  if (dma.dma[3].enable) runningDma = 3;
+  if (runningDma != -1) {
+    memory.processor = this;
+  }
+  fmt::print("runningDma={}\n", runningDma);
 }

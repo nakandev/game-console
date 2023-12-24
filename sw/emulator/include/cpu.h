@@ -1,12 +1,13 @@
 #pragma once
 #include <memory>
 #include <register.h>
+#include <processor.h>
 #include <cpuisa.h>
 #include <memory.h>
 #include <elf.h>
 #include <unordered_map>
 
-class Cpu {
+class Cpu : public Processor {
 private:
   MemorySection* programSection;
   shared_ptr<Elf> elf;
@@ -29,7 +30,7 @@ public:
   void reset();
   void requestInterruption();
   void handleInterruption();
-  void stepCycle();
+  void stepCycle() override;
   void stepInstruction();
   const uint32_t getPc();
   void cacheAllInstruction();

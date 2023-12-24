@@ -96,6 +96,7 @@ void Cpu::stepCycle()
       }
     }
     if (instr.phase == INSTR_PHASE_EXECUTE) {
+      memory.processor = this;
       isa.execute(instr, regs, memory);
       instrCount++;
     }

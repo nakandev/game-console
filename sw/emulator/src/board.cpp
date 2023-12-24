@@ -74,8 +74,8 @@ void Board::updateFrame()
 void Board::stepCpuCycle()
 {
   timer.stepCycle();
-  if (dma.isRunning()) {
-    dma.stepCycle();
+  if (memory.processor) {
+    memory.processor->stepCycle();  // cpu or dma
   }
   else {
     cpu.stepCycle();

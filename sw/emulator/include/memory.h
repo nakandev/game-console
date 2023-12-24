@@ -3,6 +3,7 @@
 #include <memory>
 #include <vector>
 #include <map>
+#include <processor.h>
 
 using namespace std;
 
@@ -36,12 +37,16 @@ class MemorySection {
 };
 
 class IoRamSection : public MemorySection {
+    void updateRunningDma(uint32_t addr, int32_t value);
   public:
     int runningDma;
     IoRamSection();
     IoRamSection(const string& name, uint32_t addr, size_t size);
     IoRamSection(const MemorySection& obj);
     ~IoRamSection();
+    void write8(uint32_t addr, int8_t value) override;
+    void write16(uint32_t addr, int16_t value) override;
+    void write32(uint32_t addr, int32_t value) override;
     void write(uint32_t addr, uint32_t size, int32_t value) override;
 };
 
@@ -59,12 +64,16 @@ union BusyFlag{
 
 class Memory {
   private:
-    map<string, shared_ptr<MemorySection>> sections;
+    map<uint32_t, shared_ptr<MemorySection>> sections;
+    map<string, uint32_t> sectionNameTable;
     MemorySection invalidSection;
   public:
     BusyFlag busyFlag;
+    Processor* processor;
     Memory();
     ~Memory();
+    MemorySection& section(const uint32_t addr);
+    MemorySection& section(const char* name);
     MemorySection& section(const string& name);
     MemorySection& sectionByAddr(const uint32_t addr);
     MemorySection& sectionByAddrSafe(const uint32_t addr);
@@ -72,6 +81,11 @@ class Memory {
     void clearSection();
     void initMinimumSections();
     void addSection(const string& name, uint32_t addr, uint32_t size);
+    template<typename T> void addSection(T& section)
+    {
+      sections.insert(make_pair(section.addr, make_shared<T>(section)));
+      sectionNameTable.insert(make_pair(section.name, section.addr));
+    }
     bool waitAccess(uint32_t addr, uint32_t size, bool rw, int8_t& wait);
     bool isBusy(uint32_t priority);
     void setBusy(uint32_t priority);
@@ -83,7 +97,5 @@ class Memory {
     void write16(uint32_t addr, int16_t value);
     void write32(uint32_t addr, int32_t value);
     void copy(uint32_t addr, uint32_t size, uint8_t* value);
-    void dmatransfer(uint32_t src, uint32_t dst, uint8_t direction, uint8_t len, uint32_t count);
-    void checkDma();
 };
 

@@ -144,9 +144,31 @@ IoRamSection::IoRamSection(const MemorySection& obj)
 IoRamSection::~IoRamSection()
 {}
 
+void IoRamSection::write8(uint32_t addr, int8_t value)
+{
+  MemorySection::write8(addr, value);
+  updateRunningDma(addr, value);
+}
+void IoRamSection::write16(uint32_t addr, int16_t value)
+{
+  MemorySection::write16(addr, value);
+  updateRunningDma(addr, value);
+}
+void IoRamSection::write32(uint32_t addr, int32_t value)
+{
+  MemorySection::write32(addr, value);
+  updateRunningDma(addr, value);
+}
+
 void IoRamSection::write(uint32_t addr, uint32_t size, int32_t value)
 {
   MemorySection::write(addr, size, value);
+  updateRunningDma(addr, value);
+}
+
+void IoRamSection::updateRunningDma(uint32_t addr, int32_t value)
+{
+  fmt::print("dma write\n");
   uint32_t raddr = addr - this->addr;
   const uint32_t dmaBegin = (uint32_t)HWREG_IO_DMA0_ADDR - (uint32_t)HWREG_IORAM_BASEADDR;
   const uint32_t dmaEnd = (uint32_t)HWREG_IO_TIMER0_ADDR - (uint32_t)HWREG_IORAM_BASEADDR;
@@ -163,7 +185,8 @@ void IoRamSection::write(uint32_t addr, uint32_t size, int32_t value)
 Memory::Memory()
   : sections(),
     invalidSection(),
-    busyFlag()
+    busyFlag(),
+    processor()
 {
   invalidSection.name = "invalid";
   initMinimumSections();
@@ -174,14 +197,22 @@ Memory::~Memory()
   sections.clear();
 }
 
+MemorySection& Memory::section(const uint32_t addr)
+{
+  return *sections[addr];
+}
+MemorySection& Memory::section(const char* name)
+{
+  return *sections[sectionNameTable[name]];
+}
 MemorySection& Memory::section(const string& name)
 {
-  return *sections[name];
+  return *sections[sectionNameTable[name]];
 }
 MemorySection& Memory::sectionByAddr(const uint32_t addr)
 {
-  return sectionByAddrSafe(addr);
-  // return sectionByAddrFast(addr);
+  // return sectionByAddrSafe(addr);
+  return sectionByAddrFast(addr);
 }
 MemorySection& Memory::sectionByAddrSafe(const uint32_t addr)
 {
@@ -194,17 +225,37 @@ MemorySection& Memory::sectionByAddrSafe(const uint32_t addr)
 }
 MemorySection& Memory::sectionByAddrFast(const uint32_t addr)
 {
-  const char* sectionTable[16] = {
-    "system", "data", "stack", "ioram", "vram", "invalid", "tile", "aram",
-    "invalid", "inst", "invalid", "invalid", "invalid", "invalid", "invalid", "invalid"
-  };
   uint32_t mid = addr >> 24;
   if (mid >= 0x80) {
-    return *sections["program"];  // program section
+    return *sections[HWREG_PROGRAM_BASEADDR];
   } else {
-    mid = mid & 0xF;
-    return *sections[sectionTable[mid]];
+    switch(mid & 0xF) {
+      case 0x0: return *sections[HWREG_SYSROM_BASEADDR];
+      case 0x1: return *sections[HWREG_FASTWORKRAM_BASEADDR];
+      case 0x2: return *sections[HWREG_WORKRAM_END - 0x0001'0000];  // sections[HWREG_SLOWWORKRAM_BASEADDR];
+      case 0x3:
+        // return *sections[HWREG_IORAM_BASEADDR];
+        switch ((addr >> 8) & 0xFFu) {
+          // case 0x0: return *sections[HWREG_IO_VIDEO_ADDR];
+          // case 0x1: return *sections[HWREG_IO_AUDIO_ADDR];
+          // case 0x2: return *sections[HWREG_IO_INPUT_ADDR];
+          case 0x3: return *sections[HWREG_IO_DMA_ADDR];
+          // case 0x4: return *sections[HWREG_IO_TIMER_ADDR];
+          // case 0x5: return *sections[HWREG_IO_SERIAL_ADDR];
+          // case 0x6: return *sections[HWREG_IO_INT_ADDR];
+          // default: return *sections[0];  // invalid section
+          default: return *sections[HWREG_IORAM_BASEADDR];  // invalid section
+        }
+      case 0x4: return *sections[HWREG_VRAM_BASEADDR];
+      case 0x6: return *sections[HWREG_TILERAM_BASEADDR];
+      case 0x7: return *sections[HWREG_ARAM_BASEADDR];
+      case 0x9: return *sections[HWREG_INSTRAM_BASEADDR];
+      case 0xE: return *sections[HWREG_SAVERAM_BASEADDR];
+      case 0xF: return *sections[HWREG_SAVERAM_BASEADDR];
+      default: return *sections[0];  // invalid section
+    }
   }
+  // unreachable
   return invalidSection;
 }
 
@@ -217,21 +268,36 @@ void Memory::initMinimumSections()
 {
   busyFlag.flag32 = 0;
   sections.clear();
-  sections.insert(make_pair("program", make_shared<MemorySection>(MemorySection("program", HWREG_PROGRAM_BASEADDR    , HWREG_PROGRAM_SIZE))));
-  sections.insert(make_pair("stack",   make_shared<MemorySection>(MemorySection("stack",   HWREG_WORKRAM_END - 0x0001'0000, 0x0001'0000))));
-  sections.insert(make_pair("tile",    make_shared<MemorySection>(MemorySection("tile",    HWREG_TILERAM_BASEADDR    , HWREG_TILERAM_SIZE))));
-  sections.insert(make_pair("vram",    make_shared<MemorySection>(MemorySection("vram",    HWREG_VRAM_BASEADDR       , HWREG_VRAM_SIZE))));
-  sections.insert(make_pair("ioram",   make_shared<IoRamSection>(IoRamSection("ioram",   HWREG_IORAM_BASEADDR      , HWREG_IORAM_SIZE))));
-  sections.insert(make_pair("aram",    make_shared<MemorySection>(MemorySection("aram",    HWREG_ARAM_BASEADDR       , HWREG_ARAM_SIZE))));
-  sections.insert(make_pair("inst",    make_shared<MemorySection>(MemorySection("inst",    HWREG_INSTRAM_BASEADDR    , HWREG_INSTRAM_SIZE))));
-  sections.insert(make_pair("system",  make_shared<MemorySection>(MemorySection("system",  HWREG_SYSROM_BASEADDR     , HWREG_SYSROM_SIZE))));
-  sections.insert(make_pair("data",    make_shared<MemorySection>(MemorySection("data"  ,  HWREG_FASTWORKRAM_BASEADDR, 0x00C0'0000))));
-  sections.insert(make_pair("invalid", make_shared<MemorySection>(MemorySection("invalid", 0, 0))));
+  #define sections_insert(T, name, addr, size) \
+    sections.insert(make_pair((addr), make_shared<T>(T(name, (addr), (size))))); \
+    sectionNameTable.insert(make_pair(name,(addr)));
+  sections_insert(MemorySection, "program", HWREG_PROGRAM_BASEADDR    , HWREG_PROGRAM_SIZE);
+  sections_insert(MemorySection, "stack",   HWREG_WORKRAM_END - 0x0001'0000, 0x0001'0000);
+  sections_insert(MemorySection, "tile",    HWREG_TILERAM_BASEADDR    , HWREG_TILERAM_SIZE);
+  sections_insert(MemorySection, "vram",    HWREG_VRAM_BASEADDR       , HWREG_VRAM_SIZE);
+  // sections_insert(IoRamSection , "ioram",   HWREG_IORAM_BASEADDR      , HWREG_IORAM_SIZE);
+  sections_insert(MemorySection, "ioram",   HWREG_IORAM_BASEADDR      , HWREG_IORAM_SIZE);
+  // sections_insert(IoRamSection , "dma",     HWREG_IO_DMA_ADDR         , 0x100);
+  sections_insert(MemorySection, "aram",    HWREG_ARAM_BASEADDR       , HWREG_ARAM_SIZE);
+  sections_insert(MemorySection, "inst",    HWREG_INSTRAM_BASEADDR    , HWREG_INSTRAM_SIZE);
+  sections_insert(MemorySection, "system",  HWREG_SYSROM_BASEADDR     , HWREG_SYSROM_SIZE);
+  sections_insert(MemorySection, "data"  ,  HWREG_FASTWORKRAM_BASEADDR, 0x00C0'0000);
+  sections_insert(MemorySection, "save",    HWREG_SAVERAM_BASEADDR    , HWREG_SAVERAM_SIZE);
+  sections_insert(MemorySection, "invalid", 0, 0);
+  #undef sections_insert
 }
 void Memory::addSection(const string& name, uint32_t addr, uint32_t size)
 {
-  sections.insert(make_pair(name, make_shared<MemorySection>(MemorySection(name, addr, size))));
+  sections.insert(make_pair(addr, make_shared<MemorySection>(MemorySection(name, addr, size))));
+  sectionNameTable.insert(make_pair(name, addr));
 }
+
+// template<typename T>
+// void Memory::addSection(T& section)
+// {
+//   sections.insert(make_pair(section.addr, make_shared<T>(section)));
+//   sectionNameTable.insert(make_pair(section.name, section.addr));
+// }
 
 bool Memory::isBusy(uint32_t priority)
 {
@@ -311,4 +377,3 @@ void Memory::copy(uint32_t addr, uint32_t size, uint8_t* value)
   auto& section = sectionByAddr(addr);
   section.copy(addr, size, value);
 }
-
