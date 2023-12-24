@@ -11,7 +11,7 @@ IntrrCtrl::~IntrrCtrl()
 {
 }
 
-void IntrrCtrl::requestInt(uint8_t intno)
+auto IntrrCtrl::requestInt(uint8_t intno) -> void
 {
   uint32_t enable = memory.read32(HWREG_IO_INT_ENABLE_ADDR);
   uint32_t status = memory.read32(HWREG_IO_INT_STATUS_ADDR);
@@ -21,14 +21,14 @@ void IntrrCtrl::requestInt(uint8_t intno)
   }
 }
 
-void IntrrCtrl::setIntStatus(uint8_t intno)
+auto IntrrCtrl::setIntStatus(uint8_t intno) -> void
 {
   uint32_t status = memory.read32(HWREG_IO_INT_STATUS_ADDR);
   status |= (1u << intno);
   memory.write32(HWREG_IO_INT_STATUS_ADDR, status);
 }
 
-void IntrrCtrl::clearIntStatus(uint8_t intno)
+auto IntrrCtrl::clearIntStatus(uint8_t intno) -> void
 {
   uint32_t status = memory.read32(HWREG_IO_INT_STATUS_ADDR);
   status &= ~(1u << intno);

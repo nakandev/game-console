@@ -32,7 +32,7 @@ MemorySection::~MemorySection()
   data = nullptr;
 }
 
-void MemorySection::resize(size_t size)
+auto MemorySection::resize(size_t size) -> void
 {
   // data.resize(size);
   uint8_t* newData = new uint8_t[size]();
@@ -42,7 +42,7 @@ void MemorySection::resize(size_t size)
   this->size = size;
 }
 
-bool MemorySection::isin(uint32_t addr)
+auto MemorySection::isin(uint32_t addr) -> bool
 {
   if (this->addr <= addr && addr < this->addr + size) {
     return true;
@@ -50,22 +50,25 @@ bool MemorySection::isin(uint32_t addr)
   return false;
 }
 
-int8_t MemorySection::read8(uint32_t addr)
+auto MemorySection::read8(uint32_t addr) -> int8_t
 {
   uint32_t relativeAddr = addr - this->addr;
   return *((int8_t*)(&data[0] + relativeAddr));
 }
-int16_t MemorySection::read16(uint32_t addr)
+
+auto MemorySection::read16(uint32_t addr) -> int16_t
 {
   uint32_t relativeAddr = addr - this->addr;
   return *((int16_t*)(&data[0] + relativeAddr));
 }
-int32_t MemorySection::read32(uint32_t addr)
+
+auto MemorySection::read32(uint32_t addr) -> int32_t
 {
   uint32_t relativeAddr = addr - this->addr;
   return *((int32_t*)(&data[0] + relativeAddr));
 }
-int32_t MemorySection::read(uint32_t addr, uint32_t size)
+
+auto MemorySection::read(uint32_t addr, uint32_t size) -> int32_t
 {
   switch (size) {
     case 1: return read8(addr);
@@ -75,22 +78,25 @@ int32_t MemorySection::read(uint32_t addr, uint32_t size)
   }
 }
 
-void MemorySection::write8(uint32_t addr, int8_t value)
+auto MemorySection::write8(uint32_t addr, int8_t value) -> void
 {
   uint32_t relativeAddr = addr - this->addr;
   *((int8_t*)(&data[0] + relativeAddr)) = value;
 }
-void MemorySection::write16(uint32_t addr, int16_t value)
+
+auto MemorySection::write16(uint32_t addr, int16_t value) -> void
 {
   uint32_t relativeAddr = addr - this->addr;
   *((int16_t*)(&data[0] + relativeAddr)) = value;
 }
-void MemorySection::write32(uint32_t addr, int32_t value)
+
+auto MemorySection::write32(uint32_t addr, int32_t value) -> void
 {
   uint32_t relativeAddr = addr - this->addr;
   *((int32_t*)(&data[0] + relativeAddr)) = value;
 }
-void MemorySection::write(uint32_t addr, uint32_t size, int32_t value)
+
+auto MemorySection::write(uint32_t addr, uint32_t size, int32_t value) -> void
 {
   switch (size) {
     case 1: write8(addr, value); break;
@@ -100,7 +106,7 @@ void MemorySection::write(uint32_t addr, uint32_t size, int32_t value)
   }
 }
 
-void MemorySection::copy(uint32_t addr, uint32_t size, uint8_t* buf)
+auto MemorySection::copy(uint32_t addr, uint32_t size, uint8_t* buf) -> void
 {
   uint32_t relativeAddr = addr - this->addr;
   // data.assign(buf + relativeAddr, buf + relativeAddr + size);
@@ -109,7 +115,7 @@ void MemorySection::copy(uint32_t addr, uint32_t size, uint8_t* buf)
   }
 }
 
-void MemorySection::set(uint32_t addr, uint32_t size, uint8_t value)
+auto MemorySection::set(uint32_t addr, uint32_t size, uint8_t value) -> void
 {
   uint32_t relativeAddr = addr - this->addr;
   for (int i=0; i<size; i++) {
@@ -117,7 +123,7 @@ void MemorySection::set(uint32_t addr, uint32_t size, uint8_t value)
   }
 }
 
-uint8_t* const MemorySection::buffer()
+auto MemorySection::buffer() -> const uint8_t*
 {
   // return data.data();
   return data;
@@ -144,29 +150,30 @@ IoRamSection::IoRamSection(const MemorySection& obj)
 IoRamSection::~IoRamSection()
 {}
 
-void IoRamSection::write8(uint32_t addr, int8_t value)
+auto IoRamSection::write8(uint32_t addr, int8_t value) -> void
 {
   MemorySection::write8(addr, value);
   updateRunningDma(addr, value);
 }
-void IoRamSection::write16(uint32_t addr, int16_t value)
+auto IoRamSection::write16(uint32_t addr, int16_t value) -> void
 {
   MemorySection::write16(addr, value);
   updateRunningDma(addr, value);
 }
-void IoRamSection::write32(uint32_t addr, int32_t value)
+
+auto IoRamSection::write32(uint32_t addr, int32_t value) -> void
 {
   MemorySection::write32(addr, value);
   updateRunningDma(addr, value);
 }
 
-void IoRamSection::write(uint32_t addr, uint32_t size, int32_t value)
+auto IoRamSection::write(uint32_t addr, uint32_t size, int32_t value) -> void
 {
   MemorySection::write(addr, size, value);
   updateRunningDma(addr, value);
 }
 
-void IoRamSection::updateRunningDma(uint32_t addr, int32_t value)
+auto IoRamSection::updateRunningDma(uint32_t addr, int32_t value) -> void
 {
   fmt::print("dma write\n");
   uint32_t raddr = addr - this->addr;
@@ -197,24 +204,28 @@ Memory::~Memory()
   sections.clear();
 }
 
-MemorySection& Memory::section(const uint32_t addr)
+auto Memory::section(const uint32_t addr) -> MemorySection&
 {
   return *sections[addr];
 }
-MemorySection& Memory::section(const char* name)
+
+auto Memory::section(const char* name) -> MemorySection&
 {
   return *sections[sectionNameTable[name]];
 }
-MemorySection& Memory::section(const string& name)
+
+auto Memory::section(const string& name) -> MemorySection&
 {
   return *sections[sectionNameTable[name]];
 }
-MemorySection& Memory::sectionByAddr(const uint32_t addr)
+
+auto Memory::sectionByAddr(const uint32_t addr) -> MemorySection&
 {
   // return sectionByAddrSafe(addr);
   return sectionByAddrFast(addr);
 }
-MemorySection& Memory::sectionByAddrSafe(const uint32_t addr)
+
+auto Memory::sectionByAddrSafe(const uint32_t addr) -> MemorySection&
 {
   for (auto& section: sections) {
     if (section.second->isin(addr)) {
@@ -223,7 +234,8 @@ MemorySection& Memory::sectionByAddrSafe(const uint32_t addr)
   }
   return invalidSection;
 }
-MemorySection& Memory::sectionByAddrFast(const uint32_t addr)
+
+auto Memory::sectionByAddrFast(const uint32_t addr) -> MemorySection&
 {
   uint32_t mid = addr >> 24;
   if (mid >= 0x80) {
@@ -259,12 +271,12 @@ MemorySection& Memory::sectionByAddrFast(const uint32_t addr)
   return invalidSection;
 }
 
-void Memory::clearSection()
+auto Memory::clearSection() -> void
 {
   sections.clear();
 }
 
-void Memory::initMinimumSections()
+auto Memory::initMinimumSections() -> void
 {
   busyFlag.flag32 = 0;
   sections.clear();
@@ -286,7 +298,8 @@ void Memory::initMinimumSections()
   sections_insert(MemorySection, "invalid", 0, 0);
   #undef sections_insert
 }
-void Memory::addSection(const string& name, uint32_t addr, uint32_t size)
+
+auto Memory::addSection(const string& name, uint32_t addr, uint32_t size) -> void
 {
   sections.insert(make_pair(addr, make_shared<MemorySection>(MemorySection(name, addr, size))));
   sectionNameTable.insert(make_pair(name, addr));
@@ -299,7 +312,7 @@ void Memory::addSection(const string& name, uint32_t addr, uint32_t size)
 //   sectionNameTable.insert(make_pair(section.name, section.addr));
 // }
 
-bool Memory::isBusy(uint32_t priority)
+auto Memory::isBusy(uint32_t priority) -> bool
 {
   uint32_t busyFlags = busyFlag.flag32;
   if (busyFlags == 0) {
@@ -311,16 +324,18 @@ bool Memory::isBusy(uint32_t priority)
   }
   return false;
 }
-void Memory::setBusy(uint32_t priority)
+
+auto Memory::setBusy(uint32_t priority) -> void
 {
   busyFlag.flag32 |= (1u << priority);
 }
-void Memory::clearBusy(uint32_t priority)
+
+auto Memory::clearBusy(uint32_t priority) -> void
 {
   busyFlag.flag32 &= ~(1u << priority);
 }
 
-bool Memory::waitAccess(uint32_t addr, uint32_t size, bool rw, int8_t& wait)
+auto Memory::waitAccess(uint32_t addr, uint32_t size, bool rw, int8_t& wait) -> bool
 {
   if (isBusy(0) || wait < 0) {
     auto addrSection = addr >> 24;
@@ -340,39 +355,43 @@ bool Memory::waitAccess(uint32_t addr, uint32_t size, bool rw, int8_t& wait)
   return false;
 }
 
-int8_t Memory::read8(uint32_t addr)
+auto Memory::read8(uint32_t addr) -> int8_t
 {
   auto& section = sectionByAddr(addr);
   return section.read8(addr);
 }
-int16_t Memory::read16(uint32_t addr)
+
+auto Memory::read16(uint32_t addr) -> int16_t
 {
   auto& section = sectionByAddr(addr);
   return section.read16(addr);
 }
-int32_t Memory::read32(uint32_t addr)
+
+auto Memory::read32(uint32_t addr) -> int32_t
 {
   auto& section = sectionByAddr(addr);
   return section.read32(addr);
 }
 
-void Memory::write8(uint32_t addr, int8_t value)
+auto Memory::write8(uint32_t addr, int8_t value) -> void
 {
   auto& section = sectionByAddr(addr);
   section.write8(addr, value);
 }
-void Memory::write16(uint32_t addr, int16_t value)
+
+auto Memory::write16(uint32_t addr, int16_t value) -> void
 {
   auto& section = sectionByAddr(addr);
   section.write16(addr, value);
 }
-void Memory::write32(uint32_t addr, int32_t value)
+
+auto Memory::write32(uint32_t addr, int32_t value) -> void
 {
   auto& section = sectionByAddr(addr);
   section.write32(addr, value);
 }
 
-void Memory::copy(uint32_t addr, uint32_t size, uint8_t* value)
+auto Memory::copy(uint32_t addr, uint32_t size, uint8_t* value) -> void
 {
   auto& section = sectionByAddr(addr);
   section.copy(addr, size, value);

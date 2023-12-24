@@ -25,10 +25,10 @@ class InputConfigDialog : GuiComponent {
     PadInfo padInfo;
     InputConfigDialog(Board& board);
     ~InputConfigDialog();
-    void update();
-    void draw();
-    void selectPadDevice();
-    void setupPadKey();
-    void setupPadKeyAll();
+    auto update() -> void;
+    auto draw() -> void;
+    auto selectPadDevice() -> void;
+    auto setupPadKey() -> void;
+    auto setupPadKeyAll() -> void;
 };
 

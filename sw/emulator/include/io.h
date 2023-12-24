@@ -19,13 +19,13 @@ private:
 public:
   IO(Memory& memory);
   ~IO();
-  void setCpu(Cpu& cpu);
-  void setVpu(Vpu& vpu);
-  void setApu(Apu& apu);
-  void setDma(Dma& dma);
-  void setTimer(Timer& timer);
-  void pressPadButton(uint8_t button);
-  void releasePadButton(uint8_t button);
-  HwPad getPadStatus();
-  void updateScanlineNumber(uint16_t y);
+  auto setCpu(Cpu& cpu) -> void;
+  auto setVpu(Vpu& vpu) -> void;
+  auto setApu(Apu& apu) -> void;
+  auto setDma(Dma& dma) -> void;
+  auto setTimer(Timer& timer) -> void;
+  auto pressPadButton(uint8_t button) -> void;
+  auto releasePadButton(uint8_t button) -> void;
+  auto getPadStatus() -> HwPad;
+  auto updateScanlineNumber(uint16_t y) -> void;
 };

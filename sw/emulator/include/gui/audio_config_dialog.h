@@ -11,7 +11,7 @@ class AudioConfigDialog : GuiComponent {
     int soundDeviceId;
     AudioConfigDialog(Board& board);
     ~AudioConfigDialog();
-    void update();
-    void selectSoundDevice();
+    auto update() -> void;
+    auto selectSoundDevice() -> void;
 };
 

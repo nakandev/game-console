@@ -11,7 +11,7 @@ Elf::~Elf()
 {
 }
 
-uint8_t Elf::load(const string& path)
+auto Elf::load(const string& path) -> uint8_t
 {
   this->path = path;
   ifstream ifs(path, ios::binary);
@@ -69,12 +69,12 @@ uint8_t Elf::load(const string& path)
   return 0;
 }
 
-const Elf::ElfHeader& Elf::getElfHeader()
+auto Elf::getElfHeader() -> const Elf::ElfHeader&
 {
   return elfHeader;
 }
 
-Elf::Section* Elf::getSection(const string& name)
+auto Elf::getSection(const string& name) -> Elf::Section*
 {
   for (auto& s: sections) {
     if (s.name == name) return &s;
@@ -82,7 +82,7 @@ Elf::Section* Elf::getSection(const string& name)
   return nullptr;
 }
 
-void Elf::allocMemory(Memory& memory)
+auto Elf::allocMemory(Memory& memory) -> void
 {
   // memory.initMinimumSections();
 

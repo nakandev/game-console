@@ -9,6 +9,6 @@ class PaletteView : public GuiComponent {
   public:
     PaletteView(Board& board);
     ~PaletteView();
-    void update();
+    auto update() -> void;
 };
 

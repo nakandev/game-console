@@ -16,9 +16,9 @@ class TileView : public GuiComponent {
     GLuint renderbuffer;
     TileView(Board& board);
     ~TileView();
-    void update();
-    void createFramebuffer();
-    void renderFramebuffer();
-    void cleanup();
+    auto update() -> void;
+    auto createFramebuffer() -> void;
+    auto renderFramebuffer() -> void;
+    auto cleanup() -> void;
 };
 

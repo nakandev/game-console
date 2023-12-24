@@ -20,7 +20,7 @@ PaletteView::~PaletteView()
 {
 }
 
-void PaletteView::update()
+auto PaletteView::update() -> void
 {
   ImGui::Text("Palette View");
   const int palNum = 4;

@@ -24,7 +24,7 @@ VideoConfigDialog::~VideoConfigDialog()
 {
 }
 
-void VideoConfigDialog::update()
+auto VideoConfigDialog::update() -> void
 {
   if (enable) {
     ImVec2 center = ImGui::GetMainViewport()->GetCenter();

@@ -16,7 +16,7 @@ private:
 public:
   Timer(Memory& memory, IntrrCtrl& intrrCtrl);
   ~Timer();
-  void init();
-  void stepCycle();
+  auto init() -> void;
+  auto stepCycle() -> void;
 };
 

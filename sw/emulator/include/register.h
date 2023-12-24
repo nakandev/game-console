@@ -22,27 +22,27 @@ public:
   RegisterGroup();
   RegisterGroup(size_t size);
   ~RegisterGroup();
-  inline Register& operator[](size_t index) noexcept { return regs[index]; }
-  void insert(size_t index, const Register& reg);
-  size_t size() { return regs.size(); }
-  void init();
-  void dump();
+  inline auto operator[](size_t index) noexcept -> Register& { return regs[index]; }
+  auto insert(size_t index, const Register& reg) -> void;
+  auto size() -> size_t { return regs.size(); }
+  auto init() -> void;
+  auto dump() -> void;
 };
 
 class SparceRegisterGroup {
 private:
   vector<Register> regs;  // sparce array of Register
   vector<size_t> indexs;
-  Register& at(size_t index);
+  auto at(size_t index) -> Register&;
 public:
   SparceRegisterGroup();
   SparceRegisterGroup(size_t size);
   ~SparceRegisterGroup();
-  inline Register& operator[](size_t index) noexcept {return at(index); }
-  void insert(size_t index, const Register& reg);
-  size_t size() { return regs.size(); }
-  void init();
-  void dump();
+  inline auto operator[](size_t index) noexcept -> Register& {return at(index); }
+  auto insert(size_t index, const Register& reg) -> void;
+  auto size() -> size_t { return regs.size(); }
+  auto init() -> void;
+  auto dump() -> void;
 };
 
 class RegisterSet {
@@ -53,7 +53,7 @@ public:
   SparceRegisterGroup csr;
   RegisterSet();
   ~RegisterSet();
-  void init();
+  auto init() -> void;
 };
 
 enum {

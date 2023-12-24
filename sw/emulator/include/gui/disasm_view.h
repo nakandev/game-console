@@ -11,7 +11,7 @@ class DisasmView : GuiComponent {
     map<uint32_t, string> disasmStrs;
     DisasmView(Board& board);
     ~DisasmView();
-    void update();
+    auto update() -> void;
 };
 
 

@@ -20,20 +20,20 @@ class MemorySection {
     MemorySection(const string& name, uint32_t addr, size_t size);
     MemorySection(const MemorySection& obj);
     virtual ~MemorySection();
-    void resize(size_t size);
-    void resizeToEndAddr(uint32_t addr);
-    bool isin(uint32_t addr);
-    virtual int8_t read8(uint32_t addr);
-    virtual int16_t read16(uint32_t addr);
-    virtual int32_t read32(uint32_t addr);
-    virtual int32_t read(uint32_t addr, uint32_t size);
-    virtual void write8(uint32_t addr, int8_t value);
-    virtual void write16(uint32_t addr, int16_t value);
-    virtual void write32(uint32_t addr, int32_t value);
-    virtual void write(uint32_t addr, uint32_t size, int32_t value);
-    void copy(uint32_t addr, uint32_t size, uint8_t* buf);
-    void set(uint32_t addr, uint32_t size, uint8_t value);
-    uint8_t* const buffer();
+    auto resize(size_t size) -> void;
+    auto resizeToEndAddr(uint32_t addr) -> void;
+    auto isin(uint32_t addr) -> bool;
+    virtual auto read8(uint32_t addr) -> int8_t;
+    virtual auto read16(uint32_t addr) -> int16_t;
+    virtual auto read32(uint32_t addr) -> int32_t;
+    virtual auto read(uint32_t addr, uint32_t size) -> int32_t;
+    virtual auto write8(uint32_t addr, int8_t value) -> void;
+    virtual auto write16(uint32_t addr, int16_t value) -> void;
+    virtual auto write32(uint32_t addr, int32_t value) -> void;
+    virtual auto write(uint32_t addr, uint32_t size, int32_t value) -> void;
+    auto copy(uint32_t addr, uint32_t size, uint8_t* buf) -> void;
+    auto set(uint32_t addr, uint32_t size, uint8_t value) -> void;
+    auto buffer() -> const uint8_t*;
 };
 
 class IoRamSection : public MemorySection {
@@ -44,10 +44,10 @@ class IoRamSection : public MemorySection {
     IoRamSection(const string& name, uint32_t addr, size_t size);
     IoRamSection(const MemorySection& obj);
     ~IoRamSection();
-    void write8(uint32_t addr, int8_t value) override;
-    void write16(uint32_t addr, int16_t value) override;
-    void write32(uint32_t addr, int32_t value) override;
-    void write(uint32_t addr, uint32_t size, int32_t value) override;
+    auto write8(uint32_t addr, int8_t value) -> void override;
+    auto write16(uint32_t addr, int16_t value) -> void override;
+    auto write32(uint32_t addr, int32_t value) -> void override;
+    auto write(uint32_t addr, uint32_t size, int32_t value) -> void override;
 };
 
 union BusyFlag{
@@ -72,30 +72,30 @@ class Memory {
     Processor* processor;
     Memory();
     ~Memory();
-    MemorySection& section(const uint32_t addr);
-    MemorySection& section(const char* name);
-    MemorySection& section(const string& name);
-    MemorySection& sectionByAddr(const uint32_t addr);
-    MemorySection& sectionByAddrSafe(const uint32_t addr);
-    MemorySection& sectionByAddrFast(const uint32_t addr);
-    void clearSection();
-    void initMinimumSections();
-    void addSection(const string& name, uint32_t addr, uint32_t size);
-    template<typename T> void addSection(T& section)
+    auto section(const uint32_t addr) -> MemorySection&;
+    auto section(const char* name) -> MemorySection&;
+    auto section(const string& name) -> MemorySection&;
+    auto sectionByAddr(const uint32_t addr) -> MemorySection&;
+    auto sectionByAddrSafe(const uint32_t addr) -> MemorySection&;
+    auto sectionByAddrFast(const uint32_t addr) -> MemorySection&;
+    auto clearSection() -> void;
+    auto initMinimumSections() -> void;
+    auto addSection(const string& name, uint32_t addr, uint32_t size) -> void;
+    template<typename T> auto addSection(T& section) -> void
     {
       sections.insert(make_pair(section.addr, make_shared<T>(section)));
       sectionNameTable.insert(make_pair(section.name, section.addr));
     }
-    bool waitAccess(uint32_t addr, uint32_t size, bool rw, int8_t& wait);
-    bool isBusy(uint32_t priority);
-    void setBusy(uint32_t priority);
-    void clearBusy(uint32_t priority);
-    int8_t read8(uint32_t addr);
-    int16_t read16(uint32_t addr);
-    int32_t read32(uint32_t addr);
-    void write8(uint32_t addr, int8_t value);
-    void write16(uint32_t addr, int16_t value);
-    void write32(uint32_t addr, int32_t value);
-    void copy(uint32_t addr, uint32_t size, uint8_t* value);
+    auto waitAccess(uint32_t addr, uint32_t size, bool rw, int8_t& wait) -> bool;
+    auto isBusy(uint32_t priority) -> bool;
+    auto setBusy(uint32_t priority) -> void;
+    auto clearBusy(uint32_t priority) -> void;
+    auto read8(uint32_t addr) -> int8_t;
+    auto read16(uint32_t addr) -> int16_t;
+    auto read32(uint32_t addr) -> int32_t;
+    auto write8(uint32_t addr, int8_t value) -> void;
+    auto write16(uint32_t addr, int16_t value) -> void;
+    auto write32(uint32_t addr, int32_t value) -> void;
+    auto copy(uint32_t addr, uint32_t size, uint8_t* value) -> void;
 };
 

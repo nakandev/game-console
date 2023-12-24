@@ -24,7 +24,7 @@ TileView::~TileView()
 {
 }
 
-void TileView::update()
+auto TileView::update() -> void
 {
   HwTileRam& tileram = *(HwTileRam*)board.memory.section("tile").buffer();
   int width = HWTILE_W * txn, height = HWTILE_H * tyn;
@@ -43,7 +43,7 @@ void TileView::update()
   ImGui::Image(reinterpret_cast<void *>(framebuffer), ImVec2(width, height));
 }
 
-void TileView::createFramebuffer()
+auto TileView::createFramebuffer() -> void
 {
   int width = HWTILE_W * txn, height = HWTILE_H * tyn;
   glGenFramebuffers(1, &framebuffer);
@@ -69,7 +69,7 @@ void TileView::createFramebuffer()
   glBindRenderbuffer(GL_RENDERBUFFER, 0);
 }
 
-void TileView::renderFramebuffer()
+auto TileView::renderFramebuffer() -> void
 {
   HwTileRam& tileram = *(HwTileRam*)board.memory.section("tile").buffer();
   int width = HWTILE_W * txn, height = HWTILE_H * tyn;
@@ -87,7 +87,7 @@ void TileView::renderFramebuffer()
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0);
 }
 
-void TileView::cleanup()
+auto TileView::cleanup() -> void
 {
   glDeleteRenderbuffers(1, &renderbuffer);
   glDeleteTextures(1, &texture);

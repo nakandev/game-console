@@ -4,7 +4,7 @@
 #include <sstream>
 #include <fmt/core.h>
 
-static vector<string> splitCommandString(const string& cmdstr)
+static auto splitCommandString(const string& cmdstr) -> vector<string>
 {
   char delim = ' ';
   vector<string> cmds;
@@ -38,14 +38,12 @@ Debugger::~Debugger()
   cpu = nullptr;
 }
 
-void
-Debugger::setCpu(Cpu& cpu)
+auto Debugger::setCpu(Cpu& cpu) -> void
 {
   this->cpu = &cpu;
 }
 
-void
-Debugger::runInterpreter()
+auto Debugger::runInterpreter() -> void
 {
   bool done = false;
   while (!done) {
@@ -58,8 +56,7 @@ Debugger::runInterpreter()
   }
 }
 
-void
-Debugger::input_command()
+auto Debugger::input_command() -> void
 {
   const char delim = ' ';
   string cmd;
@@ -76,8 +73,7 @@ Debugger::input_command()
   }
 }
 
-int
-Debugger::exec_command()
+auto Debugger::exec_command() -> int
 {
   auto& cmd = commandStrings;
   if (cmd.size() == 0) {
@@ -113,8 +109,7 @@ Debugger::exec_command()
   return 0;
 }
 
-int
-Debugger::breakpoint_set(const string& label)
+auto Debugger::breakpoint_set(const string& label) -> int
 {
   auto bp = BreakPoint{currentBreakPointId, -1, -1, "notitle"};
   if (label.starts_with("0x")) {
@@ -129,32 +124,28 @@ Debugger::breakpoint_set(const string& label)
   return 0;
 }
 
-int
-Debugger::step_in()
+auto Debugger::step_in() -> int
 {
   if (!cpu) return 1;
   cpu->stepCycle();
   return 0;
 }
 
-int
-Debugger::disassemble_pc()
+auto Debugger::disassemble_pc() -> int
 {
   if (!cpu) return 1;
   fmt::print("pc:{:08x}\n", cpu->getPc());
   return 0;
 }
 
-int
-Debugger::disassemble_all()
+auto Debugger::disassemble_all() -> int
 {
   if (!cpu) return 1;
   cpu->disassembleAll();
   return 0;
 }
 
-int
-Debugger::register_read(uint32_t group, uint32_t no, uint8_t fmt)
+auto Debugger::register_read(uint32_t group, uint32_t no, uint8_t fmt) -> int
 {
   if (!cpu) return 1;
   auto regStrs = cpu->readRegisterAll();
@@ -164,8 +155,7 @@ Debugger::register_read(uint32_t group, uint32_t no, uint8_t fmt)
   return 0;
 }
 
-int
-Debugger::process_launch()
+auto Debugger::process_launch() -> int
 {
   if (!cpu) return 1;
   long long maxCycle = 10000000;

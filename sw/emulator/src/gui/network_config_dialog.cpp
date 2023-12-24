@@ -22,7 +22,7 @@ NetworkConfigDialog::~NetworkConfigDialog()
 {
 }
 
-void NetworkConfigDialog::update()
+auto NetworkConfigDialog::update() -> void
 {
   if (enable) {
     ImVec2 center = ImGui::GetMainViewport()->GetCenter();

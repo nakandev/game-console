@@ -37,16 +37,16 @@ private:
   IntrrCtrl& intrrCtrl;
   vector<DmaChannel> channels;
   int runningDma;
-  void syncFromIoDma(int chIdx);
-  void updateRunningDma(uint32_t addr, int32_t value);
+  auto syncFromIoDma(int chIdx) -> void;
+  auto updateRunningDma(uint32_t addr, int32_t value) -> void;
 public:
   Dma(Memory& memory, IntrrCtrl& intrrCtrl);
   ~Dma();
-  void init();
-  void stepCycle();
-  bool isRunning();
-  void write8(uint32_t addr, int8_t value) override;
-  void write16(uint32_t addr, int16_t value) override;
-  void write32(uint32_t addr, int32_t value) override;
-  void write(uint32_t addr, uint32_t size, int32_t value) override;
+  auto init() -> void;
+  auto stepCycle() -> void;
+  auto isRunning() -> bool;
+  auto write8(uint32_t addr, int8_t value) -> void override;
+  auto write16(uint32_t addr, int16_t value) -> void override;
+  auto write32(uint32_t addr, int32_t value) -> void override;
+  auto write(uint32_t addr, uint32_t size, int32_t value) -> void override;
 };

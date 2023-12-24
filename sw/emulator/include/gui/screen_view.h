@@ -10,5 +10,5 @@ class ScreenView : GuiComponent {
   public:
     ScreenView(Board& board);
     ~ScreenView();
-    void update();
+    auto update() -> void;
 };

@@ -39,18 +39,18 @@ Vpu::~Vpu()
   vpuSprite.clear();
 }
 
-void Vpu::init()
+auto Vpu::init() -> void
 {
 }
 
-int Vpu::currentLineNo()
+auto Vpu::currentLineNo() -> int
 {
   return _currentLineNo;
 }
 
 static const int widthTable[] = {8, 16, 32, 64};
 static const int heightTable[] = {8, 16, 32, 64};
-static int prepareVpuSprite(HwTileRam& tileram, vector<VpuSprite>& vpusp, int y)
+static auto prepareVpuSprite(HwTileRam& tileram, vector<VpuSprite>& vpusp, int y) -> int
 {
   int spriteNum = 0;
   for (int i=0; i<HW_SPRITE_NUM; i++) {
@@ -80,7 +80,8 @@ static int prepareVpuSprite(HwTileRam& tileram, vector<VpuSprite>& vpusp, int y)
   return spriteNum;
 }
 
-static bool color_merge(HwColor& src, const HwColor& dst){
+static auto color_merge(HwColor& src, const HwColor& dst) -> bool
+{
   uint8_t a = dst.a;
   if (a == 0) return false;
   if (a == 255) {
@@ -95,13 +96,13 @@ static bool color_merge(HwColor& src, const HwColor& dst){
   }
 }
 
-static void drawLineBGPixel(uint8_t* vram, HwBG& bg, int x, int y, vector<uint32_t>& buffer)
+static auto drawLineBGPixel(uint8_t* vram, HwBG& bg, int x, int y, vector<uint32_t>& buffer) -> void
 {
   HwColor* colors = (HwColor*) vram;
   buffer[x] = colors[x + y * HW_SCREEN_W].data;
 }
 
-static void drawLineBGTile(HwTileRam& tileram, HwBG& bg, int x, int y, vector<uint32_t>& buffer)
+static auto drawLineBGTile(HwTileRam& tileram, HwBG& bg, int x, int y, vector<uint32_t>& buffer) -> void
 {
   uint8_t tilemapNo = bg.tilemapNo;
   uint8_t tileNo = bg.tileNo;
@@ -129,7 +130,7 @@ static void drawLineBGTile(HwTileRam& tileram, HwBG& bg, int x, int y, vector<ui
   buffer[x] = tileram.palette[paletteBank].color[paletteIdx + paletteNo * 16].data;
 }
 
-static void drawLineSprite(HwTileRam& tileram, VpuSprite& vpusp, int x, int y, vector<uint32_t>& buffer)
+static auto drawLineSprite(HwTileRam& tileram, VpuSprite& vpusp, int x, int y, vector<uint32_t>& buffer) -> void
 {
   HwSprite& sp = vpusp.hwsp;
   uint8_t tileNo = sp.tileNo;
@@ -173,7 +174,7 @@ static void sortLayerIndex(int idxs[4], int layers[4])
   }
 }
 
-void Vpu::drawLine(int y)
+auto Vpu::drawLine(int y) -> void
 {
   HwTileRam& tileram = *(HwTileRam*)memory.section("tile").buffer();
   uint8_t* vram = (uint8_t*)memory.section("vram").buffer();
@@ -226,14 +227,14 @@ void Vpu::drawLine(int y)
   }
 }
 
-void Vpu::drawAllLine()
+auto Vpu::drawAllLine() -> void
 {
   for (int y=0; y<HW_SCREEN_H; y++) {
     drawLine(y);
   }
 }
 
-void Vpu::copyScreenBuffer(uint32_t* buffer, bool inv)
+auto Vpu::copyScreenBuffer(uint32_t* buffer, bool inv) -> void
 {
   if (inv) {
     for (int i=0; i<HW_SCREEN_W * HW_SCREEN_H; i++) {

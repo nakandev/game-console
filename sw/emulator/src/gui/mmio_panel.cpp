@@ -20,7 +20,7 @@ MmioPanel::~MmioPanel()
 {
 }
 
-void MmioPanel::update()
+auto MmioPanel::update() -> void
 {
   ImGui::Text("MMIO Panel\n");
 }

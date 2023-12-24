@@ -20,7 +20,7 @@ DisasmView::~DisasmView()
 {
 }
 
-void DisasmView::update()
+auto DisasmView::update() -> void
 {
   ImGui::Text("%08x", board.cpu.getPc());
   ImGui::BeginChild(ImGui::GetID((void*)10), ImVec2(-1, -1), ImGuiWindowFlags_NoTitleBar);

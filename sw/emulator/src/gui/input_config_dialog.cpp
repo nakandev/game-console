@@ -46,7 +46,7 @@ InputConfigDialog::~InputConfigDialog()
   if (padInfo.device) SDL_GameControllerClose(padInfo.device);
 }
 
-void InputConfigDialog::update()
+auto InputConfigDialog::update() -> void
 {
   if (enable) {
     ImVec2 center = ImGui::GetMainViewport()->GetCenter();
@@ -100,18 +100,18 @@ void InputConfigDialog::update()
   }
 }
 
-void InputConfigDialog::draw()
+auto InputConfigDialog::draw() -> void
 {
 }
 
-void InputConfigDialog::selectPadDevice()
+auto InputConfigDialog::selectPadDevice() -> void
 {
 }
 
-void InputConfigDialog::setupPadKey()
+auto InputConfigDialog::setupPadKey() -> void
 {
 }
 
-void InputConfigDialog::setupPadKeyAll()
+auto InputConfigDialog::setupPadKeyAll() -> void
 {
 }

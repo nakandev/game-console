@@ -24,17 +24,17 @@ protected:
 public:
   Cpu(Memory& memory);
   ~Cpu();
-  void setMaxCycles(int64_t cycles);
-  uint8_t loadElf(const string& path);
-  void init();
-  void reset();
-  void requestInterruption();
-  void handleInterruption();
-  void stepCycle() override;
-  void stepInstruction();
-  const uint32_t getPc();
-  void cacheAllInstruction();
-  const map<uint32_t, string> disassembleAll();
-  const vector<string> readRegisterAll();
+  auto setMaxCycles(int64_t cycles) -> void;
+  auto loadElf(const string& path) -> uint8_t;
+  auto init() -> void;
+  auto reset() -> void;
+  auto requestInterruption() -> void;
+  auto handleInterruption() -> void;
+  auto stepCycle() -> void override;
+  auto stepInstruction() -> void;
+  const auto getPc() -> uint32_t;
+  auto cacheAllInstruction() -> void;
+  const auto disassembleAll() -> map<uint32_t, string>;
+  const auto readRegisterAll() -> vector<string>;
 };
 

@@ -11,8 +11,8 @@ public:
   Cpu& cpu;
   IntrrCtrl(Memory& memory, Cpu& cpu);
   ~IntrrCtrl();
-  void requestInt(uint8_t intno);
-  void setIntStatus(uint8_t intno);
-  void clearIntStatus(uint8_t intno);
+  auto requestInt(uint8_t intno) -> void;
+  auto setIntStatus(uint8_t intno) -> void;
+  auto clearIntStatus(uint8_t intno) -> void;
 };
 

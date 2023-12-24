@@ -30,8 +30,7 @@ Board::~Board()
 {
 }
 
-void
-Board::reset()
+auto Board::reset() -> void
 {
   cpu.init();
   vpu.init();
@@ -41,7 +40,18 @@ Board::reset()
   pause = false;
 }
 
-void Board::updateFrame()
+auto Board::stepCpuCycle() -> void
+{
+  timer.stepCycle();
+  if (memory.processor) {
+    memory.processor->stepCycle();  // cpu or dma
+  }
+  else {
+    cpu.stepCycle();
+  }
+}
+
+auto Board::updateFrame() -> void
 {
   if (pause) return;
   for (int y=0; y<HW_SCREEN_H; y++) {
@@ -69,15 +79,4 @@ void Board::updateFrame()
     stepCpuCycle();
   }
   intrrCtrl.clearIntStatus(HW_IO_INT_VBLANK);
-}
-
-void Board::stepCpuCycle()
-{
-  timer.stepCycle();
-  if (memory.processor) {
-    memory.processor->stepCycle();  // cpu or dma
-  }
-  else {
-    cpu.stepCycle();
-  }
 }

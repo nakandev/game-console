@@ -4,5 +4,5 @@ class Processor {
 public:
   Processor(){}
   virtual ~Processor(){}
-  virtual void stepCycle(){}
+  virtual auto stepCycle() -> void {}
 };

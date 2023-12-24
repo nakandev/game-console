@@ -14,28 +14,32 @@ IO::~IO()
 {
 }
 
-void IO::setCpu(Cpu& cpu)
+auto IO::setCpu(Cpu& cpu) -> void
 {
   this->cpu = &cpu;
 }
-void IO::setVpu(Vpu& vpu)
+
+auto IO::setVpu(Vpu& vpu) -> void
 {
   this->vpu = &vpu;
 }
-void IO::setApu(Apu& apu)
+
+auto IO::setApu(Apu& apu) -> void
 {
   this->apu = &apu;
 }
-void IO::setDma(Dma& dma)
+
+auto IO::setDma(Dma& dma) -> void
 {
   this->dma = &dma;
 }
-void IO::setTimer(Timer& timer)
+
+auto IO::setTimer(Timer& timer) -> void
 {
   this->timer = &timer;
 }
 
-void IO::pressPadButton(uint8_t button)
+auto IO::pressPadButton(uint8_t button) -> void
 {
   const uint32_t addr = HWREG_IO_PAD0_ADDR;
   uint32_t status = memory.read32(addr);
@@ -43,7 +47,7 @@ void IO::pressPadButton(uint8_t button)
   memory.write32(addr, status);
 }
 
-void IO::releasePadButton(uint8_t button)
+auto IO::releasePadButton(uint8_t button) -> void
 {
   const uint32_t addr = HWREG_IO_PAD0_ADDR;
   uint32_t status = memory.read32(addr);
@@ -51,7 +55,7 @@ void IO::releasePadButton(uint8_t button)
   memory.write32(addr, status);
 }
 
-HwPad IO::getPadStatus()
+auto IO::getPadStatus() -> HwPad
 {
   const uint32_t addr = HWREG_IO_PAD0_ADDR;
   uint32_t status = memory.read32(addr);
@@ -59,7 +63,7 @@ HwPad IO::getPadStatus()
   return hwpad;
 }
 
-void IO::updateScanlineNumber(uint16_t y)
+auto IO::updateScanlineNumber(uint16_t y) -> void
 {
   memory.write16(HWREG_IO_SCANLINE_ADDR, y);
 }

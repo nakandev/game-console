@@ -81,8 +81,8 @@ private:
 public:
   Elf();
   ~Elf();
-  uint8_t load(const string& path);
-  const ElfHeader& getElfHeader();
-  Section* getSection(const string& name);
-  void allocMemory(Memory& memory);
+  auto load(const string& path) -> uint8_t;
+  auto getElfHeader() -> const ElfHeader&;
+  auto getSection(const string& name) -> Section*;
+  auto allocMemory(Memory& memory) -> void;
 };

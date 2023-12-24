@@ -16,7 +16,7 @@ union union32_t {
   float f;
 };
 
-inline int32_t sext(int sb, uint32_t v)
+inline auto sext(int sb, uint32_t v) -> int32_t
 {
   return (v) | (((v) & (1 << (sb))) ? ~((1 << (sb))-1) : 0);
 }

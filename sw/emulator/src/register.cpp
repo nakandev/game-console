@@ -32,7 +32,7 @@ RegisterGroup::~RegisterGroup()
   regs.clear();
 }
 
-void RegisterGroup::insert(size_t index, const Register& reg)
+auto RegisterGroup::insert(size_t index, const Register& reg) -> void
 {
   if (regs.size() < index + 1) {
     regs.resize(index + 1);
@@ -40,14 +40,14 @@ void RegisterGroup::insert(size_t index, const Register& reg)
   regs[index] = reg;
 }
 
-void RegisterGroup::init()
+auto RegisterGroup::init() -> void
 {
   for (int i=0; i<regs.size(); i++) {
     regs[i].val.s = 0;
   }
 }
 
-void RegisterGroup::dump()
+auto RegisterGroup::dump() -> void
 {
   for (auto& regitem: regs) {
     auto& reg = regitem;
@@ -66,21 +66,21 @@ SparceRegisterGroup::~SparceRegisterGroup()
   regs.clear();
 }
 
-void SparceRegisterGroup::insert(size_t index, const Register& reg)
+auto SparceRegisterGroup::insert(size_t index, const Register& reg) -> void
 {
   // regs.insert(make_pair(index, reg));
   indexs.push_back(index);
   regs.push_back(reg);
 }
 
-void SparceRegisterGroup::init()
+auto SparceRegisterGroup::init() -> void
 {
   for (int i=0; i<indexs.size(); i++) {
     regs[i].val.s = 0;
   }
 }
 
-Register& SparceRegisterGroup::at(size_t index)
+auto SparceRegisterGroup::at(size_t index) -> Register&
 {
   for (int i=0; i<indexs.size(); i++) {
     if (indexs[i] == index) {
@@ -90,7 +90,7 @@ Register& SparceRegisterGroup::at(size_t index)
   return regs[0];
 }
 
-void SparceRegisterGroup::dump()
+auto SparceRegisterGroup::dump() -> void
 {
   for (auto& regitem: regs) {
     // auto& reg = regitem.second;
@@ -142,7 +142,7 @@ RegisterSet::~RegisterSet()
 {
 }
 
-void RegisterSet::init()
+auto RegisterSet::init() -> void
 {
   pc.val.s = 0;
   prev_pc.val.s = 0;

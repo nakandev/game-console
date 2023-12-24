@@ -25,8 +25,8 @@ private:
   vector<VpuSprite> vpuSprite;
   Memory& memory;
   int scanline;
-  void setHBlank(bool flag);
-  void setVBlank(bool flag);
+  auto setHBlank(bool flag) -> void;
+  auto setVBlank(bool flag) -> void;
 public:
   struct {
     vector<bool8_t> enableBg;
@@ -34,9 +34,9 @@ public:
   } debug;
   Vpu(Memory& memory);
   ~Vpu();
-  void init();
-  int currentLineNo();
-  void drawLine(int y);
-  void drawAllLine();
-  void copyScreenBuffer(uint32_t* buffer, bool inv=false);
+  auto init() -> void;
+  auto currentLineNo() -> int;
+  auto drawLine(int y) -> void;
+  auto drawAllLine() -> void;
+  auto copyScreenBuffer(uint32_t* buffer, bool inv=false) -> void;
 };

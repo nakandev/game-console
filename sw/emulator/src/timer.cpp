@@ -14,10 +14,10 @@ Timer::~Timer()
 {
 }
 
-void Timer::init()
+auto Timer::init() -> void
 {
 }
 
-void Timer::stepCycle()
+auto Timer::stepCycle() -> void
 {
 }

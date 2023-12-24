@@ -19,12 +19,12 @@ Cpu::~Cpu()
 {
 }
 
-void Cpu::setMaxCycles(int64_t cycles)
+auto Cpu::setMaxCycles(int64_t cycles) -> void
 {
   maxCycles = cycles;
 }
 
-uint8_t Cpu::loadElf(const string& path)
+auto Cpu::loadElf(const string& path) -> uint8_t
 {
   elf = shared_ptr<Elf>(new Elf());
   if (elf.get()->load(path)) {
@@ -37,7 +37,7 @@ uint8_t Cpu::loadElf(const string& path)
   return 0;
 }
 
-void Cpu::init()
+auto Cpu::init() -> void
 {
   elf = shared_ptr<Elf>();
   memory.initMinimumSections();
@@ -45,7 +45,7 @@ void Cpu::init()
   reset();
 }
 
-void Cpu::reset()
+auto Cpu::reset() -> void
 {
   for (auto &instr: currentInstr) {
     instr = Instruction();
@@ -63,12 +63,12 @@ void Cpu::reset()
   instrCount = 0;
 }
 
-void Cpu::requestInterruption()
+auto Cpu::requestInterruption() -> void
 {
   regs.csr[MSTATUS].val.u |= 0x8;  // MIE bit on
 }
 
-void Cpu::handleInterruption()
+auto Cpu::handleInterruption() -> void
 {
   bool isIntrr = isa.checkInterruption(currentInstr[0], regs, memory);
   if (isIntrr && !memory.isBusy(0)) {
@@ -76,7 +76,7 @@ void Cpu::handleInterruption()
   }
 }
 
-void Cpu::stepCycle()
+auto Cpu::stepCycle() -> void
 {
   if (currentInstr[0].isWaiting) {
   } else
@@ -117,7 +117,7 @@ void Cpu::stepCycle()
   cycleCount++;
 }
 
-void Cpu::stepInstruction()
+auto Cpu::stepInstruction() -> void
 {
   auto& instr = currentInstr[0];
   while (instr.phase != 0) {
@@ -125,12 +125,12 @@ void Cpu::stepInstruction()
   }
 }
 
-const uint32_t Cpu::getPc()
+const auto Cpu::getPc() -> uint32_t
 {
   return regs.pc.val.u;
 }
 
-const map<uint32_t, string> Cpu::disassembleAll()
+const auto Cpu::disassembleAll() -> map<uint32_t, string>
 {
   const uint8_t* buffer = programSection->buffer();
   size_t offset = 0;
@@ -155,7 +155,7 @@ const map<uint32_t, string> Cpu::disassembleAll()
   return std::move(disasms);
 }
 
-const vector<string> Cpu::readRegisterAll()
+const auto Cpu::readRegisterAll() -> vector<string>
 {
   vector<string> regStrs;
   for (int i=0; i<regs.gpr.size(); i++) {
@@ -165,7 +165,7 @@ const vector<string> Cpu::readRegisterAll()
   return regStrs;
 }
 
-void Cpu::cacheAllInstruction()
+auto Cpu::cacheAllInstruction() -> void
 {
   regs.pc.val.u = elf.get()->getElfHeader().entry;
   uint32_t prgEnd = programSection->addr + programSection->size;

@@ -16,7 +16,7 @@ Dma::~Dma()
   channels.clear();
 }
 
-void Dma::init()
+auto Dma::init() -> void
 {
   memory.addSection<Dma>(*this);
   HwIoDma& dmaram = *(HwIoDma*)this->data;
@@ -36,7 +36,7 @@ void Dma::init()
   runningDma = -1;
 }
 
-void Dma::syncFromIoDma(int chIdx)
+auto Dma::syncFromIoDma(int chIdx) -> void
 {
   HwIoDma& dma = *(HwIoDma*)this->data;
   channels[chIdx].src          = dma.dma[chIdx].src         ;
@@ -47,7 +47,7 @@ void Dma::syncFromIoDma(int chIdx)
   channels[chIdx].enable = true;
 }
 
-void Dma::stepCycle()
+auto Dma::stepCycle() -> void
 {
   HwIoDma& dma = *(HwIoDma*)this->data;
   int chIdx = runningDma;
@@ -118,29 +118,29 @@ void Dma::stepCycle()
   }
 }
 
-void Dma::write8(uint32_t addr, int8_t value)
+auto Dma::write8(uint32_t addr, int8_t value) -> void
 {
   MemorySection::write8(addr, value);
   updateRunningDma(addr, value);
 }
-void Dma::write16(uint32_t addr, int16_t value)
+auto Dma::write16(uint32_t addr, int16_t value) -> void
 {
   MemorySection::write16(addr, value);
   updateRunningDma(addr, value);
 }
-void Dma::write32(uint32_t addr, int32_t value)
+auto Dma::write32(uint32_t addr, int32_t value) -> void
 {
   MemorySection::write32(addr, value);
   updateRunningDma(addr, value);
 }
 
-void Dma::write(uint32_t addr, uint32_t size, int32_t value)
+auto Dma::write(uint32_t addr, uint32_t size, int32_t value) -> void
 {
   MemorySection::write(addr, size, value);
   updateRunningDma(addr, value);
 }
 
-void Dma::updateRunningDma(uint32_t addr, int32_t value)
+auto Dma::updateRunningDma(uint32_t addr, int32_t value) -> void
 {
   HwIoDma& dma = *(HwIoDma*)this->data;
   runningDma = -1;

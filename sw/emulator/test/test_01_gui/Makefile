@@ -65,11 +65,11 @@ CXXFLAGS = -std=c++20 -I$(NKX_EMU_ROOT)/include
 CXXFLAGS += -I$(IMGUI_DIR) -I$(IMGUI_FILE_DIR)
 CXXFLAGS += -I$(IMGUI_DIR)/backends
 CXXFLAGS += -g -O3
-CXXFLAGS += -flto
+# CXXFLAGS += -flto
 CXXFLAGS_PROF = -pg $(CXXFLAGS)
 LDFLAGS =
 LDFLAGS += -g -O3
-LDFLAGS += -flto
+# LDFLAGS += -flto
 LDFLAGS_PROF = -pg $(LDFLAGS)
 LIBS = -lfmt
 LIBS_SDL = `sdl2-config --libs` -lGL -lGLEW

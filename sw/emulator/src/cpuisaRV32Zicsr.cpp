@@ -6,7 +6,7 @@
 
 #include <fmt/core.h>
 
-bool CpuIsaRV32I::checkInterruption(Instruction& instr, RegisterSet& regs, Memory& memory)
+auto CpuIsaRV32I::checkInterruption(Instruction& instr, RegisterSet& regs, Memory& memory) -> bool
 {
   // check CSR.
   auto mstatus = regs.csr[MSTATUS].val.u;
@@ -16,7 +16,7 @@ bool CpuIsaRV32I::checkInterruption(Instruction& instr, RegisterSet& regs, Memor
   if ((mstatus & 0x8) && mie) return true;  // dummy conditional..
   return false;
 }
-void CpuIsaRV32I::handleInterruption(Instruction& instr, RegisterSet& regs)
+auto CpuIsaRV32I::handleInterruption(Instruction& instr, RegisterSet& regs) -> void
 {
   // save current PC to MEPC.
   regs.csr[MEPC].val.u = regs.pc.val.u;
@@ -35,7 +35,7 @@ void CpuIsaRV32I::handleInterruption(Instruction& instr, RegisterSet& regs)
   instr.isJumped = true;
 }
 
-void CpuIsaRV32I::returnInterruption(Instruction& instr, RegisterSet& regs)
+auto CpuIsaRV32I::returnInterruption(Instruction& instr, RegisterSet& regs) -> void
 {
   // restore MPIE bit to MIE bit in MSTATUS register.
   auto mstatus = regs.csr[MSTATUS].val.u;
@@ -48,12 +48,12 @@ void CpuIsaRV32I::returnInterruption(Instruction& instr, RegisterSet& regs)
   instr.isJumped = true;
 }
 
-void CpuIsaRV32I::setException(Instruction& instr, RegisterSet& regs, uint32_t cause)
+auto CpuIsaRV32I::setException(Instruction& instr, RegisterSet& regs, uint32_t cause) -> void
 {
   regs.csr[MCAUSE].val.u = cause;
 }
 
-void CpuIsaRV32I::handleException(Instruction& instr, RegisterSet& regs)
+auto CpuIsaRV32I::handleException(Instruction& instr, RegisterSet& regs) -> void
 {
   regs.csr[MEPC].val.u = regs.pc.val.u;
 }

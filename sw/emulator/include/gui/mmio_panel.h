@@ -9,6 +9,6 @@ class MmioPanel : public GuiComponent {
   public:
     MmioPanel(Board& board);
     ~MmioPanel();
-    void update();
+    auto update() -> void;
 };
 

@@ -39,14 +39,14 @@ Apu::~Apu()
   musicBuffer.clear();
 }
 
-void Apu::init()
+auto Apu::init() -> void
 {
   // noteBuffer.resize(HW_MUSIC_CHANNEL_NUM);
   // musicBuffer.resize(HW_MUSIC_FREQ_PER_FRAME * 2);
   apuMusicData = {.noteCount=0, .frameCount=0, .buffer=musicBuffer.data()};
 }
 
-static FLOAT envelope(FLOAT y, HwSoundOp& op, uint32_t noteLength, uint32_t time)
+static auto envelope(FLOAT y, HwSoundOp& op, uint32_t noteLength, uint32_t time) -> FLOAT
 {
   const uint32_t freq = HW_MUSIC_FREQUENCY;
   FLOAT end = (noteLength + 1) / 4;
@@ -74,11 +74,13 @@ static FLOAT envelope(FLOAT y, HwSoundOp& op, uint32_t noteLength, uint32_t time
   return y * k;
 }
 
-static FLOAT sig_sin(FLOAT x, FLOAT arg) {
+static auto sig_sin(FLOAT x, FLOAT arg) -> FLOAT
+{
   return sin(x);
 }
 
-static FLOAT sig_square(FLOAT x, FLOAT arg) {
+static auto sig_square(FLOAT x, FLOAT arg) -> FLOAT
+{
   double dummy;
   FLOAT nx = modf(x / (2 * 3.1415926), &dummy);
   FLOAT y;
@@ -90,7 +92,7 @@ static FLOAT sig_square(FLOAT x, FLOAT arg) {
   return y;
 }
 
-static FLOAT sig_saw(FLOAT x, FLOAT arg) {
+static auto sig_saw(FLOAT x, FLOAT arg) -> FLOAT {
   double dummy;
   FLOAT nx = modf(x / (2 * 3.1415926), &dummy);
   FLOAT y;
@@ -112,7 +114,7 @@ static FLOAT sig_saw(FLOAT x, FLOAT arg) {
   return y;
 }
 
-static FLOAT sig_noise(FLOAT x, FLOAT arg)
+static auto sig_noise(FLOAT x, FLOAT arg) -> FLOAT
 {
   return dist1(engine);
 }
@@ -124,7 +126,7 @@ static FLOAT (*signalFuncs[])(FLOAT x, FLOAT arg) = {
   sig_noise,
 };
 
-static FLOAT signalFunc(HwSoundOp& op, int scale, int length, FLOAT time, FLOAT y0)
+static auto signalFunc(HwSoundOp& op, int scale, int length, FLOAT time, FLOAT y0) -> FLOAT
 {
   FLOAT amp = (FLOAT)op.amp / 16.0;
   FLOAT freq = 0.0;
@@ -140,7 +142,7 @@ static FLOAT signalFunc(HwSoundOp& op, int scale, int length, FLOAT time, FLOAT 
   return y;
 }
 
-static FLOAT algorithm0(HwInstRam& aram, HwMusicNote& note, uint32_t time)
+static auto algorithm0(HwInstRam& aram, HwMusicNote& note, uint32_t time) -> FLOAT
 {
   /* [3 > 2 > 1 > 0 > [OUT] */
   auto instId = note.instrumentId;
@@ -159,7 +161,7 @@ static FLOAT algorithm0(HwInstRam& aram, HwMusicNote& note, uint32_t time)
   return y[0];
 }
 
-static FLOAT algorithm1(HwInstRam& aram, HwMusicNote& note, uint32_t time)
+static auto algorithm1(HwInstRam& aram, HwMusicNote& note, uint32_t time) -> FLOAT
 {
   /* [3 +        */
   /*  2 +> 1 > 0 > [OUT] */
@@ -179,7 +181,7 @@ static FLOAT algorithm1(HwInstRam& aram, HwMusicNote& note, uint32_t time)
   return y[0];
 }
 
-static FLOAT algorithm2(HwInstRam& aram, HwMusicNote& note, uint32_t time)
+static auto algorithm2(HwInstRam& aram, HwMusicNote& note, uint32_t time) -> FLOAT
 {
   /*    [3 +        */
   /* 2 > 1 +> 0 > [OUT] */
@@ -199,7 +201,7 @@ static FLOAT algorithm2(HwInstRam& aram, HwMusicNote& note, uint32_t time)
   return y[0];
 }
 
-static FLOAT algorithm3(HwInstRam& aram, HwMusicNote& note, uint32_t time)
+static auto algorithm3(HwInstRam& aram, HwMusicNote& note, uint32_t time) -> FLOAT
 {
   /* [3 > 2 +            */
   /*      1 +> 0 > [OUT] */
@@ -219,7 +221,7 @@ static FLOAT algorithm3(HwInstRam& aram, HwMusicNote& note, uint32_t time)
   return y[2] + y[0];
 }
 
-static FLOAT algorithm4(HwInstRam& aram, HwMusicNote& note, uint32_t time)
+static auto algorithm4(HwInstRam& aram, HwMusicNote& note, uint32_t time) -> FLOAT
 {
   /* 3 > 2 +        */
   /* 1 > 0 +> [OUT] */
@@ -239,7 +241,7 @@ static FLOAT algorithm4(HwInstRam& aram, HwMusicNote& note, uint32_t time)
   return y[2] + y[0];
 }
 
-static FLOAT algorithm5(HwInstRam& aram, HwMusicNote& note, uint32_t time)
+static auto algorithm5(HwInstRam& aram, HwMusicNote& note, uint32_t time) -> FLOAT
 {
   /* [3 > 2 +        */
   /*    > 1 +        */
@@ -260,7 +262,7 @@ static FLOAT algorithm5(HwInstRam& aram, HwMusicNote& note, uint32_t time)
   return y[2] + y[1] + y[0];
 }
 
-static FLOAT algorithm6(HwInstRam& aram, HwMusicNote& note, uint32_t time)
+static auto algorithm6(HwInstRam& aram, HwMusicNote& note, uint32_t time) -> FLOAT
 {
   /* [3 > 2 +        */
   /*      1 +        */
@@ -281,7 +283,7 @@ static FLOAT algorithm6(HwInstRam& aram, HwMusicNote& note, uint32_t time)
   return y[2] + y[1] + y[0];
 }
 
-static FLOAT algorithm7(HwInstRam& aram, HwMusicNote& note, uint32_t time)
+static auto algorithm7(HwInstRam& aram, HwMusicNote& note, uint32_t time) -> FLOAT
 {
   /* [3 +        */
   /*  2 +        */
@@ -314,7 +316,7 @@ FLOAT (* const algorithms[])(HwInstRam&, HwMusicNote&, uint32_t) = {
   &algorithm7,
 };
 
-void Apu::updateMusicBuffer()
+auto Apu::updateMusicBuffer() -> void
 {
   HwInstRam& aram = *(HwInstRam*)memory.section("inst").buffer();
   auto& music = aram.music[0];

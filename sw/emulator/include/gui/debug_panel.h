@@ -9,11 +9,11 @@ class DebugPanel : public GuiComponent {
   public:
     DebugPanel(Board& board);
     ~DebugPanel();
-    void update();
-    void updateDebugButtons();
-    void updateDebugButtons2();
-    void updateVideoCtrlPanel();
-    void updateAudioCtrlPanel();
-    void updateInputCtrlPanel();
+    auto update() -> void;
+    auto updateDebugButtons() -> void;
+    auto updateDebugButtons2() -> void;
+    auto updateVideoCtrlPanel() -> void;
+    auto updateAudioCtrlPanel() -> void;
+    auto updateInputCtrlPanel() -> void;
 };
 

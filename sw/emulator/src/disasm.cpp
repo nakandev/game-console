@@ -6,8 +6,7 @@
 
 #include <fmt/core.h>
 
-const string
-CpuIsaRV32I::instrToStr(int64_t icount, uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory)
+auto CpuIsaRV32I::instrToStr(int64_t icount, uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory) -> const string
 {
   auto op = disassemble(pc, instr, regs, memory);
   auto reginfo = fmt::format("x{:02d}={:08x} x{:02d}={:08x} x{:02d}={:08x} imm={:08x}",
@@ -38,15 +37,13 @@ CpuIsaRV32I::instrToStr(int64_t icount, uint32_t pc, Instruction& instr, Registe
   return std::move(printstr);
 }
 
-void
-CpuIsaRV32I::printInstr(int64_t icount, uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory)
+auto CpuIsaRV32I::printInstr(int64_t icount, uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory) -> void
 {
   string s = instrToStr(icount, pc, instr, regs, memory);
   fmt::print("{}", s);
 }
 
-string
-CpuIsaRV32I::disassemble(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory)
+auto CpuIsaRV32I::disassemble(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory) -> string
 {
   string op = "???";
   if (instr.size == 2) {
@@ -113,8 +110,7 @@ CpuIsaRV32I::disassemble(uint32_t pc, Instruction& instr, RegisterSet& regs, Mem
   return std::move(op);
 }
 
-string
-CpuIsaRV32I::disassembleTypeR(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory)
+auto CpuIsaRV32I::disassembleTypeR(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory) -> string
 {
   string dst = fmt::format("x{}", instr.dst);
   string src1 = fmt::format("x{}", instr.src1);
@@ -145,8 +141,7 @@ CpuIsaRV32I::disassembleTypeR(uint32_t pc, Instruction& instr, RegisterSet& regs
   return std::move(op);
 }
 
-string
-CpuIsaRV32I::disassembleTypeI(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory)
+auto CpuIsaRV32I::disassembleTypeI(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory) -> string
 {
   string dst = fmt::format("x{}", instr.dst);
   string src1 = fmt::format("x{}", instr.src1);
@@ -169,8 +164,7 @@ CpuIsaRV32I::disassembleTypeI(uint32_t pc, Instruction& instr, RegisterSet& regs
   return std::move(op);
 }
 
-string
-CpuIsaRV32I::disassembleTypeS(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory)
+auto CpuIsaRV32I::disassembleTypeS(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory) -> string
 {
   string dst = fmt::format("x{}", instr.dst);
   string src1 = fmt::format("x{}", instr.src1);
@@ -191,8 +185,7 @@ CpuIsaRV32I::disassembleTypeS(uint32_t pc, Instruction& instr, RegisterSet& regs
   return std::move(op);
 }
 
-string
-CpuIsaRV32I::disassembleTypeU(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory)
+auto CpuIsaRV32I::disassembleTypeU(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory) -> string
 {
   string dst = fmt::format("x{}", instr.dst);
   string imm = fmt::format("0x{:x}<{}>", instr.imm.u, instr.imm.u);
@@ -206,8 +199,7 @@ CpuIsaRV32I::disassembleTypeU(uint32_t pc, Instruction& instr, RegisterSet& regs
   return std::move(op);
 }
 
-string
-CpuIsaRV32I::disassembleTypeB(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory)
+auto CpuIsaRV32I::disassembleTypeB(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory) -> string
 {
   string src1 = fmt::format("x{}", instr.src1);
   string src2 = fmt::format("x{}", instr.src2);
@@ -226,8 +218,7 @@ CpuIsaRV32I::disassembleTypeB(uint32_t pc, Instruction& instr, RegisterSet& regs
   return std::move(op);
 }
 
-string
-CpuIsaRV32I::disassembleTypeJ(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory)
+auto CpuIsaRV32I::disassembleTypeJ(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory) -> string
 {
   string dst = fmt::format("x{}", instr.dst);
   string imm = fmt::format("0x{:x}<{}>", pc + instr.imm.s, pc + instr.imm.s);
@@ -240,8 +231,7 @@ CpuIsaRV32I::disassembleTypeJ(uint32_t pc, Instruction& instr, RegisterSet& regs
   return std::move(op);
 }
 
-string
-CpuIsaRV32I::disassembleTypeSystem(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory)
+auto CpuIsaRV32I::disassembleTypeSystem(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory) -> string
 {
   string opcode = "<typeSystem>";
   if (instr.instr == INSTR_ECALL) {
@@ -277,8 +267,7 @@ static const uint8_t tbl[8] = {
   8, 9, 10, 11, 12, 13, 14, 15
 };
 
-string
-CpuIsaRV32I::disassembleTypeCR(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory)
+auto CpuIsaRV32I::disassembleTypeCR(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory) -> string
 {
   string dst = fmt::format("x{}", instr.dst);
   string src1 = fmt::format("x{}", instr.src1);
@@ -295,8 +284,8 @@ CpuIsaRV32I::disassembleTypeCR(uint32_t pc, Instruction& instr, RegisterSet& reg
   string op = fmt::format("{} {}, {}, {}", opcode, dst, src1, src2);
   return std::move(op);
 }
-string
-CpuIsaRV32I::disassembleTypeCI(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory)
+
+auto CpuIsaRV32I::disassembleTypeCI(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory) -> string
 {
   string dst = fmt::format("x{}", instr.dst);
   string src1 = fmt::format("x{}", instr.src1);
@@ -322,8 +311,8 @@ CpuIsaRV32I::disassembleTypeCI(uint32_t pc, Instruction& instr, RegisterSet& reg
   }
   return std::move(op);
 }
-string
-CpuIsaRV32I::disassembleTypeCSS(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory)
+
+auto CpuIsaRV32I::disassembleTypeCSS(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory) -> string
 {
   string dst = fmt::format("x{}", 2);
   string src2 = fmt::format("x{}", instr.src2);
@@ -336,8 +325,8 @@ CpuIsaRV32I::disassembleTypeCSS(uint32_t pc, Instruction& instr, RegisterSet& re
   string op = fmt::format("{} {}, {} ({})", opcode, dst, imm, src2);
   return std::move(op);
 }
-string
-CpuIsaRV32I::disassembleTypeCIW(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory)
+
+auto CpuIsaRV32I::disassembleTypeCIW(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory) -> string
 {
   string dst = fmt::format("x{}", tbl[instr.dst]);
   string src1 = fmt::format("x{}", 2);
@@ -350,8 +339,8 @@ CpuIsaRV32I::disassembleTypeCIW(uint32_t pc, Instruction& instr, RegisterSet& re
   string op = fmt::format("{} {}, {}, ({})", opcode, dst, imm, src1);
   return std::move(op);
 }
-string
-CpuIsaRV32I::disassembleTypeCL(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory)
+
+auto CpuIsaRV32I::disassembleTypeCL(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory) -> string
 {
   string src1 = fmt::format("x{}", tbl[instr.src1]);
   string dst = fmt::format("x{}", tbl[instr.dst]);
@@ -364,8 +353,8 @@ CpuIsaRV32I::disassembleTypeCL(uint32_t pc, Instruction& instr, RegisterSet& reg
   string op = fmt::format("{} {}, {}, ({})", opcode, dst, imm, src1);
   return std::move(op);
 }
-string
-CpuIsaRV32I::disassembleTypeCS(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory)
+
+auto CpuIsaRV32I::disassembleTypeCS(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory) -> string
 {
   string src1 = fmt::format("x{}", tbl[instr.src1]);
   string src2 = fmt::format("x{}", tbl[instr.src2]);
@@ -378,8 +367,8 @@ CpuIsaRV32I::disassembleTypeCS(uint32_t pc, Instruction& instr, RegisterSet& reg
   string op = fmt::format("{} {}, {}, ({})", opcode, src2, imm, src1);
   return std::move(op);
 }
-string
-CpuIsaRV32I::disassembleTypeCA(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory)
+
+auto CpuIsaRV32I::disassembleTypeCA(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory) -> string
 {
   string dst = fmt::format("x{}", tbl[instr.dst]);
   string src1 = fmt::format("x{}", tbl[instr.src1]);
@@ -395,8 +384,8 @@ CpuIsaRV32I::disassembleTypeCA(uint32_t pc, Instruction& instr, RegisterSet& reg
   string op = fmt::format("{} {}, {}, {}", opcode, dst, src1, src2);
   return std::move(op);
 }
-string
-CpuIsaRV32I::disassembleTypeCB2(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory)
+
+auto CpuIsaRV32I::disassembleTypeCB2(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory) -> string
 {
   string dst = fmt::format("x{}", tbl[instr.dst]);
   string src1 = fmt::format("x{}", tbl[instr.src1]);
@@ -411,8 +400,8 @@ CpuIsaRV32I::disassembleTypeCB2(uint32_t pc, Instruction& instr, RegisterSet& re
   string op = fmt::format("{} {}, {}, {}", opcode, dst, src1, imm);
   return std::move(op);
 }
-string
-CpuIsaRV32I::disassembleTypeCB(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory)
+
+auto CpuIsaRV32I::disassembleTypeCB(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory) -> string
 {
   string dst = fmt::format("x{}", tbl[instr.dst]);
   string src1 = fmt::format("x{}", tbl[instr.src1]);
@@ -426,8 +415,8 @@ CpuIsaRV32I::disassembleTypeCB(uint32_t pc, Instruction& instr, RegisterSet& reg
   string op = fmt::format("{} {}, {}, {}", opcode, dst, src1, imm);
   return std::move(op);
 }
-string
-CpuIsaRV32I::disassembleTypeCJ(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory)
+
+auto CpuIsaRV32I::disassembleTypeCJ(uint32_t pc, Instruction& instr, RegisterSet& regs, Memory& memory) -> string
 {
   uint8_t dstreg = instr.instr == INSTR_CJAL ? 1 : 0;
   string dst = fmt::format("x{}", dstreg);

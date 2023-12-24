@@ -50,12 +50,13 @@ MainComponent::MainComponent(Board& board)
 MainComponent::~MainComponent()
 {
 }
-void MainComponent::setElfPath(string path)
+
+auto MainComponent::setElfPath(string path) -> void
 {
   elfpath = path;
 }
 
-void MainComponent::createFramebuffer()
+auto MainComponent::createFramebuffer() -> void
 {
   int width = HW_SCREEN_W, height = HW_SCREEN_H;
   glGenFramebuffers(1, &framebuffer);
@@ -83,7 +84,7 @@ void MainComponent::createFramebuffer()
   tileView.createFramebuffer();
 }
 
-void MainComponent::renderMenu()
+auto MainComponent::renderMenu() -> void
 {
   if (ImGui::BeginMenuBar()) {
     if (ImGui::BeginMenu("System")) {
@@ -163,7 +164,7 @@ void MainComponent::renderMenu()
   networkConfigDialog.update();
 }
 
-void MainComponent::renderMainPanel()
+auto MainComponent::renderMainPanel() -> void
 {
   ImVec2 winsize = ImGui::GetWindowSize();
   // fmt::print("winW={}, winH={}\n", (int)winsize.x, (int)winsize.y);
@@ -226,7 +227,7 @@ void MainComponent::renderMainPanel()
   }
 }
 
-void MainComponent::renderScreen(int w, int h, bool center)
+auto MainComponent::renderScreen(int w, int h, bool center) -> void
 {
   float aspect = (float)w / (float)h;
   float gameW, gameH;
@@ -268,7 +269,7 @@ void MainComponent::renderScreen(int w, int h, bool center)
   ImGui::Image(reinterpret_cast<void *>(framebuffer), ImVec2(gameW, gameH));
 }
 
-void MainComponent::renderFramebuffer()
+auto MainComponent::renderFramebuffer() -> void
 {
   int width = HW_SCREEN_W, height = HW_SCREEN_H;
   glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
@@ -286,7 +287,7 @@ void MainComponent::renderFramebuffer()
   if (viewTabIndex == 2) tileView.renderFramebuffer();
 }
 
-void MainComponent::cleanup()
+auto MainComponent::cleanup() -> void
 {
   glDeleteRenderbuffers(1, &renderbuffer);
   glDeleteTextures(1, &texture);
@@ -295,7 +296,7 @@ void MainComponent::cleanup()
   tileView.cleanup();
 }
 
-void DrawSplitter(int split_vertically, float thickness, float* size0, float* size1, float min_size0, float min_size1)
+auto DrawSplitter(int split_vertically, float thickness, float* size0, float* size1, float min_size0, float min_size1) -> void
 {
   ImVec2 backup_pos = ImGui::GetCursorPos();
   if (split_vertically)

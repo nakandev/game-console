@@ -30,6 +30,6 @@ public:
   } debug;
   Apu(Memory& memory);
   ~Apu();
-  void init();
-  void updateMusicBuffer();
+  auto init() -> void;
+  auto updateMusicBuffer() -> void;
 };

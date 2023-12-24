@@ -10,6 +10,6 @@ class MainPanel : GuiComponent {
   public:
     MainPanel(Board& board);
     ~MainPanel();
-    void update();
+    auto update() -> void;
 };
 

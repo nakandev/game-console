@@ -54,13 +54,13 @@ class MainComponent {
 
     MainComponent(Board& board);
     ~MainComponent();
-    void setElfPath(string path);
-    void createFramebuffer();
-    void renderMenu();
-    void renderMainPanel();
-    void renderScreen(int w, int h, bool center);
-    void renderFramebuffer();
-    void cleanup();
+    auto setElfPath(string path) -> void;
+    auto createFramebuffer() -> void;
+    auto renderMenu() -> void;
+    auto renderMainPanel() -> void;
+    auto renderScreen(int w, int h, bool center) -> void;
+    auto renderFramebuffer() -> void;
+    auto cleanup() -> void;
 };
 
-void DrawSplitter(int split_vertically, float thickness, float* size0, float* size1, float min_size0, float min_size1);
+auto DrawSplitter(int split_vertically, float thickness, float* size0, float* size1, float min_size0, float min_size1) -> void;

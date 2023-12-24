@@ -6,8 +6,11 @@
 
 #include <fmt/core.h>
 
-void
-CpuIsaRV32I::decode16(uint32_t bytes, Instruction& instr)
+static const uint8_t tbl[8] = {
+  8, 9, 10, 11, 12, 13, 14, 15
+};
+
+auto CpuIsaRV32I::decode16(uint32_t bytes, Instruction& instr) -> void
 {
   uint16_t bytes16 = bytes & 0xFFFFu;
   uint8_t opcode = bytes16 & 0x3u;
@@ -54,12 +57,7 @@ CpuIsaRV32I::decode16(uint32_t bytes, Instruction& instr)
   }
 }
 
-static const uint8_t tbl[8] = {
-  8, 9, 10, 11, 12, 13, 14, 15
-};
-
-void
-CpuIsaRV32I::decodeTypeCR(uint32_t bytes, Instruction& instr)
+auto CpuIsaRV32I::decodeTypeCR(uint32_t bytes, Instruction& instr) -> void
 {
   instr.binary = bytes;
   uint8_t opcode = (uint8_t)((bytes >>  0) & 0x03u);
@@ -100,8 +98,7 @@ CpuIsaRV32I::decodeTypeCR(uint32_t bytes, Instruction& instr)
   }
 }
 
-void
-CpuIsaRV32I::decodeTypeCI(uint32_t bytes, Instruction& instr)
+auto CpuIsaRV32I::decodeTypeCI(uint32_t bytes, Instruction& instr) -> void
 {
   instr.binary = bytes;
   uint8_t opcode = (uint8_t)((bytes >>  0) & 0x03u);
@@ -180,8 +177,7 @@ CpuIsaRV32I::decodeTypeCI(uint32_t bytes, Instruction& instr)
   }
 }
 
-void
-CpuIsaRV32I::decodeTypeCSS(uint32_t bytes, Instruction& instr)
+auto CpuIsaRV32I::decodeTypeCSS(uint32_t bytes, Instruction& instr) -> void
 {
   instr.binary = bytes;
   uint8_t opcode = (uint8_t)((bytes >>  0) & 0x03u);
@@ -210,8 +206,7 @@ CpuIsaRV32I::decodeTypeCSS(uint32_t bytes, Instruction& instr)
   }
 }
 
-void
-CpuIsaRV32I::decodeTypeCIW(uint32_t bytes, Instruction& instr)
+auto CpuIsaRV32I::decodeTypeCIW(uint32_t bytes, Instruction& instr) -> void
 {
   instr.binary = bytes;
   uint8_t opcode = (uint8_t)((bytes >>  0) & 0x00u);
@@ -229,8 +224,7 @@ CpuIsaRV32I::decodeTypeCIW(uint32_t bytes, Instruction& instr)
   instr.instr = INSTR_CADDI4SPN;
 }
 
-void
-CpuIsaRV32I::decodeTypeCL(uint32_t bytes, Instruction& instr)
+auto CpuIsaRV32I::decodeTypeCL(uint32_t bytes, Instruction& instr) -> void
 {
   instr.binary = bytes;
   uint8_t opcode = (uint8_t)((bytes >>  0) & 0x03u);
@@ -264,8 +258,7 @@ CpuIsaRV32I::decodeTypeCL(uint32_t bytes, Instruction& instr)
   }
 }
 
-void
-CpuIsaRV32I::decodeTypeCS(uint32_t bytes, Instruction& instr)
+auto CpuIsaRV32I::decodeTypeCS(uint32_t bytes, Instruction& instr) -> void
 {
   instr.binary = bytes;
   uint8_t opcode = (uint8_t)((bytes >>  0) & 0x03u);
@@ -298,8 +291,7 @@ CpuIsaRV32I::decodeTypeCS(uint32_t bytes, Instruction& instr)
   }
 }
 
-void
-CpuIsaRV32I::decodeTypeCA(uint32_t bytes, Instruction& instr)
+auto CpuIsaRV32I::decodeTypeCA(uint32_t bytes, Instruction& instr) -> void
 {
   instr.binary = bytes;
   instr.opcode = (uint8_t)((bytes >>  0) & 0x03u);
@@ -330,8 +322,7 @@ CpuIsaRV32I::decodeTypeCA(uint32_t bytes, Instruction& instr)
   }
 }
 
-void
-CpuIsaRV32I::decodeTypeCB2(uint32_t bytes, Instruction& instr)
+auto CpuIsaRV32I::decodeTypeCB2(uint32_t bytes, Instruction& instr) -> void
 {
   instr.binary = bytes;
   uint8_t opcode = (uint8_t)((bytes >>  0) & 0x03u);
@@ -362,8 +353,7 @@ CpuIsaRV32I::decodeTypeCB2(uint32_t bytes, Instruction& instr)
   }
 }
 
-void
-CpuIsaRV32I::decodeTypeCB(uint32_t bytes, Instruction& instr)
+auto CpuIsaRV32I::decodeTypeCB(uint32_t bytes, Instruction& instr) -> void
 {
   instr.binary = bytes;
   uint8_t opcode = (uint8_t)((bytes >>  0) & 0x03u);
@@ -393,8 +383,7 @@ CpuIsaRV32I::decodeTypeCB(uint32_t bytes, Instruction& instr)
   }
 }
 
-void
-CpuIsaRV32I::decodeTypeCJ(uint32_t bytes, Instruction& instr)
+auto CpuIsaRV32I::decodeTypeCJ(uint32_t bytes, Instruction& instr) -> void
 {
   instr.binary = bytes;
   uint8_t opcode = (uint8_t)((bytes >>  0) & 0x03u);
@@ -427,44 +416,45 @@ CpuIsaRV32I::decodeTypeCJ(uint32_t bytes, Instruction& instr)
   }
 }
 
-void CpuIsaRV32I::execute_cunknown(Instruction& instr, RegisterSet& regs, Memory& memory)
+auto CpuIsaRV32I::execute_cunknown(Instruction& instr, RegisterSet& regs, Memory& memory) -> void
 {
 }
+
 // type CR
-void
-CpuIsaRV32I::execute_cjr(Instruction& instr, RegisterSet& regs, Memory& memory)
+auto CpuIsaRV32I::execute_cjr(Instruction& instr, RegisterSet& regs, Memory& memory) -> void
 {
   if (instr.src1 != 0) {
     regs.pc.val.s = regs.gpr[instr.src1].val.s + 0;
     instr.isJumped = true;
   }
 }
-void
-CpuIsaRV32I::execute_cmv(Instruction& instr, RegisterSet& regs, Memory& memory)
+
+auto CpuIsaRV32I::execute_cmv(Instruction& instr, RegisterSet& regs, Memory& memory) -> void
 {
   if (instr.dst != 0) {
     regs.gpr[instr.dst].val.s = regs.gpr[instr.src2].val.s;
   }
 }
-void
-CpuIsaRV32I::execute_cebreak(Instruction& instr, RegisterSet& regs, Memory& memory)
+
+auto CpuIsaRV32I::execute_cebreak(Instruction& instr, RegisterSet& regs, Memory& memory) -> void
 {
 }
-void
-CpuIsaRV32I::execute_cjalr(Instruction& instr, RegisterSet& regs, Memory& memory)
+
+auto CpuIsaRV32I::execute_cjalr(Instruction& instr, RegisterSet& regs, Memory& memory) -> void
 {
   auto tmp = regs.gpr[instr.src1].val.s;
   regs.gpr[1].val.u = regs.pc.val.u + 2;
   regs.pc.val.s = tmp + 0;
   instr.isJumped = true;
 }
-void
-CpuIsaRV32I::execute_cadd(Instruction& instr, RegisterSet& regs, Memory& memory)
+
+auto CpuIsaRV32I::execute_cadd(Instruction& instr, RegisterSet& regs, Memory& memory) -> void
 {
   regs.gpr[instr.dst].val.s = regs.gpr[instr.src1].val.s + regs.gpr[instr.src2].val.s;
 }
+
 // type CI
-void CpuIsaRV32I::execute_clwsp(Instruction& instr, RegisterSet& regs, Memory& memory)
+auto CpuIsaRV32I::execute_clwsp(Instruction& instr, RegisterSet& regs, Memory& memory) -> void
 {
   uint32_t addr = regs.gpr[2].val.u + instr.imm.s;
   if (!memory.waitAccess(addr, 4, true, instr.waitCycle)) {
@@ -474,24 +464,28 @@ void CpuIsaRV32I::execute_clwsp(Instruction& instr, RegisterSet& regs, Memory& m
     }
   }
 }
-void CpuIsaRV32I::execute_cslli(Instruction& instr, RegisterSet& regs, Memory& memory)
+
+auto CpuIsaRV32I::execute_cslli(Instruction& instr, RegisterSet& regs, Memory& memory) -> void
 {
   regs.gpr[instr.dst].val.s = regs.gpr[instr.src1].val.s << instr.imm.s;
 }
-void CpuIsaRV32I::execute_cli(Instruction& instr, RegisterSet& regs, Memory& memory)
+
+auto CpuIsaRV32I::execute_cli(Instruction& instr, RegisterSet& regs, Memory& memory) -> void
 {
   int32_t imm = instr.imm.s;
   if (instr.dst != 0) {
     regs.gpr[instr.dst].val.s = imm;
   }
 }
-void CpuIsaRV32I::execute_caddi16sp(Instruction& instr, RegisterSet& regs, Memory& memory)
+
+auto CpuIsaRV32I::execute_caddi16sp(Instruction& instr, RegisterSet& regs, Memory& memory) -> void
 {
   int32_t imm = instr.imm.s;
   // regs.gpr[instr.dst].val.s = regs.gpr[instr.src1].val.s + imm;
   regs.gpr[2].val.s = regs.gpr[2].val.s + imm;
 }
-void CpuIsaRV32I::execute_clui(Instruction& instr, RegisterSet& regs, Memory& memory)
+
+auto CpuIsaRV32I::execute_clui(Instruction& instr, RegisterSet& regs, Memory& memory) -> void
 {
   int32_t imm = instr.imm.s;
   if (imm != 0) {
@@ -501,17 +495,20 @@ void CpuIsaRV32I::execute_clui(Instruction& instr, RegisterSet& regs, Memory& me
     // error: imm can be non-zero value.
   }
 }
-void CpuIsaRV32I::execute_caddi(Instruction& instr, RegisterSet& regs, Memory& memory)
+
+auto CpuIsaRV32I::execute_caddi(Instruction& instr, RegisterSet& regs, Memory& memory) -> void
 {
   int32_t imm = instr.imm.s;
   int32_t newimm = imm;
   regs.gpr[instr.dst].val.s = regs.gpr[instr.src1].val.s + newimm;
 }
-void CpuIsaRV32I::execute_cnop(Instruction& instr, RegisterSet& regs, Memory& memory)
+
+auto CpuIsaRV32I::execute_cnop(Instruction& instr, RegisterSet& regs, Memory& memory) -> void
 {
 }
+
 // type CSS
-void CpuIsaRV32I::execute_cswsp(Instruction& instr, RegisterSet& regs, Memory& memory)
+auto CpuIsaRV32I::execute_cswsp(Instruction& instr, RegisterSet& regs, Memory& memory) -> void
 {
   uint32_t addr = regs.gpr[2].val.u + instr.imm.s;
   if (!memory.waitAccess(addr, 4, true, instr.waitCycle)) {
@@ -519,13 +516,15 @@ void CpuIsaRV32I::execute_cswsp(Instruction& instr, RegisterSet& regs, Memory& m
     memory.write32(addr, regs.gpr[instr.src2].val.s);
   }
 }
+
 // type CIW
-void CpuIsaRV32I::execute_caddi4spn(Instruction& instr, RegisterSet& regs, Memory& memory)
+auto CpuIsaRV32I::execute_caddi4spn(Instruction& instr, RegisterSet& regs, Memory& memory) -> void
 {
   regs.gpr[tbl[instr.dst]].val.s = regs.gpr[2].val.s + instr.imm.u * 4;
 }
+
 // type CL
-void CpuIsaRV32I::execute_clw(Instruction& instr, RegisterSet& regs, Memory& memory)
+auto CpuIsaRV32I::execute_clw(Instruction& instr, RegisterSet& regs, Memory& memory) -> void
 {
   uint32_t addr = regs.gpr[tbl[instr.src1]].val.u + instr.imm.s;
   if (!memory.waitAccess(addr, 4, true, instr.waitCycle)) {
@@ -533,8 +532,9 @@ void CpuIsaRV32I::execute_clw(Instruction& instr, RegisterSet& regs, Memory& mem
     regs.gpr[tbl[instr.dst]].val.s = memory.read32(addr);
   }
 }
+
 // type CS
-void CpuIsaRV32I::execute_csw(Instruction& instr, RegisterSet& regs, Memory& memory)
+auto CpuIsaRV32I::execute_csw(Instruction& instr, RegisterSet& regs, Memory& memory) -> void
 {
   uint32_t addr = regs.gpr[tbl[instr.src1]].val.u + instr.imm.s;
   if (!memory.waitAccess(addr, 4, true, instr.waitCycle)) {
@@ -542,37 +542,45 @@ void CpuIsaRV32I::execute_csw(Instruction& instr, RegisterSet& regs, Memory& mem
     memory.write32(addr, regs.gpr[tbl[instr.src2]].val.s);
   }
 }
+
 // type CA
-void CpuIsaRV32I::execute_csub(Instruction& instr, RegisterSet& regs, Memory& memory)
+auto CpuIsaRV32I::execute_csub(Instruction& instr, RegisterSet& regs, Memory& memory) -> void
 {
   regs.gpr[tbl[instr.dst]].val.s = regs.gpr[tbl[instr.src1]].val.s - regs.gpr[tbl[instr.src2]].val.s;
 }
-void CpuIsaRV32I::execute_cxor(Instruction& instr, RegisterSet& regs, Memory& memory)
+
+auto CpuIsaRV32I::execute_cxor(Instruction& instr, RegisterSet& regs, Memory& memory) -> void
 {
   regs.gpr[tbl[instr.dst]].val.s = regs.gpr[tbl[instr.src1]].val.s ^ regs.gpr[tbl[instr.src2]].val.s;
 }
-void CpuIsaRV32I::execute_cor(Instruction& instr, RegisterSet& regs, Memory& memory)
+
+auto CpuIsaRV32I::execute_cor(Instruction& instr, RegisterSet& regs, Memory& memory) -> void
 {
   regs.gpr[tbl[instr.dst]].val.s = regs.gpr[tbl[instr.src1]].val.s | regs.gpr[tbl[instr.src2]].val.s;
 }
-void CpuIsaRV32I::execute_cand(Instruction& instr, RegisterSet& regs, Memory& memory)
+
+auto CpuIsaRV32I::execute_cand(Instruction& instr, RegisterSet& regs, Memory& memory) -> void
 {
   regs.gpr[tbl[instr.dst]].val.s = regs.gpr[tbl[instr.src1]].val.s & regs.gpr[tbl[instr.src2]].val.s;
 }
+
 // type CB2
-void CpuIsaRV32I::execute_csrli(Instruction& instr, RegisterSet& regs, Memory& memory)
+auto CpuIsaRV32I::execute_csrli(Instruction& instr, RegisterSet& regs, Memory& memory) -> void
 {
   regs.gpr[tbl[instr.dst]].val.u = regs.gpr[tbl[instr.src1]].val.u >> instr.imm.s;
 }
-void CpuIsaRV32I::execute_csrai(Instruction& instr, RegisterSet& regs, Memory& memory)
+
+auto CpuIsaRV32I::execute_csrai(Instruction& instr, RegisterSet& regs, Memory& memory) -> void
 {
   regs.gpr[tbl[instr.dst]].val.s = regs.gpr[tbl[instr.src1]].val.s >> instr.imm.s;
 }
-void CpuIsaRV32I::execute_candi(Instruction& instr, RegisterSet& regs, Memory& memory)
+
+auto CpuIsaRV32I::execute_candi(Instruction& instr, RegisterSet& regs, Memory& memory) -> void
 {
   regs.gpr[tbl[instr.dst]].val.s = regs.gpr[tbl[instr.src1]].val.s & instr.imm.s;
 }
-void CpuIsaRV32I::execute_cbeqz(Instruction& instr, RegisterSet& regs, Memory& memory)
+
+auto CpuIsaRV32I::execute_cbeqz(Instruction& instr, RegisterSet& regs, Memory& memory) -> void
 {
   bool cond = false;
   cond = regs.gpr[tbl[instr.src1]].val.s == 0;
@@ -581,7 +589,8 @@ void CpuIsaRV32I::execute_cbeqz(Instruction& instr, RegisterSet& regs, Memory& m
     instr.isJumped = true;
   }
 }
-void CpuIsaRV32I::execute_cbnez(Instruction& instr, RegisterSet& regs, Memory& memory)
+
+auto CpuIsaRV32I::execute_cbnez(Instruction& instr, RegisterSet& regs, Memory& memory) -> void
 {
   bool cond = false;
   cond = regs.gpr[tbl[instr.src1]].val.s != 0;
@@ -590,14 +599,16 @@ void CpuIsaRV32I::execute_cbnez(Instruction& instr, RegisterSet& regs, Memory& m
     instr.isJumped = true;
   }
 }
+
 // type CJ
-void CpuIsaRV32I::execute_cjal(Instruction& instr, RegisterSet& regs, Memory& memory)
+auto CpuIsaRV32I::execute_cjal(Instruction& instr, RegisterSet& regs, Memory& memory) -> void
 {
   regs.gpr[1].val.u = regs.pc.val.u + 2;
   regs.pc.val.u = regs.pc.val.u + instr.imm.s;
   instr.isJumped = true;
 }
-void CpuIsaRV32I::execute_cj(Instruction& instr, RegisterSet& regs, Memory& memory)
+
+auto CpuIsaRV32I::execute_cj(Instruction& instr, RegisterSet& regs, Memory& memory) -> void
 {
   regs.pc.val.u = regs.pc.val.u + instr.imm.s;
   instr.isJumped = true;

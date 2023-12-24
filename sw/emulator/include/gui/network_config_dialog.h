@@ -10,6 +10,6 @@ class NetworkConfigDialog : GuiComponent {
     bool enable;
     NetworkConfigDialog(Board& board);
     ~NetworkConfigDialog();
-    void update();
+    auto update() -> void;
 };
 

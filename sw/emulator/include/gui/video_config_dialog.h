@@ -22,6 +22,6 @@ class VideoConfigDialog : GuiComponent {
     bool enable;
     VideoConfigDialog(Board& board);
     ~VideoConfigDialog();
-    void update();
+    auto update() -> void;
 };
 
