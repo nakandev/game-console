@@ -13,13 +13,12 @@ Dma::Dma(Memory& memory, IntrrCtrl& intrrCtrl)
 
 Dma::~Dma()
 {
-  channels.clear();
 }
 
 auto Dma::init() -> void
 {
-  memory.addSection<Dma>(*this);
-  HwIoDma& dmaram = *(HwIoDma*)this->data;
+  memory.addSection<Dma>(this);
+  HwIoDma& dmaram = *(HwIoDma*)this->data.data();
   for (auto& ch: channels) {
     ch.src = 0;
     ch.dst = 0;
@@ -38,7 +37,7 @@ auto Dma::init() -> void
 
 auto Dma::syncFromIoDma(int chIdx) -> void
 {
-  HwIoDma& dma = *(HwIoDma*)this->data;
+  HwIoDma& dma = *(HwIoDma*)this->data.data();
   channels[chIdx].src          = dma.dma[chIdx].src         ;
   channels[chIdx].dst          = dma.dma[chIdx].dst         ;
   channels[chIdx].attribute    = dma.dma[chIdx].attribute   ;
@@ -49,7 +48,7 @@ auto Dma::syncFromIoDma(int chIdx) -> void
 
 auto Dma::stepCycle() -> void
 {
-  HwIoDma& dma = *(HwIoDma*)this->data;
+  HwIoDma& dma = *(HwIoDma*)this->data.data();
   int chIdx = runningDma;
   auto& ch = channels[chIdx];
   uint32_t priority = chIdx + 1;
@@ -61,14 +60,14 @@ auto Dma::stepCycle() -> void
   uint8_t bytesize = bytesizeTable[ch.size];
   if (ch.count > 0) {
     if (!ch.isWrite) {
-      switch (ch.size) {
+      switch ((int)ch.size) {
         case HW_IO_DMA_SIZE_8BIT:  ch.data = memory.read8(ch.src); break;
         case HW_IO_DMA_SIZE_16BIT: ch.data = memory.read16(ch.src); break;
         default: ch.data = memory.read32(ch.src); break;
       }
       // ch.data = memory.read(ch.src, bytesize);
     } else {
-      switch (ch.size) {
+      switch ((int)ch.size) {
         case HW_IO_DMA_SIZE_8BIT:  memory.write8(ch.dst, ch.data); break;
         case HW_IO_DMA_SIZE_16BIT: memory.write16(ch.dst, ch.data); break;
         default: memory.write32(ch.dst, ch.data); break;
@@ -104,10 +103,10 @@ auto Dma::stepCycle() -> void
       }
     }
     if (runningDma == -1) {
-      memory.processor = this;
+      memory.processor = memory.prevProcessor;
+      memory.prevProcessor = this;
     }
     memory.clearBusy(priority);
-    memory.processor = nullptr;
     if (dma.dma[chIdx].interrupt) {
       if (dma.dma[chIdx].trigger == HW_IO_DMA_TRIGGER_IMMEDIATELY) {
         uint32_t intno = HW_IO_INT_DMA0 + chIdx;
@@ -142,14 +141,15 @@ auto Dma::write(uint32_t addr, uint32_t size, int32_t value) -> void
 
 auto Dma::updateRunningDma(uint32_t addr, int32_t value) -> void
 {
-  HwIoDma& dma = *(HwIoDma*)this->data;
-  runningDma = -1;
-  if (dma.dma[0].enable) runningDma = 0;
-  if (dma.dma[1].enable) runningDma = 1;
-  if (dma.dma[2].enable) runningDma = 2;
-  if (dma.dma[3].enable) runningDma = 3;
-  if (runningDma != -1) {
+  HwIoDma& dma = *(HwIoDma*)this->data.data();
+  auto newRunningDma = -1;
+  if (dma.dma[0].enable) newRunningDma = 0;
+  if (dma.dma[1].enable) newRunningDma = 1;
+  if (dma.dma[2].enable) newRunningDma = 2;
+  if (dma.dma[3].enable) newRunningDma = 3;
+  if (newRunningDma != -1 && runningDma != newRunningDma) {
+    runningDma = newRunningDma;
+    memory.prevProcessor = memory.processor;
     memory.processor = this;
   }
-  fmt::print("runningDma={}\n", runningDma);
 }

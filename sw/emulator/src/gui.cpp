@@ -129,9 +129,7 @@ auto MainComponent::renderMenu() -> void
         board.pause = true;
       }
       if (ImGui::MenuItem("Reset", "")) {
-        board.reset();
-        int ret = board.cpu.loadElf(elfpath);
-        if (ret) {
+        if (board.loadElf(elfpath)) {
           fmt::print("cannot open ELF: {}\n", (string)elfpath);
         }
       }
@@ -150,9 +148,7 @@ auto MainComponent::renderMenu() -> void
       string selectedDir = ImGuiFileDialog::Instance()->GetCurrentPath();
       elfpath = selectedFile;
       elfdir = selectedDir;
-      board.reset();
-      if(!board.cpu.loadElf(elfpath)) {
-        board.pause = false;
+      if(!board.loadElf(elfpath)) {
         disasmView.disasmStrs = board.cpu.disassembleAll();
       }
     }

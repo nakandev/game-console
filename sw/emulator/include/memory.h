@@ -13,8 +13,7 @@ class MemorySection {
     uint32_t addr;
     size_t size;
   protected:
-    // vector<uint8_t> data;
-    uint8_t* data;
+    vector<uint8_t> data;
   public:
     MemorySection();
     MemorySection(const string& name, uint32_t addr, size_t size);
@@ -64,12 +63,15 @@ union BusyFlag{
 
 class Memory {
   private:
-    map<uint32_t, shared_ptr<MemorySection>> sections;
+    // map<uint32_t, shared_ptr<MemorySection>> sections;
+    vector<shared_ptr<MemorySection>> sectionsPool;
+    map<uint32_t, MemorySection*> sections;
     map<string, uint32_t> sectionNameTable;
     MemorySection invalidSection;
   public:
     BusyFlag busyFlag;
     Processor* processor;
+    Processor* prevProcessor;
     Memory();
     ~Memory();
     auto section(const uint32_t addr) -> MemorySection&;
@@ -81,10 +83,10 @@ class Memory {
     auto clearSection() -> void;
     auto initMinimumSections() -> void;
     auto addSection(const string& name, uint32_t addr, uint32_t size) -> void;
-    template<typename T> auto addSection(T& section) -> void
+    template<typename T> auto addSection(T* section) -> void
     {
-      sections.insert(make_pair(section.addr, make_shared<T>(section)));
-      sectionNameTable.insert(make_pair(section.name, section.addr));
+      sections.insert(make_pair(section->addr, section));
+      sectionNameTable.insert(make_pair(section->name, section->addr));
     }
     auto waitAccess(uint32_t addr, uint32_t size, bool rw, int8_t& wait) -> bool;
     auto isBusy(uint32_t priority) -> bool;

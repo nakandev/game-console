@@ -25,10 +25,10 @@ public:
   Board();
   ~Board();
   auto reset() -> void;
+  auto loadElf(const string& path) -> uint8_t;
+  auto reloadElf() -> void;
   auto stepCpuCycle() -> void;
   auto updateFrame() -> void;
-  auto loadElf(const string& path) -> void;
-  auto reloadElf() -> void;
   auto saveState(const string& path) -> void;
   auto loadState(const string& path) -> void;
 };

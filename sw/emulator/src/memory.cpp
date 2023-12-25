@@ -5,20 +5,18 @@
 MemorySection::MemorySection()
   :name(),  addr(), size(), data()
 {
-  data = nullptr;
 }
 
 MemorySection::MemorySection(const string& name, uint32_t addr, size_t size)
   :name(name),  addr(addr), size(size), data()
 {
-  // data.resize(size);
-  data = new uint8_t[size]();
+  data.resize(size);
 }
 
 MemorySection::MemorySection(const MemorySection& obj)
   :name(obj.name),  addr(obj.addr), size(obj.size), data()
 {
-  data = new uint8_t[size]();
+  data.resize(size);
   for (int i=0; i<size; i++) data[i] = obj.data[i];
 }
 
@@ -27,19 +25,13 @@ MemorySection::~MemorySection()
   addr = 0;
   size = 0;
   name = "";
-  // data.clear();
-  if (data) delete[] data;
-  data = nullptr;
+  data.clear();
 }
 
 auto MemorySection::resize(size_t size) -> void
 {
-  // data.resize(size);
-  uint8_t* newData = new uint8_t[size]();
-  for (int i=0; i<size; i++) newData[i] = data[i];
-  if (data) delete[] data;
-  data = newData;
-  this->size = size;
+  data.resize(size);
+  this->size = data.size();
 }
 
 auto MemorySection::isin(uint32_t addr) -> bool
@@ -125,8 +117,7 @@ auto MemorySection::set(uint32_t addr, uint32_t size, uint8_t value) -> void
 
 auto MemorySection::buffer() -> const uint8_t*
 {
-  // return data.data();
-  return data;
+  return data.data();
 }
 
 
@@ -153,47 +144,29 @@ IoRamSection::~IoRamSection()
 auto IoRamSection::write8(uint32_t addr, int8_t value) -> void
 {
   MemorySection::write8(addr, value);
-  updateRunningDma(addr, value);
 }
 auto IoRamSection::write16(uint32_t addr, int16_t value) -> void
 {
   MemorySection::write16(addr, value);
-  updateRunningDma(addr, value);
 }
 
 auto IoRamSection::write32(uint32_t addr, int32_t value) -> void
 {
   MemorySection::write32(addr, value);
-  updateRunningDma(addr, value);
 }
 
 auto IoRamSection::write(uint32_t addr, uint32_t size, int32_t value) -> void
 {
   MemorySection::write(addr, size, value);
-  updateRunningDma(addr, value);
-}
-
-auto IoRamSection::updateRunningDma(uint32_t addr, int32_t value) -> void
-{
-  fmt::print("dma write\n");
-  uint32_t raddr = addr - this->addr;
-  const uint32_t dmaBegin = (uint32_t)HWREG_IO_DMA0_ADDR - (uint32_t)HWREG_IORAM_BASEADDR;
-  const uint32_t dmaEnd = (uint32_t)HWREG_IO_TIMER0_ADDR - (uint32_t)HWREG_IORAM_BASEADDR;
-  if (dmaBegin <= raddr && raddr < dmaEnd) {
-    HwIoDma& ioDma = *(HwIoDma*)(data + dmaBegin);
-    runningDma = -1;
-    if (ioDma.dma[0].enable) runningDma = 0;
-    if (ioDma.dma[1].enable) runningDma = 1;
-    if (ioDma.dma[2].enable) runningDma = 2;
-    if (ioDma.dma[3].enable) runningDma = 3;
-  }
 }
 
 Memory::Memory()
-  : sections(),
+  : sectionsPool(),
+    sections(),
     invalidSection(),
     busyFlag(),
-    processor()
+    processor(),
+    prevProcessor()
 {
   invalidSection.name = "invalid";
   initMinimumSections();
@@ -201,7 +174,8 @@ Memory::Memory()
 
 Memory::~Memory()
 {
-  sections.clear();
+  processor = nullptr;
+  prevProcessor = nullptr;
 }
 
 auto Memory::section(const uint32_t addr) -> MemorySection&
@@ -281,7 +255,8 @@ auto Memory::initMinimumSections() -> void
   busyFlag.flag32 = 0;
   sections.clear();
   #define sections_insert(T, name, addr, size) \
-    sections.insert(make_pair((addr), make_shared<T>(T(name, (addr), (size))))); \
+    sectionsPool.push_back(make_shared<T>(T(name, (addr), (size)))); \
+    sections.insert(make_pair((addr), sectionsPool.back().get())); \
     sectionNameTable.insert(make_pair(name,(addr)));
   sections_insert(MemorySection, "program", HWREG_PROGRAM_BASEADDR    , HWREG_PROGRAM_SIZE);
   sections_insert(MemorySection, "stack",   HWREG_WORKRAM_END - 0x0001'0000, 0x0001'0000);
@@ -301,16 +276,10 @@ auto Memory::initMinimumSections() -> void
 
 auto Memory::addSection(const string& name, uint32_t addr, uint32_t size) -> void
 {
-  sections.insert(make_pair(addr, make_shared<MemorySection>(MemorySection(name, addr, size))));
+  sectionsPool.push_back(make_shared<MemorySection>(MemorySection(name, addr, size)));
+  sections.insert(make_pair(addr, sectionsPool.back().get()));
   sectionNameTable.insert(make_pair(name, addr));
 }
-
-// template<typename T>
-// void Memory::addSection(T& section)
-// {
-//   sections.insert(make_pair(section.addr, make_shared<T>(section)));
-//   sectionNameTable.insert(make_pair(section.name, section.addr));
-// }
 
 auto Memory::isBusy(uint32_t priority) -> bool
 {

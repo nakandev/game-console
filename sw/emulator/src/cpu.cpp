@@ -1,5 +1,5 @@
 #include <cpu.h>
-
+#include <memorymap.h>
 #include <fmt/core.h>
 #include <cassert>
 
@@ -41,7 +41,8 @@ auto Cpu::init() -> void
 {
   elf = shared_ptr<Elf>();
   memory.initMinimumSections();
-  programSection = &memory.section("program");
+  // programSection = &memory.section("program");
+  programSection = &memory.section(HWREG_PROGRAM_BASEADDR);
   reset();
 }
 
@@ -58,6 +59,8 @@ auto Cpu::reset() -> void
   } else {
     regs.pc.val.u = programSection->addr;
   }
+  memory.processor = this;
+  memory.prevProcessor = this;
 
   cycleCount = 0;
   instrCount = 0;
@@ -96,6 +99,7 @@ auto Cpu::stepCycle() -> void
       }
     }
     if (instr.phase == INSTR_PHASE_EXECUTE) {
+      memory.prevProcessor = memory.processor;
       memory.processor = this;
       isa.execute(instr, regs, memory);
       instrCount++;

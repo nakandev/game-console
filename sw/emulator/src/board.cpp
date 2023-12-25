@@ -40,15 +40,23 @@ auto Board::reset() -> void
   pause = false;
 }
 
+auto Board::loadElf(const string& path) -> uint8_t
+{
+  // cpu.init();
+  auto ret = cpu.loadElf(path);
+  if (ret) return ret;
+  vpu.init();
+  apu.init();
+  dma.init();
+  timer.init();
+  pause = false;
+  return ret;
+}
+
 auto Board::stepCpuCycle() -> void
 {
   timer.stepCycle();
-  if (memory.processor) {
-    memory.processor->stepCycle();  // cpu or dma
-  }
-  else {
-    cpu.stepCycle();
-  }
+  memory.processor->stepCycle();  // cpu or dma
 }
 
 auto Board::updateFrame() -> void
