@@ -41,8 +41,7 @@ auto Cpu::init() -> void
 {
   elf = shared_ptr<Elf>();
   memory.initMinimumSections();
-  // programSection = &memory.section("program");
-  programSection = &memory.section(HWREG_PROGRAM_BASEADDR);
+  programSection = &memory.section("program");
   reset();
 }
 
@@ -136,7 +135,6 @@ const auto Cpu::getPc() -> uint32_t
 
 const auto Cpu::disassembleAll() -> map<uint32_t, string>
 {
-  const uint8_t* buffer = programSection->buffer();
   size_t offset = 0;
   auto instr = Instruction();
   auto icount = 0;
@@ -150,8 +148,6 @@ const auto Cpu::disassembleAll() -> map<uint32_t, string>
     uint32_t val = programSection->read32(pc);
 
     isa.decode(val, instr);
-    // isa.printInstr(icount, pc, instr, regs, memory);
-    // disasms.push_back(isa.instrToStr(icount, pc, instr, regs, memory));
     disasms[pc] = isa.instrToStr(icount, pc, instr, regs, memory);
     offset += instr.size;
     icount++;

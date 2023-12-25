@@ -218,7 +218,7 @@ auto Memory::sectionByAddrFast(const uint32_t addr) -> MemorySection&
     switch(mid & 0xF) {
       case 0x0: return *sections[HWREG_SYSROM_BASEADDR];
       case 0x1: return *sections[HWREG_FASTWORKRAM_BASEADDR];
-      case 0x2: return *sections[HWREG_WORKRAM_END - 0x0001'0000];  // sections[HWREG_SLOWWORKRAM_BASEADDR];
+      case 0x2: return *sections[HWREG_SLOWWORKRAM_BASEADDR];
       case 0x3:
         // return *sections[HWREG_IORAM_BASEADDR];
         switch ((addr >> 8) & 0xFFu) {
@@ -258,18 +258,16 @@ auto Memory::initMinimumSections() -> void
     sectionsPool.push_back(make_shared<T>(T(name, (addr), (size)))); \
     sections.insert(make_pair((addr), sectionsPool.back().get())); \
     sectionNameTable.insert(make_pair(name,(addr)));
-  sections_insert(MemorySection, "program", HWREG_PROGRAM_BASEADDR    , HWREG_PROGRAM_SIZE);
-  sections_insert(MemorySection, "stack",   HWREG_WORKRAM_END - 0x0001'0000, 0x0001'0000);
-  sections_insert(MemorySection, "tile",    HWREG_TILERAM_BASEADDR    , HWREG_TILERAM_SIZE);
-  sections_insert(MemorySection, "vram",    HWREG_VRAM_BASEADDR       , HWREG_VRAM_SIZE);
-  // sections_insert(IoRamSection , "ioram",   HWREG_IORAM_BASEADDR      , HWREG_IORAM_SIZE);
+  sections_insert(MemorySection, "system",  HWREG_SYSROM_BASEADDR     , HWREG_SYSROM_SIZE);
+  sections_insert(MemorySection, "stack",   HWREG_FASTWORKRAM_BASEADDR, HWREG_FASTWORKRAM_SIZE);
+  sections_insert(MemorySection, "data"  ,  HWREG_SLOWWORKRAM_BASEADDR, HWREG_SLOWWORKRAM_SIZE);
   sections_insert(MemorySection, "ioram",   HWREG_IORAM_BASEADDR      , HWREG_IORAM_SIZE);
-  // sections_insert(IoRamSection , "dma",     HWREG_IO_DMA_ADDR         , 0x100);
+  sections_insert(MemorySection, "vram",    HWREG_VRAM_BASEADDR       , HWREG_VRAM_SIZE);
+  sections_insert(MemorySection, "tile",    HWREG_TILERAM_BASEADDR    , HWREG_TILERAM_SIZE);
   sections_insert(MemorySection, "aram",    HWREG_ARAM_BASEADDR       , HWREG_ARAM_SIZE);
   sections_insert(MemorySection, "inst",    HWREG_INSTRAM_BASEADDR    , HWREG_INSTRAM_SIZE);
-  sections_insert(MemorySection, "system",  HWREG_SYSROM_BASEADDR     , HWREG_SYSROM_SIZE);
-  sections_insert(MemorySection, "data"  ,  HWREG_FASTWORKRAM_BASEADDR, 0x00C0'0000);
   sections_insert(MemorySection, "save",    HWREG_SAVERAM_BASEADDR    , HWREG_SAVERAM_SIZE);
+  sections_insert(MemorySection, "program", HWREG_PROGRAM_BASEADDR    , HWREG_PROGRAM_SIZE);
   sections_insert(MemorySection, "invalid", 0, 0);
   #undef sections_insert
 }
