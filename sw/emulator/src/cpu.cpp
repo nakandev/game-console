@@ -30,10 +30,8 @@ auto Cpu::loadElf(const string& path) -> uint8_t
   if (elf.get()->load(path)) {
     return 1;
   }
-  elf.get()->allocMemory(memory);
-  programSection = &memory.section("program");
-  cacheAllInstruction();
   reset();
+  cacheAllInstruction();
   return 0;
 }
 
@@ -41,7 +39,6 @@ auto Cpu::init() -> void
 {
   elf = shared_ptr<Elf>();
   memory.initMinimumSections();
-  programSection = &memory.section("program");
   reset();
 }
 
@@ -51,10 +48,12 @@ auto Cpu::reset() -> void
     instr = Instruction();
   }
   regs.init();
+  programSection = &memory.section("program");
   auto& stack = memory.section("stack");
   regs.gpr[2].val.u = stack.addr + stack.size - 4;
   if (elf.get()) {
     regs.pc.val.u = elf.get()->getElfHeader().entry;
+    elf.get()->allocMemory(memory);
   } else {
     regs.pc.val.u = programSection->addr;
   }
@@ -179,4 +178,5 @@ auto Cpu::cacheAllInstruction() -> void
     regs.pc.val.u += instr.size;
     count++;
   }
+  regs.pc.val.u = elf.get()->getElfHeader().entry;
 }

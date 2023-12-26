@@ -84,5 +84,6 @@ public:
   auto load(const string& path) -> uint8_t;
   auto getElfHeader() -> const ElfHeader&;
   auto getSection(const string& name) -> Section*;
+  auto getInfo() -> void;
   auto allocMemory(Memory& memory) -> void;
 };
