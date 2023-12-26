@@ -518,7 +518,7 @@ auto CpuIsaRV32I::decodeTypeSystem(uint32_t bytes, Instruction& instr) -> void
     if (instr.imm.u == 0x302) {
       instr.instr = INSTR_MRET;
     } else
-    if (instr.imm.u == 0x103) {
+    if (instr.imm.u == 0x105) {
       instr.instr = INSTR_WFI;
     }
   } else {
