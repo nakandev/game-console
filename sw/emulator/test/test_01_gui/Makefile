@@ -51,10 +51,11 @@ OBJS_PROF = $(addprefix prof_,$(OBJS))
 # INPUT_ELF_NAME = trial_08_tilefile
 # INPUT_ELF_NAME = trial_09_vram
 # INPUT_ELF_NAME = trial_10_rasterscroll
-INPUT_ELF_NAME = trial_12_action
+# INPUT_ELF_NAME = trial_12_action
 # INPUT_ELF_NAME = trial_13_dma
-INPUT_ELF = /home/nyalry/nakan/dev/hobby/game-console/sw/dev/c/test/$(INPUT_ELF_NAME)/$(INPUT_ELF_NAME).exe
+# INPUT_ELF = /home/nyalry/nakan/dev/hobby/game-console/sw/dev/c/test/$(INPUT_ELF_NAME)/$(INPUT_ELF_NAME).exe
 # INPUT_ELF = /home/nyalry/nakan/dev/hobby/game-console/sw/dev/c/test/riscv-tests/isa/rv32uc-p-rvc
+INPUT_ELF = /home/nyalry/nakan/dev/hobby/game-console/sw/dev/c/tutorial/mw/00_template/tutorial_mw_00_template.exe
 
 CC = gcc
 CXX = g++

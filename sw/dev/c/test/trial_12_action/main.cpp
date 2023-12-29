@@ -67,7 +67,7 @@ extern "C" void int_handler()
 int main()
 {
   HwIoRam& ioram = *(HwIoRam*)HWREG_IORAM_BASEADDR;
-  ioram.intr.enable = (1<<HW_IO_INT_HBLANK) | (1<<HW_IO_INT_VBLANK);
+  ioram.intr.enable.bits = (1<<HW_IO_INT_HBLANK) | (1<<HW_IO_INT_VBLANK);
 
   HwTileRam& tileram = *(HwTileRam*)HWREG_TILERAM_BASEADDR;
 

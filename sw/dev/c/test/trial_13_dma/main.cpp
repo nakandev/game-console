@@ -64,13 +64,13 @@ int dummyCount = 0;
 int main()
 {
   HwIoRam& ioram = *(HwIoRam*)HWREG_IORAM_BASEADDR;
-  ioram.intr.enable = (1<<HW_IO_INT_HBLANK) | (1<<HW_IO_INT_VBLANK);
+  ioram.intr.enable.bits = (1<<HW_IO_INT_HBLANK) | (1<<HW_IO_INT_VBLANK);
 
   HwTileRam& tileram = *(HwTileRam*)HWREG_TILERAM_BASEADDR;
   uint8_t* vram = (uint8_t*)HWREG_VRAM_BASEADDR;
 
   /* Work RAM init */
-  HwColor* pixels = (HwColor*)HWREG_FASTWORKRAM_BASEADDR;
+  HwColor* pixels = (HwColor*)HWREG_MAINRAM_BASEADDR;
   for (int y=0; y<HW_SCREEN_H; y++) {
     for (int x=0; x<HW_SCREEN_W; x++) {
       uint8_t h = x*255/HW_SCREEN_W;
@@ -81,7 +81,7 @@ int main()
   }
 
   /* DMA transfer */
-  ioram.dma.dma[0].src = HWREG_FASTWORKRAM_BASEADDR;
+  ioram.dma.dma[0].src = HWREG_MAINRAM_BASEADDR;
   ioram.dma.dma[0].dst = HWREG_VRAM_BASEADDR + HW_SCREEN_W * 0 * sizeof(HwColor);
   ioram.dma.dma[0].size = HW_IO_DMA_SIZE_32BIT;
   ioram.dma.dma[0].count = HW_SCREEN_W * 16;
@@ -92,7 +92,7 @@ int main()
   ioram.dma.dma[0].dstIncrement = HW_IO_DMA_INCREMENT_INC;
   ioram.dma.dma[0].trigger = HW_IO_DMA_TRIGGER_IMMEDIATELY;
 
-  ioram.dma.dma[1].src = HWREG_FASTWORKRAM_BASEADDR;
+  ioram.dma.dma[1].src = HWREG_MAINRAM_BASEADDR;
   ioram.dma.dma[1].dst = HWREG_VRAM_BASEADDR + HW_SCREEN_W * 32 * sizeof(HwColor);
   ioram.dma.dma[1].size = HW_IO_DMA_SIZE_32BIT;
   ioram.dma.dma[1].count = HW_SCREEN_W * 16;

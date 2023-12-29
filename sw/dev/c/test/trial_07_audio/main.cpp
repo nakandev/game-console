@@ -46,7 +46,9 @@ void sprite_init()
   }
   /* SP sprite settings */
   hwTileRam.sp[0].sprite[0].flag.enable = true;
-  hwTileRam.sp[0].sprite[0].paletteNo = 0;
+  hwTileRam.sp[0].sprite[0].paletteInfo.mode = 1;
+  hwTileRam.sp[0].sprite[0].paletteInfo.bank = 0;
+  hwTileRam.sp[0].sprite[0].paletteInfo.no = 0;
   hwTileRam.sp[0].sprite[0].tileNo = sptileNo;
   hwTileRam.sp[0].sprite[0].tileIdx = tidx;
   hwTileRam.sp[0].sprite[0].tileSize = HW_SPRITE_TILESIZE_8x8;
@@ -144,7 +146,7 @@ int main()
 #endif
 
   HwIoRam& ioram = *(HwIoRam*)HWREG_IORAM_BASEADDR;
-  ioram.intr.enable = (1<<HW_IO_INT_HBLANK) | (1<<HW_IO_INT_VBLANK);
+  ioram.intr.enable.bits = (1<<HW_IO_INT_HBLANK) | (1<<HW_IO_INT_VBLANK);
   /* main loop */
   while (1) {
   }

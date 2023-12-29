@@ -1,17 +1,19 @@
-/* refs
- * /home/nyalry/nakan/work/study/riscv/gcc/build/riscv64-unknown-elf/lib/ldscripts/elf32lriscv.x
- */
-OUTPUT_FORMAT("elf32-littleriscv", "elf32-littleriscv",
-	      "elf32-littleriscv")
+OUTPUT_FORMAT("elf32-littleriscv", "elf32-littleriscv", "elf32-littleriscv")
 OUTPUT_ARCH(riscv)
 ENTRY(_start)
-SEARCH_DIR("/home/nyalry/nakan/work/study/riscv/gcc/build/riscv64-unknown-elf/lib");
 
 MEMORY
 {
-  SYSTEM  (rx)  : ORIGIN = 0x00000000, LENGTH = 0x01000000
-  DATARAM (!rx) : ORIGIN = 0x01000000, LENGTH = 0x02000000
-  PROGRAM (rx)  : ORIGIN = 0x80000000, LENGTH = 0x04000000
+  SYSTEM   (rx)  : ORIGIN = 0x00000000, LENGTH = 0x00004000
+  WORKRAM  (!rx) : ORIGIN = 0x01000000, LENGTH = 0x00008000
+  MAINRAM  (!rx) : ORIGIN = 0x02000000, LENGTH = 0x00100000
+  IORAM    (!rx) : ORIGIN = 0x03000000, LENGTH = 0x01000000
+  VRAM     (!rx) : ORIGIN = 0x04000000, LENGTH = 0x00080000
+  TILERAM  (!rx) : ORIGIN = 0x06000000, LENGTH = 0x01000000
+  ARAM     (!rx) : ORIGIN = 0x07000000, LENGTH = 0x00010000
+  INSTRAM  (!rx) : ORIGIN = 0x09000000, LENGTH = 0x00020000
+  SAVERAM  (!rx) : ORIGIN = 0x0E000000, LENGTH = 0x02000000
+  PROGRAM  (rx)  : ORIGIN = 0x80000000, LENGTH = 0x04000000
 }
 
 SECTIONS
@@ -100,13 +102,13 @@ SECTIONS
     __DATA_BEGIN__ = .;
     *(.data .data.* .gnu.linkonce.d.*)
     SORT(CONSTRUCTORS)
-  } >DATARAM
+  } >MAINRAM
   .sdata          :
   {
     __SDATA_BEGIN__ = .;
     *(.srodata.cst16) *(.srodata.cst8) *(.srodata.cst4) *(.srodata.cst2) *(.srodata .srodata.*)
     *(.sdata .sdata.* .gnu.linkonce.s.*)
-  } >DATARAM
+  } >MAINRAM
   _edata = .; PROVIDE (edata = .);
   . = .;
   __bss_start = .;
@@ -115,7 +117,7 @@ SECTIONS
     *(.dynsbss)
     *(.sbss .sbss.* .gnu.linkonce.sb.*)
     *(.scommon)
-  } >DATARAM
+  } >MAINRAM
   .bss            :
   {
    *(.dynbss)
@@ -127,7 +129,7 @@ SECTIONS
       FIXME: Why do we need it? When there is no .bss section, we do not
       pad the .data section.  */
    . = ALIGN(. != 0 ? 32 / 8 : 1);
-  } >DATARAM
+  } >MAINRAM
   . = ALIGN(32 / 8);
   . = SEGMENT_START("ldata-segment", .);
   . = ALIGN(32 / 8);
@@ -137,6 +139,35 @@ SECTIONS
   _end = .; PROVIDE (end = .);
   /* . = DATA_SEGMENT_END (.); */
 
-  PROVIDE (__stack_top = ORIGIN(DATARAM) + LENGTH(DATARAM));
-}
+  PROVIDE (__stack_top = ORIGIN(WORKRAM) + LENGTH(WORKRAM));
 
+  .ioram :
+  {
+    *(.ioram)
+  } >IORAM
+
+  .vram :
+  {
+    *(.vram)
+  } >VRAM
+
+  .tileram :
+  {
+    *(.tileram)
+  } >TILERAM
+
+  .aram :
+  {
+    *(.aram)
+  } >ARAM
+
+  .instram :
+  {
+    *(.instram)
+  } >INSTRAM
+
+  .saveram :
+  {
+    *(.saveram)
+  } >SAVERAM
+}
