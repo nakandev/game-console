@@ -1,0 +1,322 @@
+/* ---- Memory Regions ---- */
+MMIO : memory {
+  SysRom      : region {addr=0x0000_0000, size= 16KiB},
+  WorkRam     : region {addr=0x0100_0000, size= 32KiB},
+  MainRam     : region {addr=0x0200_0000, size=  1MiB},
+  IoRam       : region {addr=0x0200_0000, size=256KiB},
+  VRam        : region {addr=0x0200_0000, size=512KiB},
+  TileRam     : region {addr=0x0200_0000, size=  1MiB},
+  ARam        : region {addr=0x0200_0000, size=  1KiB},
+  InstRAM     : region {addr=0x0200_0000, size=  1MiB},
+  SaveRam     : region {addr=0x0200_0000, size=  5MiB},
+  ProgRam     : region {addr=0x0200_0000, size=  2GiB},
+}
+
+
+/* ---- SysRom ---- */
+SysRom : region {
+  access={sw=rx, hw=rx},
+}
+
+
+/* ---- WorkRam ---- */
+WorkRam : region {
+  access={sw=rwx, hw=rwx},
+}
+
+
+/* ---- MainRam ---- */
+MainRam : region {
+  access={sw=rwx, hw=rwx},
+}
+
+
+/* ---- IoRam ---- */
+IoRam : region {
+  access={sw=rw, hw=rw},
+  field={
+    video     : IoVideo,
+    audio     : IoAudio,
+    input     : IoInput,
+    dma       : IoDma,
+    timer     : IoTimer,
+    serial    : IoSerial,
+    interrupt : IoInterrupt,
+  }
+}
+
+IoVideo : struct {
+  screenW  : u32 {access={sw=r, hw=r}},
+  screenH  : u32 {access={sw=r, hw=r}},
+  scanline : u32 {access={sw=r, hw=r}},
+}
+
+IoAudio : struct {
+  waveBits : u8,
+  channels : u8,
+}
+
+IoInput : struct {
+  pad      : Pad[2],
+  keyboard : Keyboard,
+  touch    : Touch,
+}
+
+IoDma : struct {
+  channel : Dma[4]
+}
+
+Dma : struct {
+  src       : u32,
+  dst       : u32,
+  attribute : u32 {
+    _            : bits[4];
+    trigger      : bits[4];
+    srcIncrement : bits[2];
+    dstIncrement : bits[2];
+    mode         : bits[1];
+    interrupt    : bits[1];
+    repeat       : bits[1];
+    count        : bits[14];
+    size         : bits[2];
+    enable       : bits[1];
+  },
+  _         : u32
+}
+
+IoTimer : struct {
+  channel : Timer[4]
+}
+
+Timer : struct {
+  attribute : u32 {
+    _         : bits[28],
+    mode      : bits[2],
+    interrupt : bits[1],
+    enable    : bits[1],
+  },
+  time      : u32,
+  count     : u32,
+}
+
+IoSerial : struct {
+  serial : u32,
+}
+
+IoInterrupt : struct {
+  enable : InterruptBits,
+  status : InterruptBits,
+  vector : u32,
+}
+
+InterruptBits : u32 {
+  _        : bits[16];
+  serial   : bits[1];
+  saveram  : bits[1];
+  timer3   : bits[1];
+  timer2   : bits[1];
+  timer1   : bits[1];
+  timer0   : bits[1];
+  dma3     : bits[1];
+  dma2     : bits[1];
+  dma1     : bits[1];
+  dma0     : bits[1];
+  touch    : bits[1];
+  keyboard : bits[1];
+  pad1     : bits[1];
+  pad0     : bits[1];
+  vblank   : bits[1];
+  hblank   : bits[1];
+}
+
+/* ---- VRam ---- */
+VRam : region {
+  access={sw=rw, hw=rw},
+  field={
+    pixel : Color[320 * 240]
+  }
+}
+
+
+/* ---- TileRam ---- */
+TileRam : region {
+  access={sw=rw, hw=rw},
+  field={
+    Palette : region {offset=0x00_0000, size=?},
+    Tile    : region {offset=0x00_0000, size=?},
+    TileMap : region {offset=0x00_0000, size=?},
+    BG      : region {offset=0x00_0000, size=?},
+    SP      : region {offset=0x00_0000, size=?},
+  }
+}
+
+Color : u32 {
+  r    : bits[31:24],
+  g    : bits[23:16],
+  b    : bits[15: 8],
+  a    : bits[ 7: 0],
+  data : bits[31: 0],
+}
+
+Palette : region {
+  access={sw=rw, hw=rw},
+  field={
+    palette : Color[256]
+  }
+}
+
+Tile : region {
+  access={sw=rw, hw=rw},
+  field={
+    data : u8[32][32]
+}
+
+TileMap : region {
+  access={sw=rw, hw=rw},
+  field={
+    tileIdx : u16[4096] {
+      flipY : bits[15:15],
+      flipX : bits[14:14],
+      idx   : bits[13: 0],
+      data  : bits[15: 0],
+    }
+  }
+}
+
+PaletteInfo : u8 {
+  no   : bits[7:4],
+  bank : bits[3:1],
+  mode : bits[0:0],
+  info : bits[7:0],
+}
+
+Matrix2d : struct {
+  a : u16,
+  b : u16,
+  c : u16,
+  d : u16,
+  x : u16,
+  y : u16,
+}
+
+BG : region {
+  access={sw=rw, hw=rw},
+  field={
+    flag        : u8,
+    paletteInfo : PaletteInfo,
+    tileNo      : u8,
+    tilemapNo   : u8,
+    x           : u16,
+    y           : u16,
+    affineInv   : Matrix2d,
+  }
+}
+
+Sprite : struct {
+  flag : u8 {
+  },
+  tileIdx : u8,
+  _       : u8 {
+    reserved : bits[2],
+    tileSize : bits[2],
+    tileNo   : bits[4],
+  },
+  x       : s16,
+  y       : s16,
+}
+
+SP : region {
+  access={sw=rw, hw=rw},
+  field={
+    sprite : Sprite[256]
+  }
+}
+
+
+/* ---- ARam ---- */
+ARam : region {
+  access={sw=rw, hw=rw},
+  field={
+    wave : u16[512]
+  }
+}
+
+
+/* ---- InstRam ---- */
+InstRam : region {
+  access={sw=rw, hw=rw},
+}
+
+SoundOp : struct {
+  _      : u32 {
+    func : bits[2],
+    arg  : bits[5],
+    A    : bits[6],
+    D    : bits[6],
+    S    : bits[6],
+    R    : bits[7],
+  },
+  amp    : s16,
+  ratio  : u8,
+  detune : u8,
+}
+
+Instrument : struct {
+  soundOpId : u8[4],
+  algorithm : u8,
+  reserved  : u8[3],
+}
+
+MusicNote : struct {
+  _         : u8 {
+    enable       : bits[1:0],
+    instrumentId : bits[7:1],
+  _         : u8 {
+  },
+    length       : bits[3:0],
+    channel      : bits[7:4],
+  },
+  direction : s8,
+  scale     : s8,
+  start     : u32,
+}
+
+Musicsheet : struct {
+  note : MusicNote[256],
+}
+
+Music : struct {
+  flag            : u8 {
+    _      : bits[6],
+    loop   : bits[1],
+    enable : bits[1],
+  },
+  loopNote        : u8,
+  endNote         : u8,
+  noteFrameLength : u8,
+  channel         : u8[8] {
+    sheetId : bits[7],
+    enable  : bits[1],
+  },
+  _               : u16,
+  _               : u8,
+  masterDirection : s8,
+  _               : u32 {
+    noteCount    : bits[8],
+    _            : bits[8],
+    masterVolume : bits[16],
+  },
+  freqCount       : u32,
+}
+
+
+/* ---- SaveRam ---- */
+SaveRam : region {
+  access={sw=rw, hw=rw},
+}
+
+
+/* ---- ProgRam ---- */
+ProgRam : region {
+  access={sw=rx, hw=rx},
+}
