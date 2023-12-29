@@ -22,7 +22,7 @@ AudioConfigDialog::~AudioConfigDialog()
 {
 }
 
-void AudioConfigDialog::update()
+auto AudioConfigDialog::update() -> void
 {
   if (enable) {
     ImVec2 center = ImGui::GetMainViewport()->GetCenter();

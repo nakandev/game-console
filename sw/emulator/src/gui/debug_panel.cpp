@@ -20,7 +20,7 @@ DebugPanel::~DebugPanel()
 {
 }
 
-void DebugPanel::update()
+auto DebugPanel::update() -> void
 {
   ImGui::Text("Control Panel\n");
   ImGui::Separator();
@@ -35,7 +35,7 @@ void DebugPanel::update()
   updateInputCtrlPanel();
 }
 
-void DebugPanel::updateDebugButtons()
+auto DebugPanel::updateDebugButtons() -> void
 {
   ImGui::Text("Play\n");
   ImGui::Button(">"); ImGui::SameLine();  // Run/Pause
@@ -46,7 +46,8 @@ void DebugPanel::updateDebugButtons()
   ImGui::Button("Save state");
   ImGui::Button("Load state");
 }
-void DebugPanel::updateDebugButtons2()
+
+auto DebugPanel::updateDebugButtons2() -> void
 {
   ImGui::Text("Debugger\n");
   ImGui::Button("si"); ImGui::SameLine();  // Step CPU Instruction
@@ -55,7 +56,8 @@ void DebugPanel::updateDebugButtons2()
   ImGui::Button("sv"); // Step until VSYNC
   ImGui::Button("breakpoint");
 }
-void DebugPanel::updateVideoCtrlPanel()
+
+auto DebugPanel::updateVideoCtrlPanel() -> void
 {
   ImGui::Text("Video\n");
   ImGui::Checkbox("BG0", &board.vpu.debug.enableBg[0].v1); ImGui::SameLine();
@@ -64,7 +66,8 @@ void DebugPanel::updateVideoCtrlPanel()
   ImGui::Checkbox("BG3", &board.vpu.debug.enableBg[3].v1);
   ImGui::Checkbox("SP ", &board.vpu.debug.enableSp.v1);
 }
-void DebugPanel::updateAudioCtrlPanel()
+
+auto DebugPanel::updateAudioCtrlPanel() -> void
 {
   ImGui::Text("Audio\n");
   ImGui::Checkbox("Ch0", &board.apu.debug.enableCh[0 ].v1); ImGui::SameLine();
@@ -76,7 +79,8 @@ void DebugPanel::updateAudioCtrlPanel()
   ImGui::Checkbox("Ch6", &board.apu.debug.enableCh[6 ].v1); ImGui::SameLine();
   ImGui::Checkbox("Ch7", &board.apu.debug.enableCh[7 ].v1);
 }
-void DebugPanel::updateInputCtrlPanel()
+
+auto DebugPanel::updateInputCtrlPanel() -> void
 {
   ImGui::Text("Input\n");
   HwPad hwpad = board.io.getPadStatus();
