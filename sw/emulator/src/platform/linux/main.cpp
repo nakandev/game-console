@@ -118,7 +118,7 @@ void audio_callback(void *userdata, Uint8 *stream, int len)
 int main(int argc, char* argv[])
 {
   // debugLevel = 1;
-  filesystem::path elfpath = "/home/nyalry/nakan/dev/hobby/game-console/sw/dev/c/test/trial_08_tilefile/trial_08_tilefile";
+  filesystem::path elfpath = "/home/nyalry/nakan/dev/hobby/game-console/sw/dev/c/tutorial/mw/00_template/tutorial_mw_00_template.exe";
   if (argc == 2) {
     elfpath = string(argv[1]);
   }

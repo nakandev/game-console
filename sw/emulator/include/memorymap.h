@@ -2,11 +2,11 @@
 #include <cstdint>
 #include <initializer_list>
 
-enum {
+enum HwMemoryRegion {
   HWREG_SYSROM_BASEADDR       = 0x0000'0000,    HWREG_SYSROM_SIZE       = 16*1024,
-  HWREG_FASTWORKRAM_BASEADDR  = 0x0100'0000,    HWREG_FASTWORKRAM_SIZE  = 32*1024,
-  HWREG_SLOWWORKRAM_BASEADDR  = 0x0200'0000,    HWREG_SLOWWORKRAM_SIZE  = 1*1024*1024,
-  HWREG_WORKRAM_END           = 0x0300'0000,    // HWREG_WORKRAM_END       = 0,
+  HWREG_WORKRAM_BASEADDR      = 0x0100'0000,    HWREG_WORKRAM_SIZE  = 32*1024,
+  HWREG_MAINRAM_BASEADDR      = 0x0200'0000,    HWREG_MAINRAM_SIZE  = 1*1024*1024,
+  HWREG_MAINRAM_END           = 0x0300'0000,
   HWREG_IORAM_BASEADDR        = 0x0300'0000,    HWREG_IORAM_SIZE        = 256*1024,  // fix to 1*1024
   HWREG_VRAM_BASEADDR         = 0x0400'0000,    HWREG_VRAM_SIZE         = 512*1024,
   // HWREG_PALRAM_BASEADDR      = 0x0500'0000,  // HWREG_PALRAM_SIZE       = 2*1024,
@@ -163,9 +163,24 @@ struct HwIoDma {
   HwDma dma[4];
 };
 
+struct HwTimer {
+  union {
+    struct {
+      uint32_t enable    : 1;
+      uint32_t interrupt : 1;
+      uint32_t repeat    : 1;
+      uint32_t _reserved : 29;
+    };
+    uint32_t attribute;
+  };
+  uint32_t _reserved2;
+  uint32_t limit;
+  uint32_t count;
+};
+
 // IO Timer
 struct HwIoTimer {
-  uint32_t timer[4];
+  HwTimer timer[4];
 };
 
 // IO Serial
@@ -194,9 +209,32 @@ enum {
   HW_IO_INT_SERIAL,
 };
 
+union HwIoInterruptBits {
+  struct {
+    uint32_t hblank   : 1;
+    uint32_t vblank   : 1;
+    uint32_t pad0     : 1;
+    uint32_t pad1     : 1;
+    uint32_t keyboard : 1;
+    uint32_t touch    : 1;
+    uint32_t dma0     : 1;
+    uint32_t dma1     : 1;
+    uint32_t dma2     : 1;
+    uint32_t dma3     : 1;
+    uint32_t timer0   : 1;
+    uint32_t timer1   : 1;
+    uint32_t timer2   : 1;
+    uint32_t timer3   : 1;
+    uint32_t saveram  : 1;
+    uint32_t serial   : 1;
+    uint32_t padx     : 16;
+  };
+  uint32_t bits;
+};
+
 struct HwIoInterrupt {
-  uint32_t enable;
-  uint32_t status;
+  HwIoInterruptBits enable;
+  HwIoInterruptBits status;
   uint32_t vector;
 };
 

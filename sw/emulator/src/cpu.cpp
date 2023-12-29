@@ -139,6 +139,7 @@ const auto Cpu::disassembleAll() -> map<uint32_t, string>
   auto icount = 0;
   auto size = elf->getSection(".init")->size;
   size += elf->getSection(".text")->size;
+  // size += elf->getSection(".rodata")->size;
   // vector<string> disasms;
   map<uint32_t, string> disasms;
   while (offset < size) {

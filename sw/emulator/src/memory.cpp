@@ -217,8 +217,8 @@ auto Memory::sectionByAddrFast(const uint32_t addr) -> MemorySection&
   } else {
     switch(mid & 0xF) {
       case 0x0: return *sections[HWREG_SYSROM_BASEADDR];
-      case 0x1: return *sections[HWREG_FASTWORKRAM_BASEADDR];
-      case 0x2: return *sections[HWREG_SLOWWORKRAM_BASEADDR];
+      case 0x1: return *sections[HWREG_WORKRAM_BASEADDR];
+      case 0x2: return *sections[HWREG_MAINRAM_BASEADDR];
       case 0x3:
         // return *sections[HWREG_IORAM_BASEADDR];
         switch ((addr >> 8) & 0xFFu) {
@@ -226,7 +226,7 @@ auto Memory::sectionByAddrFast(const uint32_t addr) -> MemorySection&
           // case 0x1: return *sections[HWREG_IO_AUDIO_ADDR];
           // case 0x2: return *sections[HWREG_IO_INPUT_ADDR];
           case 0x3: return *sections[HWREG_IO_DMA_ADDR];
-          // case 0x4: return *sections[HWREG_IO_TIMER_ADDR];
+          case 0x4: return *sections[HWREG_IO_TIMER_ADDR];
           // case 0x5: return *sections[HWREG_IO_SERIAL_ADDR];
           // case 0x6: return *sections[HWREG_IO_INT_ADDR];
           // default: return *sections[0];  // invalid section
@@ -258,16 +258,16 @@ auto Memory::initMinimumSections() -> void
     sectionsPool.push_back(make_shared<T>(T(name, (addr), (size)))); \
     sections.insert(make_pair((addr), sectionsPool.back().get())); \
     sectionNameTable.insert(make_pair(name,(addr)));
-  sections_insert(MemorySection, "system",  HWREG_SYSROM_BASEADDR     , HWREG_SYSROM_SIZE);
-  sections_insert(MemorySection, "stack",   HWREG_FASTWORKRAM_BASEADDR, HWREG_FASTWORKRAM_SIZE);
-  sections_insert(MemorySection, "data"  ,  HWREG_SLOWWORKRAM_BASEADDR, HWREG_SLOWWORKRAM_SIZE);
-  sections_insert(MemorySection, "ioram",   HWREG_IORAM_BASEADDR      , HWREG_IORAM_SIZE);
-  sections_insert(MemorySection, "vram",    HWREG_VRAM_BASEADDR       , HWREG_VRAM_SIZE);
-  sections_insert(MemorySection, "tile",    HWREG_TILERAM_BASEADDR    , HWREG_TILERAM_SIZE);
-  sections_insert(MemorySection, "aram",    HWREG_ARAM_BASEADDR       , HWREG_ARAM_SIZE);
-  sections_insert(MemorySection, "inst",    HWREG_INSTRAM_BASEADDR    , HWREG_INSTRAM_SIZE);
-  sections_insert(MemorySection, "save",    HWREG_SAVERAM_BASEADDR    , HWREG_SAVERAM_SIZE);
-  sections_insert(MemorySection, "program", HWREG_PROGRAM_BASEADDR    , HWREG_PROGRAM_SIZE);
+  sections_insert(MemorySection, "system",  HWREG_SYSROM_BASEADDR , HWREG_SYSROM_SIZE );
+  sections_insert(MemorySection, "stack",   HWREG_WORKRAM_BASEADDR, HWREG_WORKRAM_SIZE);
+  sections_insert(MemorySection, "data"  ,  HWREG_MAINRAM_BASEADDR, HWREG_MAINRAM_SIZE);
+  sections_insert(MemorySection, "ioram",   HWREG_IORAM_BASEADDR  , HWREG_IORAM_SIZE  );
+  sections_insert(MemorySection, "vram",    HWREG_VRAM_BASEADDR   , HWREG_VRAM_SIZE   );
+  sections_insert(MemorySection, "tile",    HWREG_TILERAM_BASEADDR, HWREG_TILERAM_SIZE);
+  sections_insert(MemorySection, "aram",    HWREG_ARAM_BASEADDR   , HWREG_ARAM_SIZE   );
+  sections_insert(MemorySection, "inst",    HWREG_INSTRAM_BASEADDR, HWREG_INSTRAM_SIZE);
+  sections_insert(MemorySection, "save",    HWREG_SAVERAM_BASEADDR, HWREG_SAVERAM_SIZE);
+  sections_insert(MemorySection, "program", HWREG_PROGRAM_BASEADDR, HWREG_PROGRAM_SIZE);
   sections_insert(MemorySection, "invalid", 0, 0);
   #undef sections_insert
 }
@@ -309,7 +309,7 @@ auto Memory::waitAccess(uint32_t addr, uint32_t size, bool rw, int8_t& wait) -> 
     if (addrSection > (HWREG_SAVERAM_BASEADDR >> 24)) {
       wait = 5;
     } else
-    if (addrSection == (HWREG_SLOWWORKRAM_BASEADDR >> 24)) {
+    if (addrSection == (HWREG_MAINRAM_BASEADDR >> 24)) {
       wait = 3;
     } else
     {
