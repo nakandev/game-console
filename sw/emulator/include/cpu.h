@@ -36,5 +36,7 @@ public:
   auto cacheAllInstruction() -> void;
   const auto disassembleAll() -> map<uint32_t, string>;
   const auto readRegisterAll() -> vector<string>;
+  const auto getInstrCount() -> int64_t;
+  const auto getCycleCount() -> int64_t;
 };
 

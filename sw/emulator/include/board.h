@@ -8,6 +8,7 @@
 #include <dma.h>
 #include <timer.h>
 #include <io.h>
+#include <sram.h>
 #include <string>
 
 class Board {
@@ -16,11 +17,12 @@ public:
   Memory memory;
   Cpu cpu;
   IntrrCtrl intrrCtrl;
+  IO io;
   Vpu vpu;
   Apu apu;
   Dma dma;
   Timer timer;
-  IO io;
+  Sram sram;
   bool pause;
   Board();
   ~Board();

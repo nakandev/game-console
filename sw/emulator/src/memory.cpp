@@ -2,6 +2,14 @@
 #include <memorymap.h>
 #include <fmt/core.h>
 
+enum MemoryErrorNo {
+  NoError = 0,
+  ReadOutOfRange,
+  WriteOutOfRange,
+};
+
+MemoryErrorNo memoryErrorNo;
+
 MemorySection::MemorySection()
   :name(),  addr(), size(), data()
 {
@@ -44,18 +52,30 @@ auto MemorySection::isin(uint32_t addr) -> bool
 
 auto MemorySection::read8(uint32_t addr) -> int8_t
 {
+  if (!isin(addr)) {
+    memoryErrorNo = ReadOutOfRange;
+    return 0;
+  }
   uint32_t relativeAddr = addr - this->addr;
   return *((int8_t*)(&data[0] + relativeAddr));
 }
 
 auto MemorySection::read16(uint32_t addr) -> int16_t
 {
+  if (!isin(addr)) {
+    memoryErrorNo = ReadOutOfRange;
+    return 0;
+  }
   uint32_t relativeAddr = addr - this->addr;
   return *((int16_t*)(&data[0] + relativeAddr));
 }
 
 auto MemorySection::read32(uint32_t addr) -> int32_t
 {
+  if (!isin(addr)) {
+    memoryErrorNo = ReadOutOfRange;
+    return 0;
+  }
   uint32_t relativeAddr = addr - this->addr;
   return *((int32_t*)(&data[0] + relativeAddr));
 }
@@ -72,18 +92,30 @@ auto MemorySection::read(uint32_t addr, uint32_t size) -> int32_t
 
 auto MemorySection::write8(uint32_t addr, int8_t value) -> void
 {
+  if (!isin(addr)) {
+    memoryErrorNo = WriteOutOfRange;
+    return;
+  }
   uint32_t relativeAddr = addr - this->addr;
   *((int8_t*)(&data[0] + relativeAddr)) = value;
 }
 
 auto MemorySection::write16(uint32_t addr, int16_t value) -> void
 {
+  if (!isin(addr)) {
+    memoryErrorNo = WriteOutOfRange;
+    return;
+  }
   uint32_t relativeAddr = addr - this->addr;
   *((int16_t*)(&data[0] + relativeAddr)) = value;
 }
 
 auto MemorySection::write32(uint32_t addr, int32_t value) -> void
 {
+  if (!isin(addr)) {
+    memoryErrorNo = WriteOutOfRange;
+    return;
+  }
   uint32_t relativeAddr = addr - this->addr;
   *((int32_t*)(&data[0] + relativeAddr)) = value;
 }
@@ -115,6 +147,13 @@ auto MemorySection::set(uint32_t addr, uint32_t size, uint8_t value) -> void
   }
 }
 
+auto MemorySection::zerofill() -> void
+{
+  for (int i=0; i<size; i++) {
+    data[i] = 0;
+  }
+}
+
 auto MemorySection::buffer() -> const uint8_t*
 {
   return data.data();
@@ -124,18 +163,15 @@ auto MemorySection::buffer() -> const uint8_t*
 IoRamSection::IoRamSection()
 : MemorySection()
 {
-  runningDma = -1;
 }
 
 IoRamSection::IoRamSection(const string& name, uint32_t addr, size_t size)
 : MemorySection(name, addr, size)
 {
-  runningDma = -1;
 }
 IoRamSection::IoRamSection(const MemorySection& obj)
 : MemorySection(obj)
 {
-  runningDma = -1;
 }
 
 IoRamSection::~IoRamSection()
@@ -229,8 +265,7 @@ auto Memory::sectionByAddrFast(const uint32_t addr) -> MemorySection&
           case 0x4: return *sections[HWREG_IO_TIMER_ADDR];
           // case 0x5: return *sections[HWREG_IO_SERIAL_ADDR];
           // case 0x6: return *sections[HWREG_IO_INT_ADDR];
-          // default: return *sections[0];  // invalid section
-          default: return *sections[HWREG_IORAM_BASEADDR];  // invalid section
+          default: return *sections[HWREG_IORAM_BASEADDR];
         }
       case 0x4: return *sections[HWREG_VRAM_BASEADDR];
       case 0x6: return *sections[HWREG_TILERAM_BASEADDR];
@@ -247,13 +282,15 @@ auto Memory::sectionByAddrFast(const uint32_t addr) -> MemorySection&
 
 auto Memory::clearSection() -> void
 {
+  sectionsPool.clear();
   sections.clear();
+  sectionNameTable.clear();
 }
 
 auto Memory::initMinimumSections() -> void
 {
   busyFlag.flag32 = 0;
-  sections.clear();
+  clearSection();
   #define sections_insert(T, name, addr, size) \
     sectionsPool.push_back(make_shared<T>(T(name, (addr), (size)))); \
     sections.insert(make_pair((addr), sectionsPool.back().get())); \
@@ -262,14 +299,26 @@ auto Memory::initMinimumSections() -> void
   sections_insert(MemorySection, "stack",   HWREG_WORKRAM_BASEADDR, HWREG_WORKRAM_SIZE);
   sections_insert(MemorySection, "data"  ,  HWREG_MAINRAM_BASEADDR, HWREG_MAINRAM_SIZE);
   sections_insert(MemorySection, "ioram",   HWREG_IORAM_BASEADDR  , HWREG_IORAM_SIZE  );
-  sections_insert(MemorySection, "vram",    HWREG_VRAM_BASEADDR   , HWREG_VRAM_SIZE   );
-  sections_insert(MemorySection, "tile",    HWREG_TILERAM_BASEADDR, HWREG_TILERAM_SIZE);
-  sections_insert(MemorySection, "aram",    HWREG_ARAM_BASEADDR   , HWREG_ARAM_SIZE   );
-  sections_insert(MemorySection, "inst",    HWREG_INSTRAM_BASEADDR, HWREG_INSTRAM_SIZE);
   sections_insert(MemorySection, "save",    HWREG_SAVERAM_BASEADDR, HWREG_SAVERAM_SIZE);
   sections_insert(MemorySection, "program", HWREG_PROGRAM_BASEADDR, HWREG_PROGRAM_SIZE);
   sections_insert(MemorySection, "invalid", 0, 0);
   #undef sections_insert
+}
+
+auto Memory::resetRamSections() -> void
+{
+  sections[HWREG_SYSROM_BASEADDR]->zerofill();
+  sections[HWREG_WORKRAM_BASEADDR]->zerofill();
+  sections[HWREG_MAINRAM_BASEADDR]->zerofill();
+  sections[HWREG_IORAM_BASEADDR]->zerofill();
+  sections[HWREG_IO_DMA_ADDR]->zerofill();
+  sections[HWREG_IO_TIMER_ADDR]->zerofill();
+  sections[HWREG_VRAM_BASEADDR]->zerofill();
+  sections[HWREG_TILERAM_BASEADDR]->zerofill();
+  sections[HWREG_ARAM_BASEADDR]->zerofill();
+  sections[HWREG_INSTRAM_BASEADDR]->zerofill();
+  // sections[HWREG_SAVERAM_BASEADDR]->zerofill();
+  // sections[HWREG_PROGRAM_BASEADDR]->zerofill();
 }
 
 auto Memory::addSection(const string& name, uint32_t addr, uint32_t size) -> void

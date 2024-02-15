@@ -1,11 +1,10 @@
 #pragma once
 #include <common.h>
 #include <memorymap.h>
+#include <memory.h>
 #include <vector>
 
 using namespace std;
-
-class Memory;
 
 struct ApuMusicData {
   uint32_t noteCount;  // auto update
@@ -21,6 +20,8 @@ struct ApuMusicNote {
 class Apu {
 private:
   Memory& memory;
+  MemorySection aramSection;
+  MemorySection instSection;
   vector<ApuMusicNote> noteBuffer;
   vector<int16_t> musicBuffer;
 public:

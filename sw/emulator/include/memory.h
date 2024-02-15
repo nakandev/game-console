@@ -32,6 +32,7 @@ class MemorySection {
     virtual auto write(uint32_t addr, uint32_t size, int32_t value) -> void;
     auto copy(uint32_t addr, uint32_t size, uint8_t* buf) -> void;
     auto set(uint32_t addr, uint32_t size, uint8_t value) -> void;
+    auto zerofill() -> void;
     auto buffer() -> const uint8_t*;
 };
 
@@ -82,6 +83,7 @@ class Memory {
     auto sectionByAddrFast(const uint32_t addr) -> MemorySection&;
     auto clearSection() -> void;
     auto initMinimumSections() -> void;
+    auto resetRamSections() -> void;
     auto addSection(const string& name, uint32_t addr, uint32_t size) -> void;
     template<typename T> auto addSection(T* section) -> void
     {

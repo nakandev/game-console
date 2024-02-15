@@ -100,9 +100,9 @@ auto Cpu::stepCycle() -> void
       memory.prevProcessor = memory.processor;
       memory.processor = this;
       isa.execute(instr, regs, memory);
-      instrCount++;
     }
     if (instr.phase == INSTR_PHASE_POSTPROC) {
+      instrCount++;
       if (debugLevel >= 1) {
         if (regs.prev_pc.val.u != regs.pc.val.u) {
           isa.printInstr(instrCount, regs.prev_pc.val.u, instr, regs, memory);
@@ -180,4 +180,14 @@ auto Cpu::cacheAllInstruction() -> void
     count++;
   }
   regs.pc.val.u = elf.get()->getElfHeader().entry;
+}
+
+auto Cpu::getInstrCount() -> int64_t
+{
+  return instrCount;
+}
+
+auto Cpu::getCycleCount() -> int64_t
+{
+  return cycleCount;
 }

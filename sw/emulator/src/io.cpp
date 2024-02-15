@@ -67,3 +67,9 @@ auto IO::updateScanlineNumber(uint16_t y) -> void
 {
   memory.write16(HWREG_IO_SCANLINE_ADDR, y);
 }
+
+auto IO::updateMusicFrameNumber() -> void
+{
+  uint32_t frame = memory.read32(HWREG_IO_MUSICFRAME_ADDR);
+  memory.write32(HWREG_IO_MUSICFRAME_ADDR, frame + 1);
+}

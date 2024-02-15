@@ -16,6 +16,8 @@ std::uniform_real_distribution<FLOAT> dist1(-1.0, 1.0);
 
 Apu::Apu(Memory& memory)
   : memory(memory),
+  aramSection("aram", HWREG_ARAM_BASEADDR   , HWREG_ARAM_SIZE   ),
+  instSection("inst", HWREG_INSTRAM_BASEADDR, HWREG_INSTRAM_SIZE),
   noteBuffer(),
   musicBuffer(),
   apuMusicData(),
@@ -41,6 +43,8 @@ Apu::~Apu()
 
 auto Apu::init() -> void
 {
+  memory.addSection<MemorySection>(&aramSection);
+  memory.addSection<MemorySection>(&instSection);
   // noteBuffer.resize(HW_MUSIC_CHANNEL_NUM);
   // musicBuffer.resize(HW_MUSIC_FREQ_PER_FRAME * 2);
   apuMusicData = {.noteCount=0, .frameCount=0, .buffer=musicBuffer.data()};

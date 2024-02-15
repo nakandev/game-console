@@ -10,6 +10,8 @@ Vpu::Vpu(Memory& memory)
     screenBuffer(),
     vpuSprite(),
     memory(memory),
+    vramSection("vram", HWREG_VRAM_BASEADDR   , HWREG_VRAM_SIZE),
+    tileSection("tile", HWREG_TILERAM_BASEADDR, HWREG_TILERAM_SIZE),
     scanline(),
     debug()
 {
@@ -41,6 +43,8 @@ Vpu::~Vpu()
 
 auto Vpu::init() -> void
 {
+  memory.addSection<MemorySection>(&vramSection);
+  memory.addSection<MemorySection>(&tileSection);
 }
 
 auto Vpu::currentLineNo() -> int

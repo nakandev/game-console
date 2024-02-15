@@ -1,11 +1,10 @@
 #pragma once
 #include <common.h>
 #include <memorymap.h>
+#include <memory.h>
 #include <vector>
 
 using namespace std;
-
-class Memory;
 
 struct VpuSprite {
   HwSprite hwsp;
@@ -24,6 +23,8 @@ private:
   vector<uint32_t> screenBuffer;
   vector<VpuSprite> vpuSprite;
   Memory& memory;
+  MemorySection vramSection;
+  MemorySection tileSection;
   int scanline;
   auto setHBlank(bool flag) -> void;
   auto setVBlank(bool flag) -> void;

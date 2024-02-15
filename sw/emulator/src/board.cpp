@@ -6,11 +6,12 @@ Board::Board()
   memory(),
   cpu(memory),
   intrrCtrl(memory, cpu),
+  io(memory),
   vpu(memory),
   apu(memory),
   dma(memory, intrrCtrl),
   timer(memory, intrrCtrl),
-  io(memory),
+  sram(memory, intrrCtrl),
   pause(true)
 {
   io.setCpu(cpu);
@@ -24,6 +25,7 @@ Board::Board()
   apu.init();
   dma.init();
   timer.init();
+  sram.init();
 }
 
 Board::~Board()
@@ -32,23 +34,26 @@ Board::~Board()
 
 auto Board::reset() -> void
 {
+  memory.resetRamSections();
   cpu.init();
   vpu.init();
   apu.init();
   dma.init();
   timer.init();
+  sram.init();
   pause = false;
 }
 
 auto Board::loadElf(const string& path) -> uint8_t
 {
-  // cpu.init();
+  memory.resetRamSections();
   auto ret = cpu.loadElf(path);
   if (ret) return ret;
   vpu.init();
   apu.init();
   dma.init();
   timer.init();
+  sram.load(path);
   pause = false;
   return ret;
 }
@@ -80,6 +85,7 @@ auto Board::updateFrame() -> void
     io.updateScanlineNumber(y);
   }
   apu.updateMusicBuffer();
+  io.updateMusicFrameNumber();
 
   intrrCtrl.setIntStatus(HW_IO_INT_VBLANK);
   intrrCtrl.requestInt(HW_IO_INT_VBLANK);
@@ -87,4 +93,12 @@ auto Board::updateFrame() -> void
     stepCpuCycle();
   }
   intrrCtrl.clearIntStatus(HW_IO_INT_VBLANK);
+}
+
+auto Board::saveState(const string& path) -> void
+{
+}
+
+auto Board::loadState(const string& path) -> void
+{
 }

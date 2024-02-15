@@ -28,4 +28,5 @@ public:
   auto releasePadButton(uint8_t button) -> void;
   auto getPadStatus() -> HwPad;
   auto updateScanlineNumber(uint16_t y) -> void;
+  auto updateMusicFrameNumber() -> void;
 };
