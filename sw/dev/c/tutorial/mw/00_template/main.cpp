@@ -102,7 +102,7 @@ int main()
   /* BG settings */
   tileram.bg[3].flag.enable = true;
   // tileram.bg[2].flag.layer = 2;
-  tileram.bg[3].paletteInfo.mode = 1;
+  tileram.bg[3].paletteInfo.mode = HWBG_PIXEL_MODE;
   tileram.bg[3].paletteInfo.bank = 0;
   tileram.bg[3].paletteInfo.no = 1;
   tileram.bg[3].tileNo = 1;
@@ -111,7 +111,7 @@ int main()
   tileram.bg[3].y = 0;
   tileram.bg[2].flag.enable = true;
   // tileram.bg[2].flag.layer = 3;
-  tileram.bg[2].paletteInfo.mode = 1;
+  tileram.bg[2].paletteInfo.mode = HWBG_PIXEL_MODE;
   tileram.bg[2].paletteInfo.bank = 0;
   tileram.bg[2].paletteInfo.no = 2;
   tileram.bg[2].tileNo = 3;

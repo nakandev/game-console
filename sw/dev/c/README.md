@@ -1,4 +1,4 @@
-# SW Devkit for C
+# Software Development Kit for C
 
 hw (hardware)
 : Hardware register macros and structure definition

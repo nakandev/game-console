@@ -24,6 +24,29 @@ void int_handler()
         hwTileRam.sp[0].sprite[0].x += 2;
       }
     }
+
+    if (pad & (1 << HW_PAD_A)) {
+      hwInstRam.soundOp[2].arg = 0x0f;
+      hwInstRam.soundOp[2].A = 0x1f;
+      hwInstRam.soundOp[2].D = 0x1f;
+      hwInstRam.soundOp[2].S = 0x00;
+      hwInstRam.soundOp[2].R = 0x08;
+      hwInstRam.soundOp[2].amp = 10*16 + 0;
+      hwInstRam.soundOp[2].ratio = 0;
+      hwInstRam.soundOp[2].detune = 10;
+      hwInstRam.instrument[0].algorithm = 3;
+    } else
+    if (pad & (1 << HW_PAD_B)) {
+      hwInstRam.soundOp[2].arg = 0;
+      hwInstRam.soundOp[2].A = 0x00;
+      hwInstRam.soundOp[2].D = 0x1f;
+      hwInstRam.soundOp[2].S = 0x03;
+      hwInstRam.soundOp[2].R = 0x04;
+      hwInstRam.soundOp[2].amp = 0*16 + 12;
+      hwInstRam.soundOp[2].ratio = 61;
+      hwInstRam.soundOp[2].detune = 0;
+      hwInstRam.instrument[0].algorithm = 4;
+    }
   }
 }
 };
@@ -72,17 +95,6 @@ int main()
   hwInstRam.soundOp[1].ratio = 49;
   hwInstRam.soundOp[1].detune = 0;
   hwInstRam.soundOp[2].func = HW_SOUNDOP_SIN;
-#if 0
-  hwInstRam.soundOp[2].arg = 0x0f;
-  hwInstRam.soundOp[2].A = 0x1f;
-  hwInstRam.soundOp[2].D = 0x1f;
-  hwInstRam.soundOp[2].S = 0x00;
-  hwInstRam.soundOp[2].R = 0x08;
-  hwInstRam.soundOp[2].amp = 10*16 + 0;
-  hwInstRam.soundOp[2].ratio = 0;
-  hwInstRam.soundOp[2].detune = 10;
-  hwInstRam.instrument[0].algorithm = 3;
-#else
   hwInstRam.soundOp[2].arg = 0;
   hwInstRam.soundOp[2].A = 0x00;
   hwInstRam.soundOp[2].D = 0x1f;
@@ -92,7 +104,6 @@ int main()
   hwInstRam.soundOp[2].ratio = 61;
   hwInstRam.soundOp[2].detune = 0;
   hwInstRam.instrument[0].algorithm = 4;
-#endif
   /* instrument settings */
   hwInstRam.instrument[0].soundOpId[0] = 1;
   hwInstRam.instrument[0].soundOpId[1] = 2;
@@ -135,7 +146,7 @@ int main()
   hwInstRam.musicsheet[0].note[35] = {.enable=false, .instrumentId=0, .length=3, .channel=0, .direction=0, .scale= 0, .start=31*4};
 
   /* music settings */
-  hwInstRam.music[0].flag.loop = false;
+  hwInstRam.music[0].flag.loop = true;
   hwInstRam.music[0].loopNote = 0;
   hwInstRam.music[0].endNote = 32*4;
   hwInstRam.music[0].noteFrameLength = HW_MUSIC_DEFAULT_NOTE_FRAMELEN / 8;

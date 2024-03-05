@@ -57,7 +57,9 @@ def main():
 
     imgpals = image.getpalette()
     pals = list()
-    for i in range(len(image.getcolors())):
+    len_colors = len(image.getcolors())
+    # len_colors = len(image.getpalette()) // 3
+    for i in range(len_colors):
         col = imgpals[i * 3: i * 3 + 3]
         if 'transparency' in image.info and i == image.info['transparency']:
             col = col + [0]

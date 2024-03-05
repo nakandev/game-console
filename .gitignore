@@ -46,5 +46,6 @@ _study/
 
 # Other
 **/riscv-tests/
+sw/**/build/
 sw/emulator/lib/
 **/imgui.ini
