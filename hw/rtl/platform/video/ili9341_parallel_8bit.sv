@@ -7,8 +7,8 @@
  */
 
 module ili9341_parallel_8bit(
-    input clk,
-    input rst,
+    input wire clk,
+    input wire rst,
     input lcd_vblank,
     input lcd_write,
     input [7:0] lcd_col_r,
@@ -172,8 +172,8 @@ module ili9341_parallel_8bit(
             reset_stage <= RESET_START;
             reset_clks <= RESET_CLKS;
             clear_cnt <= SCREEN_W * SCREEN_H * 2;
-            data_count_x <= 0;//SCREEN_W - 1;
-            data_count_y <= 0;//SCREEN_H - 1;
+            data_count_x <= SCREEN_W - 1;
+            data_count_y <= SCREEN_H - 1;
         end else if (|reset_clks) begin
             reset_clks <= reset_clks - 1;
         end else if (reset_stage == RESET_START ||
