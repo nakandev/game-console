@@ -276,6 +276,9 @@ union HwColor {
 enum {
   HWPALETTE_COLORNUM = 256,
   HWPALETTE_BYTESIZE = 1,
+  HWPALETTE_MODE_256 = 0,
+  HWPALETTE_MODE_16  = 1,
+  HWPALETTE_BANK_SIZE = 8,
   HWREG_PALETTE_BASEADDR   = HWREG_TILERAM_BASEADDR + 0x0000'0000,
   HWREG_PALETTE_BYTESIZE   = 0x0400,  // 4 * 256
   HWREG_PALETTE0_ADDR    = HWREG_PALETTE_BASEADDR + HWREG_PALETTE_BYTESIZE * 0,
@@ -320,9 +323,9 @@ enum {
 struct HwTilemap {
   union {
     struct {
-      uint16_t idx   : 14;
       uint16_t flipX : 1;
       uint16_t flipY : 1;
+      uint16_t idx   : 14;
     };
     uint16_t data;
   } tileIdx[HWBG_TILENUM];
@@ -363,7 +366,8 @@ struct HwMatrix2d {
 union HwPaletteInfo {
   struct {
     uint8_t mode: 1;
-    uint8_t bank: 3;
+    uint8_t _reserved: 1;
+    uint8_t bank: 2;
     uint8_t no  : 4;
   };
   uint8_t info;
@@ -382,8 +386,10 @@ struct HwBG {
     };
     uint8_t data;
   } flag;
-  HwPaletteInfo paletteInfo;
-  uint8_t tileNo;
+  /*uint8_t*/HwPaletteInfo paletteInfo;
+  uint8_t tileNo     : 4;
+  uint8_t tileSize   : 2;
+  uint8_t _reserved2 : 2;
   uint8_t tilemapNo;
   int16_t x;
   int16_t y;
@@ -417,7 +423,7 @@ struct HwSprite {
     };
     uint8_t data;
   } flag;
-  HwPaletteInfo paletteInfo;
+  /*uint8_t*/HwPaletteInfo paletteInfo;
   uint8_t tileIdx;
   uint8_t tileNo     : 4;
   uint8_t tileSize   : 2;

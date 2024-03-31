@@ -9,10 +9,6 @@ SRCS += interrupt.s
 SRCS += startup.cpp
 SRCS += main.cpp
 OBJS = $(addsuffix .o,$(basename $(SRCS)))
-OBJS += rsc/back_gif.pal.o
-OBJS += rsc/back_gif.tile.o
-OBJS += rsc/tileset_gif.pal.o
-OBJS += rsc/tileset_gif.tile.o
 
 TOOLCHAIN_PREFIX = /home/nyalry/nakan/work/study/riscv/gcc/build32/bin/riscv32-unknown-elf-
 CXX     = $(TOOLCHAIN_PREFIX)g++

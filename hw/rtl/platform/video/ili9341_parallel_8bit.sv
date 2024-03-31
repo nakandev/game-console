@@ -141,6 +141,7 @@ module ili9341_parallel_8bit(
     reg write_busy;
     reg [8:0] write_data;
     reg send_pix_lo;
+    reg [17:0] send_cnt;
 
     assign tft_rst = reset_stage != RESET_LO;
     assign tft_cs = 0; // Chip select enable (active low)
@@ -184,7 +185,6 @@ module ili9341_parallel_8bit(
                     (reset_stage == RESET_CLEAR) ||
                     (reset_stage == RESET_INIT2 && init2_cnt == INIT2_LEN)) begin
             reset_stage <= reset_stage + 1;
-            reset_clks <= RESET_CLKS;
         end else if (write_busy) begin
             write_busy <= 0;
         end else if (init_cnt < INIT_LEN) begin
@@ -203,10 +203,6 @@ module ili9341_parallel_8bit(
             send_pix_lo <= 0;
             write_busy <= 1;
             write_data <= {1'b1, col_lo(lcd_col_r, lcd_col_g, lcd_col_b)};
-        end else if (lcd_write) begin
-            send_pix_lo <= 1;
-            write_busy <= 1;
-            write_data <= {1'b1, col_hi(lcd_col_r, lcd_col_g, lcd_col_b)};
 
             if (data_count_x < SCREEN_W - 1) begin
                 data_count_x <= data_count_x + 1;
@@ -218,6 +214,10 @@ module ili9341_parallel_8bit(
                     data_count_y <= 0;
                 end
             end
+        end else if (lcd_write) begin
+            send_pix_lo <= 1;
+            write_busy <= 1;
+            write_data <= {1'b1, col_hi(lcd_col_r, lcd_col_g, lcd_col_b)};
         end
     end
 endmodule

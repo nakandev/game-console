@@ -38,6 +38,7 @@ public:
   auto init() -> void;
   auto currentLineNo() -> int;
   auto drawLine(int y) -> void;
+  auto drawLineRtl(int y) -> void;
   auto drawAllLine() -> void;
   auto copyScreenBuffer(uint32_t* buffer, bool inv=false) -> void;
 };
