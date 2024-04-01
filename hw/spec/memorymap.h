@@ -323,9 +323,10 @@ enum {
 struct HwTilemap {
   union {
     struct {
-      uint16_t flipX : 1;
-      uint16_t flipY : 1;
-      uint16_t idx   : 14;
+      uint16_t vflip     : 1;
+      uint16_t hflip     : 1;
+      uint16_t _reserved : 2;
+      uint16_t idx       : 12;
     };
     uint16_t data;
   } tileIdx[HWBG_TILENUM];
@@ -354,6 +355,18 @@ enum {
   HWBG_PIXEL_MODE = 1,
 };
 
+union HwPaletteInfo {
+  struct {
+    uint16_t _reserved0 : 4;
+    uint16_t alpha      : 4;
+    uint16_t _reserved1 : 1;
+    uint16_t mode       : 1;
+    uint16_t bank       : 2;
+    uint16_t no         : 4;
+  };
+  uint16_t info;
+};
+
 struct HwMatrix2d {
   int16_t a;
   int16_t b;
@@ -363,36 +376,26 @@ struct HwMatrix2d {
   int16_t y;
 };
 
-union HwPaletteInfo {
-  struct {
-    uint8_t mode: 1;
-    uint8_t _reserved: 1;
-    uint8_t bank: 2;
-    uint8_t no  : 4;
-  };
-  uint8_t info;
-};
-
 struct HwBG {
-  union {
-    struct {
-      uint8_t enable    : 1;
-      uint8_t mode      : 1;
-      uint8_t vflip     : 1;
-      uint8_t hflip     : 1;
-      uint8_t layer     : 2;
-      uint8_t affineEnable : 1;
-      uint8_t _reserved : 1;
-    };
-    uint8_t data;
-  } flag;
-  /*uint8_t*/HwPaletteInfo paletteInfo;
-  uint8_t tileNo     : 4;
-  uint8_t tileSize   : 2;
-  uint8_t _reserved2 : 2;
-  uint8_t tilemapNo;
-  int16_t x;
-  int16_t y;
+  uint16_t enable       : 1;
+  uint16_t affineEnable : 1;
+  uint16_t layer        : 2;
+  uint16_t mode         : 1;
+  uint16_t _reservedX   : 2;
+  int16_t  x            : 9;
+
+  uint16_t vflip        : 1;
+  uint16_t hflip        : 1;
+  uint16_t _reservedY   : 2;
+  uint16_t tileSize__   : 2;
+  uint16_t tileSize     : 2;
+  int16_t  y            : 8;
+
+  uint16_t tileBank      : 4;
+  uint16_t tilemapBank   : 4;
+  uint16_t _resrevedTile : 8;
+
+  /*uint16_t*/ HwPaletteInfo paletteInfo;
   HwMatrix2d affineInv;
 };
 
@@ -412,24 +415,24 @@ enum {
 };
 
 struct HwSprite {
-  union {
-    struct {
-      uint8_t enable    : 1;
-      uint8_t vflip     : 1;
-      uint8_t hflip     : 1;
-      uint8_t layer     : 2;
-      uint8_t affineEnable : 1;
-      uint8_t _reserved : 2;
-    };
-    uint8_t data;
-  } flag;
-  /*uint8_t*/HwPaletteInfo paletteInfo;
-  uint8_t tileIdx;
-  uint8_t tileNo     : 4;
-  uint8_t tileSize   : 2;
-  uint8_t _reserved2 : 2;
-  int16_t x;
-  int16_t y;
+  uint16_t enable       : 1;
+  uint16_t affineEnable : 1;
+  uint16_t layer        : 2;
+  uint16_t _reservedX   : 3;
+  int16_t  x            : 9;
+
+  uint16_t vflip        : 1;
+  uint16_t hflip        : 1;
+  uint16_t _reservedY   : 2;
+  uint16_t tileSize__   : 2;
+  uint16_t tileSize     : 2;
+  int16_t  y            : 8;
+
+  uint16_t tileBank      : 4;
+  uint16_t tileIdx       : 12;
+
+  /*uint16_t*/ HwPaletteInfo paletteInfo;
+
   HwMatrix2d affineInv;
 };
 

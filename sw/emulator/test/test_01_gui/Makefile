@@ -33,6 +33,7 @@ SRCS += debug_panel.cpp
 SRCS += disasm_view.cpp
 SRCS += palette_view.cpp
 SRCS += tile_view.cpp
+SRCS += tilemap_view.cpp
 SRCS += mmio_panel.cpp
 SRCS += input_config_dialog.cpp
 SRCS += video_config_dialog.cpp

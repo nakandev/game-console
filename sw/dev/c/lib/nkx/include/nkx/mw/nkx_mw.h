@@ -41,11 +41,11 @@ void isReleaseButton(uint8_t padNo);
 
 /* Video */
 void setPalette(uint8_t palBank, uint8_t palNo, uint32_t offset, const uint32_t* palData, uint32_t size);
-void setTile(uint8_t tileNo, uint32_t offset, const uint8_t* tileData, uint32_t size);
-void setTilemap(uint8_t mapNo, uint32_t offset, const uint16_t* mapData, uint32_t size);
-// void setTilemap2D(uint8_t mapNo, const Vec2 mapSize, const Vec2 mapOffset, const uint16_t* mapData, const Vec2 dataSize, const Rect2 dataRect);
+void setTile(uint8_t tileBank, uint32_t offset, const uint8_t* tileData, uint32_t size);
+void setTilemap(uint8_t mapBank, uint32_t offset, const uint16_t* mapData, uint32_t size);
+// void setTilemap2D(uint8_t mapBank, const Vec2 mapSize, const Vec2 mapOffset, const uint16_t* mapData, const Vec2 dataSize, const Rect2 dataRect);
 void setTilemap2D(
-  uint8_t mapNo,
+  uint8_t mapBank,
   uint32_t mapSizeW, uint32_t mapSizeH,
   uint32_t mapOffsetX, uint32_t mapOffsetY,
   const uint16_t* mapData,
@@ -53,7 +53,7 @@ void setTilemap2D(
   uint32_t dataRectX, uint32_t dataRectY, uint32_t dataRectW, uint32_t dataRectH
 );
 void setTilemap2DLambda(
-  uint8_t mapNo,
+  uint8_t mapBank,
   uint32_t mapSizeW, uint32_t mapSizeH,
   uint32_t mapOffsetX, uint32_t mapOffsetY,
   uint16_t (*mapData)(int32_t, int32_t),
@@ -65,7 +65,7 @@ void setTilemap2DLambda(
 
 void loadAsciiFontPalette(uint8_t palBank, uint8_t palNo, const uint32_t* palData, uint32_t size);
 void loadAsciiFontTile(uint8_t tileNo, const uint8_t* tileData, uint32_t size);
-void setAsciiFontBG(uint8_t bgNo, uint8_t palBank, uint8_t palNo, uint8_t tileNo, uint8_t tilemapNo);
+void setAsciiFontBG(uint8_t bgNo, uint8_t palBank, uint8_t palNo, uint8_t tileBank, uint8_t tilemapBank);
 void putsBG(uint8_t bgNo, uint16_t x, uint16_t y, const char* str, uint8_t n);
 
 /* Audio */

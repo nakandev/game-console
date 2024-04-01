@@ -6,6 +6,7 @@ class Board;
 class TileView : public GuiComponent {
   private:
     Board& board;
+    int bankNo;
     int palNo;
     int txn;
     int tyn;

@@ -59,14 +59,14 @@ static auto prepareVpuSprite(HwTileRam& tileram, vector<VpuSprite>& vpusp, int y
   int spriteNum = 0;
   for (int i=0; i<HW_SPRITE_NUM; i++) {
     HwSprite& sp = tileram.sp[0].sprite[i];
-    if (!sp.flag.enable) continue;
+    if (!sp.enable) continue;
     int16_t w = widthTable[sp.tileSize];
     int16_t h = heightTable[sp.tileSize];
     int16_t beginX = sp.x;
     int16_t beginY = sp.y;
     int16_t endX = sp.x + w - 1;
     int16_t endY = sp.y + h - 1;
-    if (sp.flag.affineEnable) {
+    if (sp.affineEnable) {
       beginX -= w / 2;
       beginY -= h / 2;
       endX += w / 2;
@@ -108,11 +108,9 @@ static auto drawLineBGPixel(uint8_t* vram, HwBG& bg, int x, int y, vector<uint32
 
 static auto drawLineBGTile(HwTileRam& tileram, HwBG& bg, int x, int y, vector<uint32_t>& buffer) -> void
 {
-  uint8_t tilemapNo = bg.tilemapNo;
-  uint8_t tileNo = bg.tileNo;
   int32_t x0 = x - bg.x;
   int32_t y0 = y - bg.y;
-  if (bg.flag.affineEnable) {
+  if (bg.affineEnable) {
     HwMatrix2d B = bg.affineInv;  // B = inv(A)
     int32_t x00 = x0 - B.x;
     int32_t y00 = y0 - B.y;
@@ -129,31 +127,33 @@ static auto drawLineBGTile(HwTileRam& tileram, HwBG& bg, int x, int y, vector<ui
   uint8_t tw = widthTable[bg.tileSize];
   uint8_t th = heightTable[bg.tileSize];
   uint16_t offset0 = (tx0 / tw) + (ty0 / tw) * (HW_TILEMAP_W / tw);
-  uint16_t tilemapIdx = tileram.tilemap[tilemapNo].tileIdx[offset0].data;
+  uint8_t tilemapBank = bg.tilemapBank;
+  uint16_t tilemapIdx = tileram.tilemap[tilemapBank].tileIdx[offset0].data;
   uint16_t offset1x = tx0 % tw / HWTILE_W;
   uint16_t offset1y = ty0 % th / HWTILE_H * (tw / HWTILE_W);
   uint16_t tileIdx = tilemapIdx * (tw * th / HWTILE_H / HWTILE_W) + offset1x + offset1y;
   uint32_t tilex = ty0 % HWTILE_H;
   uint32_t tiley = tx0 % HWTILE_W;
+  uint8_t tileBank = bg.tileBank;
+  uint8_t paletteIdx = tileram.tile[tileBank][tileIdx].data[tilex][tiley];
   uint8_t paletteBank = bg.paletteInfo.bank;
   uint8_t paletteNo = bg.paletteInfo.no;
-  uint8_t paletteIdx = tileram.tile[tileNo][tileIdx].data[tilex][tiley];
   uint8_t paletteOffset;
   if (bg.paletteInfo.mode == HWPALETTE_MODE_256) {
     paletteOffset = paletteIdx;
   } else /* if (paletteInfo.mode == HWPALETTE_MODE_16) */ {
     paletteOffset = paletteIdx + paletteNo * 16;
   }
+  // fmt::print("x={} y={} tilex={} tiley={} palOffset={}\n", x, y, tilex, tiley, paletteOffset);
   buffer[x] = tileram.palette[paletteBank].color[paletteOffset].data;
 }
 
 static auto drawLineSprite(HwTileRam& tileram, VpuSprite& vpusp, int x, int y, vector<uint32_t>& buffer) -> void
 {
   HwSprite& sp = vpusp.hwsp;
-  uint8_t tileNo = sp.tileNo;
   int32_t x0 = x - sp.x;
   int32_t y0 = y - sp.y;
-  if (sp.flag.affineEnable) {
+  if (sp.affineEnable) {
     HwMatrix2d B = sp.affineInv;  // B = inv(A)
     int32_t x00 = x0 - B.x;
     int32_t y00 = y0 - B.y;
@@ -167,13 +167,14 @@ static auto drawLineSprite(HwTileRam& tileram, VpuSprite& vpusp, int x, int y, v
   if (y0 < 0 || y0 >= heightTable[sp.tileSize]) return;
   uint32_t tx0 = ((uint32_t)x0) % HW_TILEMAP_W;
   uint32_t ty0 = ((uint32_t)y0) % HW_TILEMAP_H;
+  uint8_t tileBank = sp.tileBank;
   uint8_t offset = (x0 / HWTILE_W) + (y0 / HWTILE_H) * (widthTable[sp.tileSize] / HWTILE_W);
   uint8_t tileIdx = sp.tileIdx + offset;
   uint32_t tilex = tx0 % HWTILE_W;
   uint32_t tiley = ty0 % HWTILE_H;
+  uint8_t paletteIdx = tileram.tile[tileBank][tileIdx].data[tiley][tilex];
   uint8_t paletteBank = sp.paletteInfo.bank;
   uint8_t paletteNo = sp.paletteInfo.no;
-  uint8_t paletteIdx = tileram.tile[tileNo][tileIdx].data[tiley][tilex];
   uint8_t paletteOffset;
   if (sp.paletteInfo.mode == HWPALETTE_MODE_256) {
     paletteOffset = paletteIdx;
@@ -212,14 +213,14 @@ auto Vpu::drawLine(int y) -> void
   }
   int idxs[4] = {0, 1, 2, 3};
   int layers[4];
-  for (int i=0; i<4; i++) layers[i] = tileram.bg[i].flag.layer;
+  for (int i=0; i<4; i++) layers[i] = tileram.bg[i].layer;
   sortLayerIndex(idxs, layers);
   for (int x=0; x<HW_SCREEN_W; x++) {
     for (int i=0; i<4; i++) {
       uint8_t layer = idxs[i];
       auto& bg = tileram.bg[layer];
-      if (debug.enableBg[layer].v1 && bg.flag.enable) {
-        if (bg.flag.mode == HWBG_PIXEL_MODE) {
+      if (debug.enableBg[layer].v1 && bg.enable) {
+        if (bg.mode == HWBG_PIXEL_MODE) {
           drawLineBGPixel(vram, tileram.bg[layer], x, y, lineBufferBg[layer]);
         } else {
           drawLineBGTile(tileram, tileram.bg[layer], x, y, lineBufferBg[layer]);
@@ -232,7 +233,7 @@ auto Vpu::drawLine(int y) -> void
       HwSP& hwsp = tileram.sp[0];
       for (int si=0; si<spnum; si++) {
         auto& vpusp = vpuSprite[si];
-        uint8_t layer = vpusp.hwsp.flag.layer;
+        uint8_t layer = vpusp.hwsp.layer;
         if (x < vpusp.beginX || vpusp.endX < x) continue;
         drawLineSprite(tileram, vpusp, x, y, lineBufferSp[layer]);
       }
@@ -302,25 +303,25 @@ static auto getTileIdxSP(HwTileRam& tileram, uint8_t objSize, int16_t objXa, int
   return tileIdx;
 }
 
-static auto getTileIdxBG(HwTileRam& tileram, uint8_t objSize, int16_t objXa, int16_t objYa, uint8_t tilemapNo) -> uint16_t
+static auto getTileIdxBG(HwTileRam& tileram, uint8_t objSize, int16_t objXa, int16_t objYa, uint8_t tilemapBank) -> uint16_t
 {
   uint32_t tx0 = ((uint32_t)objXa) % HW_TILEMAP_W;
   uint32_t ty0 = ((uint32_t)objYa) % HW_TILEMAP_H;
   uint8_t tw = widthTable[objSize];
   uint8_t th = heightTable[objSize];
   uint16_t offset0 = (tx0 / tw) + (ty0 / tw) * (HW_TILEMAP_W / tw);
-  uint16_t tilemapIdx = tileram.tilemap[tilemapNo].tileIdx[offset0].data;
+  uint16_t tilemapIdx = tileram.tilemap[tilemapBank].tileIdx[offset0].data;
   uint16_t offset1x = tx0 % tw / HWTILE_W;
   uint16_t offset1y = ty0 % th / HWTILE_H * (tw / HWTILE_W);
   uint16_t tileIdx = tilemapIdx * (tw * th / HWTILE_H / HWTILE_W) + offset1x + offset1y;
   return tileIdx;
 }
 
-static auto getPaletteIdx(HwTileRam& tileram, int16_t objXa, int16_t objYa, uint8_t tileNo, uint16_t tileIdx) -> uint8_t
+static auto getPaletteIdx(HwTileRam& tileram, int16_t objXa, int16_t objYa, uint8_t tileBank, uint16_t tileIdx) -> uint8_t
 {
   uint32_t tilex = ((uint32_t)objXa) % HW_TILEMAP_W % HWTILE_W;
   uint32_t tiley = ((uint32_t)objYa) % HW_TILEMAP_H % HWTILE_H;
-  uint8_t paletteIdx = tileram.tile[tileNo][tileIdx].data[tiley][tilex];  // Memory Access
+  uint8_t paletteIdx = tileram.tile[tileBank][tileIdx].data[tiley][tilex];  // Memory Access
   return paletteIdx;
 }
 
@@ -374,17 +375,17 @@ auto Vpu::drawLineRtl(int y) -> void
   if (debug.enableSp.v1) {
     for (int i=0; i<HW_SPRITE_NUM; i++) {
       HwSprite& sp = tileram.sp[0].sprite[i];  // Memory Access * sp_num
-      if (!sp.flag.enable) continue;
+      if (!sp.enable) continue;
       if (!isInDrawAreaY(sp.tileSize, sp.x, sp.y)) continue;
       int layer = 0;
-      uint32_t x0x1 = getDrawAreaX(sp.tileSize, sp.x, sp.flag.affineEnable);
+      uint32_t x0x1 = getDrawAreaX(sp.tileSize, sp.x, sp.affineEnable);
       int16_t beginX = x0x1 >> 16, endX = x0x1 & 0xFFFF;
       for (int x=beginX; x<endX; x++) {
         // if (!spWrittenFlag[x]) {
-        auto xaya = affineTransform(x, y, sp.x, sp.y, sp.flag.affineEnable, sp.affineInv);
+        auto xaya = affineTransform(x, y, sp.x, sp.y, sp.affineEnable, sp.affineInv);
         int16_t xa = xaya >> 16, ya = xaya & 0xFFFF;
         auto tileIdx = getTileIdxSP(tileram, sp.tileSize, xa, ya, sp.tileIdx);
-        auto paletteIdx = getPaletteIdx(tileram, xa, ya, sp.tileNo, tileIdx);
+        auto paletteIdx = getPaletteIdx(tileram, xa, ya, sp.tileBank, tileIdx);
         spWrittenFlag[x] = colorMergeSP(tileram, sp.x, paletteIdx, sp.paletteInfo, lineBufferSp[layer]);
         lineSPCycles += 1;
         // }
@@ -393,24 +394,24 @@ auto Vpu::drawLineRtl(int y) -> void
   }
   int idxs[4] = {0, 1, 2, 3};
   int layers[4];
-  for (int i=0; i<4; i++) layers[i] = tileram.bg[i].flag.layer;
+  for (int i=0; i<4; i++) layers[i] = tileram.bg[i].layer;
   sortLayerIndex(idxs, layers);
   int lineBGCycles = 0;
   lineBGCycles += 5 + 5;
   for (int i=0; i<4; i++) {
     uint8_t layer = idxs[i];
     auto& bg = tileram.bg[layer];
-    if (debug.enableBg[layer].v1 && bg.flag.enable) {
+    if (debug.enableBg[layer].v1 && bg.enable) {
       for (int x=0; x<HW_SCREEN_W; x++) {
-        if (bg.flag.mode == HWBG_PIXEL_MODE) {
+        if (bg.mode == HWBG_PIXEL_MODE) {
           drawLineBGPixel(vram, tileram.bg[layer], x, y, lineBufferBg[layer]);
         } else {
-          auto xaya = affineTransform(x, y, bg.x, bg.y, bg.flag.affineEnable, bg.affineInv);
+          auto xaya = affineTransform(x, y, bg.x, bg.y, bg.affineEnable, bg.affineInv);
           int16_t xa = xaya >> 16, ya = xaya & 0xFFFF;
           // if (xa < 0 || xa >= 512) continue;
           // if (ya < 0 || ya >= 512) continue;
-          auto tileIdx = getTileIdxBG(tileram, bg.tileSize, xa, ya, bg.tilemapNo);
-          auto paletteIdx = getPaletteIdx(tileram, xa, ya, bg.tileNo, tileIdx);
+          auto tileIdx = getTileIdxBG(tileram, bg.tileSize, xa, ya, bg.tilemapBank);
+          auto paletteIdx = getPaletteIdx(tileram, xa, ya, bg.tileBank, tileIdx);
           colorMergeBG(tileram, x, paletteIdx, bg.paletteInfo, lineBufferBg[layer]);
           lineBGCycles += 1;
         }

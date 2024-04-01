@@ -5,6 +5,7 @@
 #include <gui/disasm_view.h>
 #include <gui/palette_view.h>
 #include <gui/tile_view.h>
+#include <gui/tilemap_view.h>
 #include <gui/mmio_panel.h>
 #include <gui/input_config_dialog.h>
 #include <gui/video_config_dialog.h>
@@ -25,6 +26,7 @@ class MainComponent {
     DisasmView disasmView;
     PaletteView paletteView;
     TileView tileView;
+    TilemapView tilemapView;
     MmioPanel mmioPanel;
   public:
     InputConfigDialog inputConfigDialog;

@@ -46,6 +46,7 @@ _study/
 
 # Other
 **/riscv-tests/
+sw/**/memorymap.h
 sw/**/build/
 sw/emulator/lib/
 **/imgui.ini

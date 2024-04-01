@@ -23,26 +23,18 @@ PaletteView::~PaletteView()
 auto PaletteView::update() -> void
 {
   ImGui::Text("Palette View");
-  const int palNum = 4;
-  uint32_t colors[palNum][256];
+  const int bankNum = 4;
   HwTileRam& tileram = *(HwTileRam*)board.memory.section("tile").buffer();
-  int palNo = 1;
-  for (int palNo=0; palNo<palNum; palNo++) {
-    for (int i=0; i<sizeof(colors)/sizeof(colors[0]); i++) {
-      colors[palNo][i] = tileram.palette[palNo].color[i].data;
-    }
-  }
   ImDrawList* draw_list = ImGui::GetWindowDrawList();
   ImVec2 pos00 = ImGui::GetCursorScreenPos();
   int sz = 8;
-  for (int palNo=0; palNo<palNum; palNo++) {
-    ImVec2 pos0 = ImVec2(pos00.x + (sz*16+4)*palNo, pos00.y);
+  for (int palBank=0; palBank<bankNum; palBank++) {
+    ImVec2 pos0 = ImVec2(pos00.x + (sz*16+4)*palBank, pos00.y);
     ImVec2 pos0RB = ImVec2(pos0.x + sz*16, pos0.y + sz*16);
     draw_list->AddRect(pos0, pos0RB, 0xff808080, 1);
     for (int y=0; y<16; y++) {
       for (int x=0; x<16; x++) {
-        uint32_t c = tileram.palette[palNo].color[x + y * 16].data;
-        // uint32_t c = colors[palNo][x + y * 16];
+        uint32_t c = tileram.palette[palBank].color[x + y * 16].data;
         uint32_t color = c;
         color = (((c>>0) & 0xff) << 24)
               | (((c>>8) & 0xff) << 16)

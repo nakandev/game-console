@@ -100,23 +100,23 @@ int main()
   );
 
   /* BG settings */
-  tileram.bg[0].flag.enable = true;
-  // tileram.bg[0].flag.layer = 0;
-  tileram.bg[0].paletteInfo.mode = HWBG_PIXEL_MODE;
+  tileram.bg[0].enable = true;
+  tileram.bg[0].layer = 0;
+  tileram.bg[0].paletteInfo.mode = HWPALETTE_MODE_16;
   tileram.bg[0].paletteInfo.bank = 0;
   tileram.bg[0].paletteInfo.no = 1;
-  tileram.bg[0].tileNo = 1;
-  tileram.bg[0].tilemapNo = 1;
+  tileram.bg[0].tileBank = 1;
+  tileram.bg[0].tilemapBank = 1;
   tileram.bg[0].x = 0;
   tileram.bg[0].y = 0;
 
-  tileram.bg[1].flag.enable = true;
-  // tileram.bg[1].flag.layer = 1;
-  tileram.bg[1].paletteInfo.mode = HWBG_PIXEL_MODE;
+  tileram.bg[1].enable = true;
+  tileram.bg[1].layer = 1;
+  tileram.bg[1].paletteInfo.mode = HWPALETTE_MODE_16;
   tileram.bg[1].paletteInfo.bank = 0;
   tileram.bg[1].paletteInfo.no = 2;
-  tileram.bg[1].tileNo = 3;
-  tileram.bg[1].tilemapNo = 2;
+  tileram.bg[1].tileBank = 3;
+  tileram.bg[1].tilemapBank = 2;
   tileram.bg[1].x = 0;
   tileram.bg[1].y = 0;
 
@@ -151,10 +151,10 @@ int main()
     tileram.bg[0].x = -camera_bg3_x % 512;
 
     for (int y=0; y<30; y++) {
-      auto tilemapNo = tileram.bg[0].tilemapNo;
+      auto tilemapBank = tileram.bg[0].tilemapBank;
       int tileX = (camera_bg3_x + HW_SCREEN_W) % 512 / 8;
       int texX = (camera_bg3_x + HW_SCREEN_W) % 384 / 8;
-      tileram.tilemap[tilemapNo].tileIdx[tileX + y*HW_TILEMAP_XTILE].data = texX + y*48;
+      tileram.tilemap[tilemapBank].tileIdx[tileX + y*HW_TILEMAP_XTILE].data = texX + y*48;
     }
   }
 

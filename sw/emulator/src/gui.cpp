@@ -20,6 +20,7 @@ MainComponent::MainComponent(Board& board)
   disasmView(board),
   paletteView(board),
   tileView(board),
+  tilemapView(board),
   mmioPanel(board),
   inputConfigDialog(board),
   videoConfigDialog(board),
@@ -82,6 +83,7 @@ auto MainComponent::createFramebuffer() -> void
   glBindRenderbuffer(GL_RENDERBUFFER, 0);
 
   tileView.createFramebuffer();
+  tilemapView.createFramebuffer();
 }
 
 auto MainComponent::renderMenu() -> void
@@ -202,6 +204,7 @@ auto MainComponent::renderMainPanel() -> void
         if      (viewTabIndex == 0) disasmView.update();
         else if (viewTabIndex == 1) paletteView.update();
         else if (viewTabIndex == 2) tileView.update();
+        else if (viewTabIndex == 3) tilemapView.update();
       }
       ImGui::EndChild();
     ImGui::EndChild();
@@ -281,6 +284,7 @@ auto MainComponent::renderFramebuffer() -> void
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0);
 
   if (viewTabIndex == 2) tileView.renderFramebuffer();
+  if (viewTabIndex == 3) tilemapView.renderFramebuffer();
 }
 
 auto MainComponent::cleanup() -> void
@@ -290,6 +294,7 @@ auto MainComponent::cleanup() -> void
   glDeleteFramebuffers(1, &framebuffer);
 
   tileView.cleanup();
+  tilemapView.cleanup();
 }
 
 auto DrawSplitter(int split_vertically, float thickness, float* size0, float* size1, float min_size0, float min_size1) -> void

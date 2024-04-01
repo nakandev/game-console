@@ -11,12 +11,16 @@
 #include <gui.h>
 #include <fmt/core.h>
 
+const int tileBankNum = 8;
+const int tileBankSize = 1024;
+
 TileView::TileView(Board& board)
 : board(board)
 {
+  bankNo = 0;
   palNo = 1;
-  txn = 64; tyn = 16;  // txn * tyn = 1024
-  tiles.resize(HWTILE_W * HWTILE_H * 1024);
+  txn = 64; tyn = tileBankSize / txn;
+  tiles.resize(HWTILE_W * HWTILE_H * tileBankSize);
   createFramebuffer();
 }
 
@@ -28,16 +32,21 @@ auto TileView::update() -> void
 {
   HwTileRam& tileram = *(HwTileRam*)board.memory.section("tile").buffer();
   int width = HWTILE_W * txn, height = HWTILE_H * tyn;
-  for (int i=0; i<1024; i++) {
+  for (int i=0; i<tileBankSize; i++) {
     for (int y=0; y<HWTILE_H; y++) {
       for (int x=0; x<HWTILE_W; x++) {
-        uint8_t tidx = tileram.tile[1][i].data[y][x] & 0xFu;
+        // [TODO] select 256-color / 16-color
+        uint8_t tidx = tileram.tile[bankNo][i].data[y][x];
         uint32_t color = tidx * 0x111111u | 0xFF000000u;
-        // int offset = x + y*HWTILE_W + i*HWTILE_W*HWTILE_H;
         int offset = x + y*HWTILE_W*txn + i%txn*HWTILE_W + i/txn*HWTILE_H*txn*HWTILE_W;
         tiles[offset] = color;
       }
     }
+  }
+  // ImVec2 backup_pos = ImGui::GetCursorPos();
+  if(ImGui::InputInt("tileBank", &bankNo)) {
+    if (bankNo < 0) bankNo = 0;
+    if (bankNo > tileBankNum - 1) bankNo = tileBankNum - 1;
   }
   ImVec2 backup_pos = ImGui::GetCursorPos();
   ImGui::Image(reinterpret_cast<void *>(framebuffer), ImVec2(width, height));
