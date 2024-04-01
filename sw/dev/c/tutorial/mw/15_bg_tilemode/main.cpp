@@ -107,6 +107,7 @@ int main()
   tileram.bg[0].paletteInfo.mode = HWPALETTE_MODE_256;
   tileram.bg[0].paletteInfo.bank = 0;
   tileram.bg[0].paletteInfo.no = 0;
+  tileram.bg[0].paletteInfo.transparency = 0;
   tileram.bg[0].tileBank = 0;
   tileram.bg[0].tileSize = HW_SPRITE_TILESIZE_16x16;
   tileram.bg[0].tilemapBank = 0;
@@ -118,6 +119,7 @@ int main()
   tileram.bg[3].paletteInfo.mode = HWPALETTE_MODE_256;
   tileram.bg[3].paletteInfo.bank = 0;
   tileram.bg[3].paletteInfo.no = 0;
+  tileram.bg[3].paletteInfo.transparency = 4;
   tileram.bg[3].tileBank = 1;
   tileram.bg[3].tileSize = HW_SPRITE_TILESIZE_8x8;
   tileram.bg[3].tilemapBank = 1;

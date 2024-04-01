@@ -144,8 +144,11 @@ static auto drawLineBGTile(HwTileRam& tileram, HwBG& bg, int x, int y, vector<ui
   } else /* if (paletteInfo.mode == HWPALETTE_MODE_16) */ {
     paletteOffset = paletteIdx + paletteNo * 16;
   }
-  // fmt::print("x={} y={} tilex={} tiley={} palOffset={}\n", x, y, tilex, tiley, paletteOffset);
-  buffer[x] = tileram.palette[paletteBank].color[paletteOffset].data;
+  HwColor color = tileram.palette[paletteBank].color[paletteOffset];
+  if (color.a > 0 && bg.paletteInfo.transparency > 0) {
+    color.a = 0xFFu - (bg.paletteInfo.transparency * 0x11u);
+  }
+  buffer[x] = color.data;
 }
 
 static auto drawLineSprite(HwTileRam& tileram, VpuSprite& vpusp, int x, int y, vector<uint32_t>& buffer) -> void
@@ -181,9 +184,12 @@ static auto drawLineSprite(HwTileRam& tileram, VpuSprite& vpusp, int x, int y, v
   } else /* if (paletteInfo.mode == HWPALETTE_MODE_16) */ {
     paletteOffset = paletteIdx + paletteNo * 16;
   }
-  HwColor spColor = tileram.palette[paletteBank].color[paletteOffset];
+  HwColor color = tileram.palette[paletteBank].color[paletteOffset];
+  if (color.a > 0 && sp.paletteInfo.transparency > 0) {
+    color.a = 0xFFu - (sp.paletteInfo.transparency * 0x11u);
+  }
   HwColor bufColor = {.data = buffer[x]};
-  color_merge(bufColor, spColor);
+  color_merge(bufColor, color);
   buffer[x] = bufColor.data;
 }
 
@@ -241,11 +247,11 @@ auto Vpu::drawLine(int y) -> void
   }
   for (int x=0; x<HW_SCREEN_W; x++) {
     HwColor finalColor = {.data = 0};
-    for (int layer=3; layer>=0; layer--) {
+    for (int layer=0; layer<4; layer++) {
       HwColor spColor = {.data=lineBufferSp[layer][x]};
-      if (color_merge(finalColor, spColor)) break;
+      if (color_merge(finalColor, spColor)) /*break*/;
       HwColor bgColor = {.data=lineBufferBg[layer][x]};
-      if (color_merge(finalColor, bgColor)) break;
+      if (color_merge(finalColor, bgColor)) /*break*/;
     }
     finalColor.a = 255;
 
@@ -422,11 +428,11 @@ auto Vpu::drawLineRtl(int y) -> void
     y, lineSPCycles, lineBGCycles, lineSPCycles+lineBGCycles);
   for (int x=0; x<HW_SCREEN_W; x++) {
     HwColor finalColor = {.data = lineBufferSp[0][x]};
-    for (int layer=3; layer>=0; layer--) {
+    for (int layer=0; layer<4; layer++) {
       HwColor spColor = {.data=lineBufferSp[layer][x]};
-      if (color_merge(finalColor, spColor)) break;
+      if (color_merge(finalColor, spColor)) /*break*/;
       HwColor bgColor = {.data=lineBufferBg[layer][x]};
-      if (color_merge(finalColor, bgColor)) break;
+      if (color_merge(finalColor, bgColor)) /*break*/;
     }
     finalColor.a = 255;
     screenBuffer[x + y*HW_SCREEN_W] = finalColor.data;

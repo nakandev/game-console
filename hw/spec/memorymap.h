@@ -357,12 +357,12 @@ enum {
 
 union HwPaletteInfo {
   struct {
-    uint16_t _reserved0 : 4;
-    uint16_t alpha      : 4;
-    uint16_t _reserved1 : 1;
-    uint16_t mode       : 1;
-    uint16_t bank       : 2;
-    uint16_t no         : 4;
+    uint16_t _reserved0   : 4;
+    uint16_t transparency : 4;
+    uint16_t _reserved1   : 1;
+    uint16_t mode         : 1;
+    uint16_t bank         : 2;
+    uint16_t no           : 4;
   };
   uint16_t info;
 };
