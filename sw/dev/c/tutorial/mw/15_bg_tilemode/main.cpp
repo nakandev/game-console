@@ -104,7 +104,7 @@ int main()
   /* BG settings */
   tileram.bg[0].enable = true;
   tileram.bg[0].layer = 0;
-  tileram.bg[0].paletteInfo.mode = HWPALETTE_MODE_256;
+  tileram.bg[0].paletteInfo.mode = HW_PALETTE_MODE_256;
   tileram.bg[0].paletteInfo.bank = 0;
   tileram.bg[0].paletteInfo.no = 0;
   tileram.bg[0].paletteInfo.transparency = 0;
@@ -116,7 +116,7 @@ int main()
 
   tileram.bg[3].enable = true;
   tileram.bg[3].layer = 3;
-  tileram.bg[3].paletteInfo.mode = HWPALETTE_MODE_256;
+  tileram.bg[3].paletteInfo.mode = HW_PALETTE_MODE_256;
   tileram.bg[3].paletteInfo.bank = 0;
   tileram.bg[3].paletteInfo.no = 0;
   tileram.bg[3].paletteInfo.transparency = 4;

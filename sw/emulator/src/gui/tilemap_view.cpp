@@ -20,7 +20,7 @@ TilemapView::TilemapView(Board& board)
   bankNo = 0;
   palNo = 1;
   txn = 64; tyn = mapBankSize / txn;
-  tiles.resize(HWTILE_W * HWTILE_H * mapBankSize);
+  tiles.resize(HW_TILE_W * HW_TILE_H * mapBankSize);
   createFramebuffer();
 }
 
@@ -31,16 +31,16 @@ TilemapView::~TilemapView()
 auto TilemapView::update() -> void
 {
   HwTileRam& tileram = *(HwTileRam*)board.memory.section("tile").buffer();
-  int width = HWTILE_W * txn, height = HWTILE_H * tyn;
+  int width = HW_TILE_W * txn, height = HW_TILE_H * tyn;
   for (int i=0; i<mapBankSize; i++) {
-    for (int y=0; y<HWTILE_H; y++) {
-      for (int x=0; x<HWTILE_W; x++) {
+    for (int y=0; y<HW_TILE_H; y++) {
+      for (int x=0; x<HW_TILE_W; x++) {
         uint16_t tidx = tileram.tilemap[bankNo].tileIdx[i].data & 0x0FFFu;
         uint8_t t0 = (tidx >> 0) & 0xFu;
         uint8_t t1 = (tidx >> 4) & 0xFu;
         uint8_t t2 = (tidx >> 8) & 0xFu;
         uint32_t color = (t2 << (16+4)) | (t1 << (8+4)) |  (t0 << (0+4)) | 0xFF000000u;
-        int offset = x + y*HWTILE_W*txn + i%txn*HWTILE_W + i/txn*HWTILE_H*txn*HWTILE_W;
+        int offset = x + y*HW_TILE_W*txn + i%txn*HW_TILE_W + i/txn*HW_TILE_H*txn*HW_TILE_W;
         tiles[offset] = color;
       }
     }
@@ -55,7 +55,7 @@ auto TilemapView::update() -> void
 
 auto TilemapView::createFramebuffer() -> void
 {
-  int width = HWTILE_W * txn, height = HWTILE_H * tyn;
+  int width = HW_TILE_W * txn, height = HW_TILE_H * tyn;
   glGenFramebuffers(1, &framebuffer);
   glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
 
@@ -82,7 +82,7 @@ auto TilemapView::createFramebuffer() -> void
 auto TilemapView::renderFramebuffer() -> void
 {
   HwTileRam& tileram = *(HwTileRam*)board.memory.section("tile").buffer();
-  int width = HWTILE_W * txn, height = HWTILE_H * tyn;
+  int width = HW_TILE_W * txn, height = HW_TILE_H * tyn;
   glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
   glViewport(0, 0, width, height);
   glClearColor(0.0f, 0.0f, 0.0f, 1.0f);

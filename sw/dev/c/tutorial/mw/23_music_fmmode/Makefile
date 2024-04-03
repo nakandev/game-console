@@ -19,13 +19,13 @@ CXX     = $(TOOLCHAIN_PREFIX)g++
 OBJDUMP = $(TOOLCHAIN_PREFIX)objdump
 OBJCOPY = $(TOOLCHAIN_PREFIX)objcopy
 
-CFLAGS = -std=c++20 -I$(NKX_C_ROOT)/include
+CFLAGS = -std=c++20 -I$(NKX_C_ROOT)/lib/nkx/include
 # CFLAGS += -march=rv32im -mabi=ilp32
 CFLAGS += -march=rv32imc -mabi=ilp32
 CFLAGS += -fno-use-cxa-atexit
 CFLAGS += -O2
 # CFLAGS += -DBUILD_FOR_SIMULATOR
-LDFLAGS = -nostdlib -L$(NKX_C_ROOT)/lib
+LDFLAGS = -nostdlib -L$(NKX_C_ROOT)/lib/nkx/build
 LDFLAGS += -T nkx.lds
 LDFLAGS += -Wl,-Map=$(TARGET).map
 LIBS = -static -lnkxhw -lnkxmw

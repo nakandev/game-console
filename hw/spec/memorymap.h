@@ -274,11 +274,11 @@ union HwColor {
 
 // Palette
 enum {
-  HWPALETTE_COLORNUM = 256,
-  HWPALETTE_BYTESIZE = 1,
-  HWPALETTE_MODE_256 = 0,
-  HWPALETTE_MODE_16  = 1,
-  HWPALETTE_BANK_SIZE = 8,
+  HW_PALETTE_COLORNUM = 256,
+  HW_PALETTE_BYTESIZE = 1,
+  HW_PALETTE_MODE_256 = 0,
+  HW_PALETTE_MODE_16  = 1,
+  HW_PALETTE_BANK_SIZE = 8,
   HWREG_PALETTE_BASEADDR   = HWREG_TILERAM_BASEADDR + 0x0000'0000,
   HWREG_PALETTE_BYTESIZE   = 0x0400,  // 4 * 256
   HWREG_PALETTE0_ADDR    = HWREG_PALETTE_BASEADDR + HWREG_PALETTE_BYTESIZE * 0,
@@ -288,15 +288,15 @@ enum {
 };
 
 union HwPalette {
-  uint32_t data[HWPALETTE_COLORNUM];
-  HwColor color[HWPALETTE_COLORNUM];
+  uint32_t data[HW_PALETTE_COLORNUM];
+  HwColor color[HW_PALETTE_COLORNUM];
 };
 
 // Tile
 enum {
-  HWTILE_W = 8,
-  HWTILE_H = 8,
-  HWTILE_BYTESIZE = HWTILE_W * HWTILE_H * HWPALETTE_BYTESIZE,  // 64
+  HW_TILE_W = 8,
+  HW_TILE_H = 8,
+  HW_TILE_BYTESIZE = HW_TILE_W * HW_TILE_H * HW_PALETTE_BYTESIZE,  // 64
   HWREG_TILE_BASEADDR      = HWREG_TILERAM_BASEADDR + 0x0010'0000,
   HWREG_TILE_BYTESIZE    = 0x00010000,
   HWREG_TILE0_ADDR    = HWREG_TILE_BASEADDR + HWREG_TILE_BYTESIZE * 0,
@@ -306,12 +306,12 @@ enum {
 };
 
 struct HwTile {
-  uint8_t data[HWTILE_H][HWTILE_W];  // paletteIdx
+  uint8_t data[HW_TILE_H][HW_TILE_W];  // paletteIdx
 };
 
 // Tilemap
 enum {
-  HWBG_TILENUM = 64 * 64,  // 4096
+  HW_BG_TILENUM = 64 * 64,  // 4096
   HWREG_TILEMAP_BASEADDR   = HWREG_TILERAM_BASEADDR + 0x0020'0000,
   HWREG_TILEMAP_BYTESIZE   = 0x2000,
   HWREG_TILEMAP0_ADDR      = HWREG_TILEMAP_BASEADDR + HWREG_TILEMAP_BYTESIZE * 0,
@@ -329,7 +329,7 @@ struct HwTilemap {
       uint16_t idx       : 12;
     };
     uint16_t data;
-  } tileIdx[HWBG_TILENUM];
+  } tileIdx[HW_BG_TILENUM];
 };
 
 // BG
@@ -339,20 +339,24 @@ enum {
   HW_SCREEN_H = 240,
   HW_SCREEN_HBLANK = 80,
   HW_SCREEN_VBLANK = 80,
-  HW_SCREEN_XTILE = HW_SCREEN_W / HWTILE_W,
-  HW_SCREEN_YTILE = HW_SCREEN_H / HWTILE_H,
+  HW_SCREEN_XTILE = HW_SCREEN_W / HW_TILE_W,
+  HW_SCREEN_YTILE = HW_SCREEN_H / HW_TILE_H,
   HW_TILEMAP_W = 512,
   HW_TILEMAP_H = 512,
-  HW_TILEMAP_XTILE = HW_TILEMAP_W / HWTILE_W,
-  HW_TILEMAP_YTILE = HW_TILEMAP_H / HWTILE_H,
+  HW_TILEMAP_XTILE = HW_TILEMAP_W / HW_TILE_W,
+  HW_TILEMAP_YTILE = HW_TILEMAP_H / HW_TILE_H,
   HWREG_BG_BASEADDR        = HWREG_TILERAM_BASEADDR + 0x0030'0000,
   HWREG_BG_BYTESIZE        = 0x100,
   HWREG_BG0_ADDR      = HWREG_BG_BASEADDR + HWREG_BG_BYTESIZE * 0,
   HWREG_BG1_ADDR      = HWREG_BG_BASEADDR + HWREG_BG_BYTESIZE * 1,
   HWREG_BG2_ADDR      = HWREG_BG_BASEADDR + HWREG_BG_BYTESIZE * 2,
   HWREG_BG3_ADDR      = HWREG_BG_BASEADDR + HWREG_BG_BYTESIZE * 3,
-  HWBG_TILE_MODE = 0,
-  HWBG_PIXEL_MODE = 1,
+  HW_BG_TILE_MODE = 0,
+  HW_BG_PIXEL_MODE = 1,
+  HW_BG_TILESIZE_8x8   = 0,
+  HW_BG_TILESIZE_16x16 = 1,
+  HW_BG_TILESIZE_32x32 = 2,
+  HW_BG_TILESIZE_64x64 = 3,
 };
 
 union HwPaletteInfo {
@@ -377,25 +381,22 @@ struct HwMatrix2d {
 };
 
 struct HwBG {
-  uint16_t enable       : 1;
-  uint16_t affineEnable : 1;
-  uint16_t layer        : 2;
-  uint16_t mode         : 1;
-  uint16_t _reservedX   : 2;
-  int16_t  x            : 9;
-
-  uint16_t vflip        : 1;
-  uint16_t hflip        : 1;
-  uint16_t _reservedY   : 2;
-  uint16_t tileSize__   : 2;
-  uint16_t tileSize     : 2;
-  int16_t  y            : 8;
+  uint32_t enable       : 1;
+  uint32_t affineEnable : 1;
+  uint32_t layer        : 2;
+  uint32_t vflip        : 1;
+  uint32_t hflip        : 1;
+  uint32_t tileSize     : 2;
+  uint32_t mode         : 1;
+  uint32_t _reserved    : 6;
+  int32_t  x            : 9;
+  int32_t  y            : 8;
 
   uint16_t tileBank      : 4;
   uint16_t tilemapBank   : 4;
   uint16_t _resrevedTile : 8;
-
   /*uint16_t*/ HwPaletteInfo paletteInfo;
+
   HwMatrix2d affineInv;
 };
 
@@ -415,22 +416,18 @@ enum {
 };
 
 struct HwSprite {
-  uint16_t enable       : 1;
-  uint16_t affineEnable : 1;
-  uint16_t layer        : 2;
-  uint16_t _reservedX   : 3;
-  int16_t  x            : 9;
-
-  uint16_t vflip        : 1;
-  uint16_t hflip        : 1;
-  uint16_t _reservedY   : 2;
-  uint16_t tileSize__   : 2;
-  uint16_t tileSize     : 2;
-  int16_t  y            : 8;
+  uint32_t enable       : 1;
+  uint32_t affineEnable : 1;
+  uint32_t layer        : 2;
+  uint32_t vflip        : 1;
+  uint32_t hflip        : 1;
+  uint32_t tileSize     : 2;
+  uint32_t _reserved    : 7;
+  int32_t  x            : 9;
+  int32_t  y            : 8;
 
   uint16_t tileBank      : 4;
   uint16_t tileIdx       : 12;
-
   /*uint16_t*/ HwPaletteInfo paletteInfo;
 
   HwMatrix2d affineInv;

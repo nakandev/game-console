@@ -72,15 +72,15 @@ void init_piano_image()
   }
 
   /* BG settings */
-  // tileram.bg[2].flag.layer = 2;
-  tileram.bg[3].paletteInfo.mode = HWBG_PIXEL_MODE;
+  // tileram.bg[2].layer = 2;
+  tileram.bg[3].paletteInfo.mode = HW_BG_PIXEL_MODE;
   tileram.bg[3].paletteInfo.bank = 0;
   tileram.bg[3].paletteInfo.no = 1;
-  tileram.bg[3].tileNo = 1;
-  tileram.bg[3].tilemapNo = 1;
+  tileram.bg[3].tileBank = 1;
+  tileram.bg[3].tilemapBank = 1;
   tileram.bg[3].x = 0;
   tileram.bg[3].y = 0;
-  tileram.bg[3].flag.enable = true;
+  tileram.bg[3].enable = true;
 }
 
 void init_text()
