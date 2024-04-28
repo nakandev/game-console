@@ -315,7 +315,7 @@ static auto getTileIdxBG(HwTileRam& tileram, uint8_t objSize, int16_t objXa, int
   uint32_t ty0 = ((uint32_t)objYa) % HW_TILEMAP_H;
   uint8_t tw = widthTable[objSize];
   uint8_t th = heightTable[objSize];
-  uint16_t offset0 = (tx0 / tw) + (ty0 / tw) * (HW_TILEMAP_W / tw);
+  uint16_t offset0 = (tx0 / tw) + (ty0 / th) * (HW_TILEMAP_W / tw);
   uint16_t tilemapIdx = tileram.tilemap[tilemapBank].tileIdx[offset0].data;
   uint16_t offset1x = tx0 % tw / HW_TILE_W;
   uint16_t offset1y = ty0 % th / HW_TILE_H * (tw / HW_TILE_W);
