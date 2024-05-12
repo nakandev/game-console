@@ -84,18 +84,18 @@ static auto prepareVpuSprite(HwTileRam& tileram, vector<VpuSprite>& vpusp, int y
   return spriteNum;
 }
 
-static auto color_merge(HwColor& src, const HwColor& dst) -> bool
+static auto color_merge(HwColor& dst, const HwColor& src) -> bool
 {
-  uint8_t a = dst.a;
+  uint8_t a = src.a;
   if (a == 0) return false;
   if (a == 255) {
-    src.data = dst.data;
+    dst.data = src.data;
     return true;
   } else {
-    src.r = (uint8_t)(((uint16_t)src.r * (255 - a) + (uint16_t)dst.r * a) / 256);
-    src.g = (uint8_t)(((uint16_t)src.g * (255 - a) + (uint16_t)dst.g * a) / 256);
-    src.b = (uint8_t)(((uint16_t)src.b * (255 - a) + (uint16_t)dst.b * a) / 256);
-    src.a = (src.a + dst.a) / 2;
+    dst.r = (uint8_t)(((uint16_t)dst.r * (255 - a) + (uint16_t)src.r * a) / 256);
+    dst.g = (uint8_t)(((uint16_t)dst.g * (255 - a) + (uint16_t)src.g * a) / 256);
+    dst.b = (uint8_t)(((uint16_t)dst.b * (255 - a) + (uint16_t)src.b * a) / 256);
+    dst.a = (dst.a + src.a) / 2;
     return false;
   }
 }
