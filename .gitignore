@@ -50,3 +50,5 @@ sw/**/memorymap.h
 sw/**/build/
 sw/emulator/lib/
 **/imgui.ini
+hw/**/build/
+hw/hdl/cpu/3rd/
