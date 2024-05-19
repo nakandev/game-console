@@ -149,7 +149,9 @@ assign vsync = y < SCREEN_H;
 endmodule
 
 /* -------------------------------- */
-module vpu_bg_parameter_load (
+module vpu_bg_parameter_load
+  import gameconsole_pkg::*;
+(
   input  wire        clk,
   input  wire        rst_n,
   output wire        bg_en,
@@ -201,12 +203,9 @@ assign bg_en = !done;
 endmodule
 
 /* -------------------------------- */
-module vpu_bg_pipeline #(
-    parameter SCREEN_W = 320,
-    parameter SCREEN_H = 240,
-    parameter SCREEN_HBLANK = 80,
-    parameter SCREEN_VBLANK = 80
-)(
+module vpu_bg_pipeline
+  import gameconsole_pkg::*;
+(
   input  wire        clk,
   input  wire        rst_n,
   input  wire        pipeline_enable,
@@ -216,15 +215,15 @@ module vpu_bg_pipeline #(
   input  reg  [31:0] bg_affine0_cache[4],
   input  reg  [31:0] bg_affine1_cache[4],
   input  reg  [31:0] bg_affine2_cache[4],
-  output wire        map_en,
-  output wire [10:0] map_addr,
-  input  wire [15:0] map_data,
-  output wire        tile_en,
-  output wire [14:0] tile_addr,
-  input  wire [ 7:0] tile_data,
-  output wire        pal_en,
-  output wire [ 7:0] pal_addr,
-  input  wire [31:0] pal_data,
+  output wire                 map_en,
+  output wire [MAP_ADDR_W-1:0]  map_addr,
+  input  wire [MAP_DATA_W-1:0]  map_data,
+  output wire                 tile_en,
+  output wire [TILE_ADDR_W-1:0] tile_addr,
+  input  wire [TILE_DATA_W-1:0] tile_data,
+  output wire                 pal_en,
+  output wire [PAL_ADDR_W-1:0]  pal_addr,
+  input  wire [PAL_DATA_W-1:0]  pal_data,
   output wire [31:0] color,
   output wire        dummy
 );
@@ -243,7 +242,7 @@ wire [ 8: 0]/*[16: 8]*/ bg_x;
 wire [ 7: 0]/*[ 7: 0]*/ bg_y;
 
 wire [ 3: 0]/*[31:28]*/ bg_bank;
-wire [ 3: 0]/*[27:24]*/ bg_mapbank;
+wire [ 3: 0]/*[27:24]*/ bg_map_bank;
 //wire [ 7: 0]/*[23:16]*/ bg__tilereserved;
 //wire [ 3: 0]/*[15:12]*/ bg__palreserved0;
 wire [ 3: 0]/*[11: 8]*/ bg_pal_transparency;
@@ -265,7 +264,7 @@ assign bg_x        = bg_data0_cache[layer][16: 8];
 assign bg_y        = bg_data0_cache[layer][ 7: 0];
 
 assign bg_bank             = bg_data1_cache[layer][31:28];
-assign bg_mapbank          = bg_data1_cache[layer][27:24];
+assign bg_map_bank         = bg_data1_cache[layer][27:24];
 //assign bg__tilereserved    = bg_data1_cache[layer][23:16];
 //assign bg__palreserved0    = bg_data1_cache[layer][15:12];
 assign bg_pal_transparency = bg_data1_cache[layer][11: 8];
@@ -324,6 +323,7 @@ reg [8:0] objx_p01;
 reg [7:0] objy_p01;
 reg [7:0] tw_p01;
 reg [7:0] th_p01;
+reg [3:0] map_bank_p01;
 reg [0:0] pal_mode_p01;
 reg [1:0] pal_bank_p01;
 reg [3:0] pal_no_p01;
@@ -333,6 +333,7 @@ always_ff @(posedge clk) begin
   objy_p01 <= objy;
   tw_p01 <= tw;
   th_p01 <= th;
+  map_bank_p01 <= bg_map_bank;
   pal_mode_p01 <= bg_pal_mode;
   pal_bank_p01 <= bg_pal_bank;
   pal_no_p01 <= bg_pal_no;
@@ -350,6 +351,7 @@ vpu_bg_pipeline1_map_load bg_pipe1 (
   th_p01,
   tx0,
   ty0,
+  map_bank_p01,
   map_en,
   map_addr,
   map_data,
@@ -438,7 +440,9 @@ assign dummy = 1;
 endmodule
 
 /* -------------------------------- */
-module vpu_bg_pipeline0_affine_transform (
+module vpu_bg_pipeline0_affine_transform
+  import gameconsole_pkg::*;
+(
   input  wire        clk,
   input  wire        rst_n,
   input  wire [ 8:0] xin,
@@ -486,7 +490,9 @@ end
 endmodule
 
 /* -------------------------------- */
-module vpu_bg_pipeline1_map_load (
+module vpu_bg_pipeline1_map_load
+  import gameconsole_pkg::*;
+(
   input  wire        clk,
   input  wire        rst_n,
   input  wire [ 8:0] objx,
@@ -495,9 +501,10 @@ module vpu_bg_pipeline1_map_load (
   input  wire [ 7:0] th,
   output reg  [ 8:0] tx0,
   output reg  [ 8:0] ty0,
+  input  wire [ 3:0] map_bank,
   output wire        map_en,
-  output reg  [10:0] map_addr,
-  input  reg  [15:0] map_data,
+  output reg  [MAP_ADDR_W-1:0] map_addr,
+  input  reg  [MAP_DATA_W-1:0] map_data,
   output reg  [15:0] tile_idx
 );
 
@@ -506,7 +513,6 @@ localparam HW_TILE_H = 8;
 localparam HW_TILEMAP_W = 512;
 localparam HW_TILEMAP_H = 512;
 
-reg [1:0] map_bank = 0;
 shortint offset0 = 0;
 shortint offset1x = 0;
 shortint offset1y = 0;
@@ -523,21 +529,23 @@ always_comb begin
 end
 
 assign map_en = 1;
-assign map_addr = offset0;
+assign map_addr = {map_bank, offset0[10:0]};
 
 endmodule
 
 /* -------------------------------- */
-module vpu_bg_pipeline2_tile_load (
+module vpu_bg_pipeline2_tile_load
+  import gameconsole_pkg::*;
+(
   input  wire        clk,
   input  wire        rst_n,
   input  wire [ 8:0] objx,
   input  wire [ 7:0] objy,
-  input  wire [15:0] tile_idx,
+  input  wire [TILE_INDX_W-1:0] tile_idx,
   output wire        tile_en,
-  output reg  [14:0] tile_addr,
-  input  reg  [ 7:0] tile_data,
-  output reg  [ 7:0] pal_idx
+  output reg  [TILE_ADDR_W-1:0] tile_addr,
+  input  reg  [TILE_DATA_W-1:0] tile_data,
+  output reg  [PAL_INDX_W-1:0] pal_idx
 );
 
 localparam HW_TILE_W = 8;
@@ -562,27 +570,29 @@ assign pal_idx = tile_data;
 endmodule
 
 /* -------------------------------- */
-module vpu_bg_pipeline3_palette_load (
+module vpu_bg_pipeline3_palette_load
+  import gameconsole_pkg::*;
+(
   input  wire        clk,
   input  wire        rst_n,
   input  wire [ 1:0] layer,
   input  wire        pal_mode,
-  input  wire [ 1:0] pal_bank,
+  input  wire [PAL_BANK_W-1:0] pal_bank,
   input  wire [ 3:0] pal_no,
-  input  wire [ 7:0] pal_idx,
+  input  wire [PAL_INDX_W-1:0] pal_idx,
   output wire        pal_en,
-  output reg  [ 7:0] pal_addr,
-  input  reg  [31:0] pal_data,
+  output reg  [PAL_ADDR_W-1:0] pal_addr,
+  input  reg  [PAL_DATA_W-1:0] pal_data,
   output reg  [31:0] color_n[4]
 );
 
 //always_comb begin
 always_ff @(posedge clk) begin
   if (pal_mode == 0) begin
-    pal_addr <= pal_idx;
+    pal_addr <= {pal_bank, pal_idx};
   end
   else begin
-    pal_addr <= pal_idx[7:0] + pal_no * 16;
+    pal_addr <= {pal_bank, pal_idx & 8'h0F + pal_no * 16};
   end
   color_n[layer] <= pal_data;
 end
@@ -592,7 +602,9 @@ assign pal_en = 1;
 endmodule
 
 /* -------------------------------- */
-module vpu_bg_pipeline4_color_merge (
+module vpu_bg_pipeline4_color_merge
+  import gameconsole_pkg::*;
+(
   input  wire        clk,
   input  wire        rst_n,
   input  wire [ 1:0] layer,
@@ -610,7 +622,6 @@ function logic [31:0] color_merge(logic [31:0] cols[4]);
     src_a = src >> 24;
     if (src_a == 0) begin
       dst = dst;
-      dst = src;
     end
     else if (src_a == 255) begin
       dst = src;

@@ -1,4 +1,25 @@
 `timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date: 03/12/2024 04:36:01 PM
+// Design Name: 
+// Module Name: test_top
+// Project Name: 
+// Target Devices: 
+// Tool Versions: 
+// Description: 
+// 
+// Dependencies: 
+// 
+// Revision:
+// Revision 0.01 - File Created
+// Additional Comments:
+// 
+//////////////////////////////////////////////////////////////////////////////////
+
+//`include "top.sv"
 
 module test_arty_a7_35t_vpu_ili9341_parallel_8bit(
 );
@@ -43,7 +64,7 @@ module test_arty_a7_35t_vpu_ili9341_parallel_8bit(
     led     = 0;
   end
 
-  arty_a7_35t_vpu_ili9341_parallel_8bit  arty_a7_35t (
+  arty_a7_35t_vpu_ili9341_parallel_8bit top_Ins (
     CLK100MHZ,
     btn,
     ck_a5,  // none

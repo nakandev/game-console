@@ -19,9 +19,9 @@ module bram_tdp_rf_rf #(
 input  wire [ 0:0] clka,clkb,ena,enb,wea,web;
 input  wire [ADDR_W-1:0] addra,addrb;
 input  wire [DATA_W-1:0] dina,dinb;
-output wire [DATA_W-1:0] douta,doutb;
+output reg  [DATA_W-1:0] douta,doutb;
 reg [DATA_W-1:0] ram [2**ADDR_W-1:0];
-reg [DATA_W-1:0] douta,doutb;
+// reg [DATA_W-1:0] doutaa,doutbb;
 
 always @(posedge clka) begin
   if (ena) begin

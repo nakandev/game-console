@@ -10,41 +10,46 @@ set SRCS_IP     $::env(SRCS_IP)
 set TOP_NAME    $::env(TOP_NAME)
 set ENABLE_CHECKPOINT 1
 set ENABLE_REPORT 0
+set USE_PROJECT 0
 
 # --------------------------------
 # synth_1/top.tcl
 cd ${PROJ_DIR}
-open_checkpoint -part ${BOARD_PART1} ${PROJ_DIR}/${PROJ_NAME}_synth.dcp
-set_param chipscope.maxJobs ${MAXJOBS}
-set_param project.singleFileAddWarning.threshold 0
-set_param project.compositeFile.enableAutoGeneration 0
-set_param synth.vivado.isSynthRun true
-# set_property webtalk.parent_dir ${PROJ_DIR}/${PROJ_NAME}.cache/wt [current_project]
-set_property parent.project_path ${PROJ_DIR}/${PROJ_NAME}.xpr [current_project]
-set_property default_lib xil_defaultlib [current_project]
-set_property target_language Verilog [current_project]
-set_property board_part ${BOARD_PART2} [current_project]
-set_property ip_output_repo ${PROJ_DIR}/${PROJ_NAME}.cache/ip [current_project]
-set_property ip_cache_permissions {read write} [current_project]
+if (${USE_PROJECT}) {
+  open_project [file join ${PROJ_DIR} ${PROJ_NAME}];
+} else {
+  open_checkpoint -part ${BOARD_PART1} ${PROJ_DIR}/${PROJ_NAME}_synth.dcp
+  set_param chipscope.maxJobs ${MAXJOBS}
+  # set_param project.singleFileAddWarning.threshold 0
+  # set_param project.compositeFile.enableAutoGeneration 0
+  # set_param synth.vivado.isSynthRun true
+  # set_property webtalk.parent_dir ${PROJ_DIR}/${PROJ_NAME}.cache/wt [current_project]
+  set_property parent.project_path ${PROJ_DIR}/${PROJ_NAME}.xpr [current_project]
+  # set_property default_lib xil_defaultlib [current_project]
+  # set_property target_language Verilog [current_project]
+  set_property board_part ${BOARD_PART2} [current_project]
+  set_property ip_output_repo ${PROJ_DIR}/${PROJ_NAME}.cache/ip [current_project]
+  set_property ip_cache_permissions {read write} [current_project]
 
-# --------------------------------
-# impl_1/top.tcl
-# set_param chipscope.maxJobs ${MAXJOBS}
-# set_param runs.launchOptions { -jobs ${MAXJOBS}  }
-# create_project -in_memory -part ${BOARD_PART1}
-# set_property board_part ${BOARD_PART2} [current_project]
-set_property design_mode GateLvl [current_fileset]
-# set_param project.singleFileAddWarning.threshold 0
-# # set_property webtalk.parent_dir ${PROJ_DIR}/${PROJ_NAME}.cache/wt [current_project]
-# set_property parent.project_path ${PROJ_DIR}/${PROJ_NAME}.xpr [current_project]
-# set_property ip_output_repo ${PROJ_DIR}/${PROJ_NAME}.cache/ip [current_project]
-# set_property ip_cache_permissions {read write} [current_project]
-add_files -quiet ${PROJ_DIR}/${PROJ_NAME}_synth.dcp
-# read_ip -quiet ${PROJ_DIR}/${PROJ_NAME}.blk_mem_gen_0.xci
-foreach src_dc ${SRCS_DC} {
-  read_xdc ${src_dc}
+  # --------------------------------
+  # impl_1/top.tcl
+  # set_param chipscope.maxJobs ${MAXJOBS}
+  # set_param runs.launchOptions { -jobs ${MAXJOBS}  }
+  # create_project -in_memory -part ${BOARD_PART1}
+  # set_property board_part ${BOARD_PART2} [current_project]
+  set_property design_mode GateLvl [current_fileset]
+  # set_param project.singleFileAddWarning.threshold 0
+  # # set_property webtalk.parent_dir ${PROJ_DIR}/${PROJ_NAME}.cache/wt [current_project]
+  # set_property parent.project_path ${PROJ_DIR}/${PROJ_NAME}.xpr [current_project]
+  # set_property ip_output_repo ${PROJ_DIR}/${PROJ_NAME}.cache/ip [current_project]
+  # set_property ip_cache_permissions {read write} [current_project]
+  # add_files -quiet ${PROJ_DIR}/${PROJ_NAME}_synth.dcp
+  # read_ip -quiet ${PROJ_DIR}/${PROJ_NAME}.blk_mem_gen_0.xci
+  foreach src_dc ${SRCS_DC} {
+    read_xdc ${src_dc}
+  }
+  # read_checkpoint -auto_incremental -incremental ${PROJ_DIR}/${PROJ_NAME}_synth.dcp
 }
-# read_checkpoint -auto_incremental -incremental ${PROJ_DIR}/${PROJ_NAME}_synth.dcp
 
 # link_design -top ${TOP_NAME} -part ${BOARD_PART1}
 opt_design
@@ -79,4 +84,8 @@ if (${ENABLE_REPORT}) {
   report_power -file ${PROJ_DIR}/${PROJ_NAME}_power_routed.rpt \
     -pb ${PROJ_DIR}/${PROJ_NAME}_power_summary_routed.pb \
     -rpx ${PROJ_DIR}/${PROJ_NAME}_power_routed.rpx
+}
+
+if (${USE_PROJECT}) {
+  close_project
 }

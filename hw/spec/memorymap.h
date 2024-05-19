@@ -439,11 +439,11 @@ struct HwSP {
 
 // TILERAM
 struct HwTileRam {
-  __attribute__((aligned(0x10'0000))) HwPalette palette[2];
-  __attribute__((aligned(0x10'0000))) HwTile tile[16][0x10'0000/sizeof(HwTile)/16];
+  __attribute__((aligned(0x08'0000))) HwBG bg[0x10'0000/sizeof(HwBG)];
+  __attribute__((aligned(0x08'0000))) HwSP sp[0x10'0000/sizeof(HwSP)];
   __attribute__((aligned(0x10'0000))) HwTilemap tilemap[0x10'0000/sizeof(HwTilemap)];
-  __attribute__((aligned(0x10'0000))) HwBG bg[0x10'0000/sizeof(HwBG)];
-  __attribute__((aligned(0x10'0000))) HwSP sp[0x10'0000/sizeof(HwSP)];
+  __attribute__((aligned(0x10'0000))) HwTile tile[16][0x10'0000/sizeof(HwTile)/16];
+  __attribute__((aligned(0x10'0000))) HwPalette palette[2];
 };
 
 // VRAM
