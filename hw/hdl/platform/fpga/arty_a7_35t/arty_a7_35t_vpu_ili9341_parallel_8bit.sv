@@ -142,6 +142,7 @@ end
 cpu cpu(
   .clk     (clk10MHZ),
   .rst_n   (initialized),
+  .vsync   (vsync_vpu),  // [DEBUG]
   .mem_en  (mem_en  ),
   .mem_we  (mem_we  ),
   .mem_addr(mem_addr),

@@ -16,86 +16,120 @@ module vpu
   output wire        vsync
 );
 
-wire                   sp_ram_ena    , sp_ram_enb    ;
-wire [SP_ADDR_W-1:0]   sp_ram_addra  , sp_ram_addrb  ;
-wire [SP_DATA_W-1:0]   sp_ram_dina   , sp_ram_dinb   ;
-wire [SP_DATA_W-1:0]   sp_ram_douta  , sp_ram_doutb  ;
+wire                   bg_param_ram_ena  , bg_param_ram_enb  ;
+wire [SP_ADDR_W-1:0]   bg_param_ram_addra, bg_param_ram_addrb;
+wire [SP_DATA_W-1:0]   bg_param_ram_dina , bg_param_ram_dinb ;
+wire [SP_DATA_W-1:0]   bg_param_ram_douta, bg_param_ram_doutb;
 
-wire                   map_ram_ena   , map_ram_enb   ;
-wire [MAP_ADDR_W-1:0]  map_ram_addra , map_ram_addrb ;
-wire [MAP_DATA_W-1:0]  map_ram_dina  , map_ram_dinb  ;
-wire [MAP_DATA_W-1:0]  map_ram_douta , map_ram_doutb ;
+wire                   bg_map_ram_ena    , bg_map_ram_enb    ;
+wire [MAP_ADDR_W-1:0]  bg_map_ram_addra  , bg_map_ram_addrb  ;
+wire [MAP_DATA_W-1:0]  bg_map_ram_dina   , bg_map_ram_dinb   ;
+wire [MAP_DATA_W-1:0]  bg_map_ram_douta  , bg_map_ram_doutb  ;
 
-wire                   tile_ram_ena  , tile_ram_enb  ;
-wire [TILE_ADDR_W-1:0] tile_ram_addra, tile_ram_addrb;
-wire [TILE_DATA_W-1:0] tile_ram_dina , tile_ram_dinb ;
-wire [TILE_DATA_W-1:0] tile_ram_douta, tile_ram_doutb;
+wire                   bg_tile_ram_ena   , bg_tile_ram_enb   ;
+wire [TILE_ADDR_W-1:0] bg_tile_ram_addra , bg_tile_ram_addrb ;
+wire [TILE_DATA_W-1:0] bg_tile_ram_dina  , bg_tile_ram_dinb  ;
+wire [TILE_DATA_W-1:0] bg_tile_ram_douta , bg_tile_ram_doutb ;
 
-wire                   pal_ram_ena   , pal_ram_enb   ;
-wire [PAL_ADDR_W-1:0]  pal_ram_addra , pal_ram_addrb ;
-wire [PAL_DATA_W-1:0]  pal_ram_dina  , pal_ram_dinb  ;
-wire [PAL_DATA_W-1:0]  pal_ram_douta , pal_ram_doutb ;
+wire                   bg_pal_ram_ena    , bg_pal_ram_enb    ;
+wire [PAL_ADDR_W-1:0]  bg_pal_ram_addra  , bg_pal_ram_addrb  ;
+wire [PAL_DATA_W-1:0]  bg_pal_ram_dina   , bg_pal_ram_dinb   ;
+wire [PAL_DATA_W-1:0]  bg_pal_ram_douta  , bg_pal_ram_doutb  ;
+
+wire [31:0] sp_linebuffer[320];
 
 // reg        dot_clk;
 // reg [31:0] color;
 // reg        hsync, vsync;
 
+assign bg_param_ram_dinb = 0;
+assign bg_map_ram_dinb   = 0;
+assign bg_tile_ram_dinb  = 0;
+assign bg_pal_ram_dinb   = 0;
+
 vpu_core vpu_core
-(
-  .clk        (clk),
-  .rst_n      (rst_n),
-
-  .sp_en      (sp_ram_enb),
-  .sp_addr    (sp_ram_addrb),
-  .sp_dout    (sp_ram_doutb),
-
-  .map_en     (map_ram_enb),
-  .map_addr   (map_ram_addrb),
-  .map_dout   (map_ram_doutb),
-
-  .tile_en    (tile_ram_enb),
-  .tile_addr  (tile_ram_addrb),
-  .tile_dout  (tile_ram_doutb),
-
-  .pal_en     (pal_ram_enb),
-  .pal_addr   (pal_ram_addrb),
-  .pal_dout   (pal_ram_doutb),
-
-  .dot_clk    (dot_clk),
-  .color      (color),
-  .hsync      (hsync),
-  .vsync      (vsync)
-);
-
-vram vram
 (
   .clk            (clk),
   .rst_n          (rst_n),
 
-  .mem_en         (mem_en),
-  .mem_we         (mem_we),
-  .mem_addr       (mem_addr),
-  .mem_din        (mem_din),
-  .mem_dout       (mem_dout),
+  .bg_param_en    (bg_param_ram_enb  ),
+  .bg_param_addr  (bg_param_ram_addrb),
+  .bg_param_dout  (bg_param_ram_doutb),
 
-  .sp_ram_enb     (sp_ram_enb    ),
-  .sp_ram_addrb   (sp_ram_addrb  ),
-  .sp_ram_dinb    (sp_ram_dinb   ),
-  .sp_ram_doutb   (sp_ram_doutb  ),
+  .bg_map_en      (bg_map_ram_enb    ),
+  .bg_map_addr    (bg_map_ram_addrb  ),
+  .bg_map_dout    (bg_map_ram_doutb  ),
 
-  .map_ram_enb    (map_ram_enb   ),
-  .map_ram_addrb  (map_ram_addrb ),
-  .map_ram_dinb   (map_ram_dinb  ),
-  .map_ram_doutb  (map_ram_doutb ),
+  .bg_tile_en     (bg_tile_ram_enb   ),
+  .bg_tile_addr   (bg_tile_ram_addrb ),
+  .bg_tile_dout   (bg_tile_ram_doutb ),
 
-  .tile_ram_enb   (tile_ram_enb  ),
-  .tile_ram_addrb (tile_ram_addrb),
-  .tile_ram_dinb  (tile_ram_dinb ),
-  .tile_ram_doutb (tile_ram_doutb),
+  .bg_pal_en      (bg_pal_ram_enb    ),
+  .bg_pal_addr    (bg_pal_ram_addrb  ),
+  .bg_pal_dout    (bg_pal_ram_doutb  ),
 
-  .pal_ram_enb    (pal_ram_enb   ),
-  .pal_ram_addrb  (pal_ram_addrb ),
-  .pal_ram_dinb   (pal_ram_dinb  ),
-  .pal_ram_doutb  (pal_ram_doutb )
+  .sp_param_en    (sp_param_ram_enb  ),
+  .sp_param_addr  (sp_param_ram_addrb),
+  .sp_param_dout  (sp_param_ram_doutb),
+
+  .sp_tile_en     (sp_tile_ram_enb   ),
+  .sp_tile_addr   (sp_tile_ram_addrb ),
+  .sp_tile_dout   (sp_tile_ram_doutb ),
+
+  .sp_pal_en      (sp_pal_ram_enb    ),
+  .sp_pal_addr    (sp_pal_ram_addrb  ),
+  .sp_pal_dout    (sp_pal_ram_doutb  ),
+
+  .dot_clk        (dot_clk),
+  .color          (color),
+  .hsync          (hsync),
+  .vsync          (vsync)
+);
+
+vram vram
+(
+  .clk                (clk),
+  .rst_n              (rst_n),
+
+  .mem_en             (mem_en),
+  .mem_we             (mem_we),
+  .mem_addr           (mem_addr),
+  .mem_din            (mem_din),
+  .mem_dout           (mem_dout),
+
+  .bg_param_ram_enb   (bg_param_ram_enb  ),
+  .bg_param_ram_addrb (bg_param_ram_addrb),
+  .bg_param_ram_dinb  (bg_param_ram_dinb ),
+  .bg_param_ram_doutb (bg_param_ram_doutb),
+
+  .bg_map_ram_enb     (bg_map_ram_enb    ),
+  .bg_map_ram_addrb   (bg_map_ram_addrb  ),
+  .bg_map_ram_dinb    (bg_map_ram_dinb   ),
+  .bg_map_ram_doutb   (bg_map_ram_doutb  ),
+
+  .bg_tile_ram_enb    (bg_tile_ram_enb   ),
+  .bg_tile_ram_addrb  (bg_tile_ram_addrb ),
+  .bg_tile_ram_dinb   (bg_tile_ram_dinb  ),
+  .bg_tile_ram_doutb  (bg_tile_ram_doutb ),
+
+  .bg_pal_ram_enb     (bg_pal_ram_enb    ),
+  .bg_pal_ram_addrb   (bg_pal_ram_addrb  ),
+  .bg_pal_ram_dinb    (bg_pal_ram_dinb   ),
+  .bg_pal_ram_doutb   (bg_pal_ram_doutb  ),
+
+  .sp_param_ram_enb   (sp_param_ram_enb  ),
+  .sp_param_ram_addrb (sp_param_ram_addrb),
+  .sp_param_ram_dinb  (sp_param_ram_dinb ),
+  .sp_param_ram_doutb (sp_param_ram_doutb),
+
+  .sp_tile_ram_enb    (sp_tile_ram_enb   ),
+  .sp_tile_ram_addrb  (sp_tile_ram_addrb ),
+  .sp_tile_ram_dinb   (sp_tile_ram_dinb  ),
+  .sp_tile_ram_doutb  (sp_tile_ram_doutb ),
+
+  .sp_pal_ram_enb     (sp_pal_ram_enb    ),
+  .sp_pal_ram_addrb   (sp_pal_ram_addrb  ),
+  .sp_pal_ram_dinb    (sp_pal_ram_dinb   ),
+  .sp_pal_ram_doutb   (sp_pal_ram_doutb  )
 );
 endmodule

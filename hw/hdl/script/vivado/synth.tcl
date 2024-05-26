@@ -7,6 +7,7 @@ set PROJ_DIR    $::env(PROJ_DIR)
 set SRCS_DC     $::env(SRCS_DC)
 set SRCS_V      $::env(SRCS_V)
 set SRCS_IP     $::env(SRCS_IP)
+set SRCS_SIM    $::env(SRCS_SIM)
 set TOP_NAME    $::env(TOP_NAME)
 set ENABLE_CHECKPOINT 1
 set ENABLE_REPORT 0
@@ -31,6 +32,9 @@ if (${USE_PROJECT}) {
   set_property board_part ${BOARD_PART2} [current_project]
   set_property ip_output_repo ${PROJ_DIR}/${PROJ_NAME}.cache/ip [current_project]
   set_property ip_cache_permissions {read write} [current_project]
+
+  # create_fileset -simset sim_1
+  add_files -fileset sim_1 ${SRCS_SIM}
   foreach src_v ${SRCS_V} {
     read_verilog -library xil_defaultlib -sv ${src_v}
   }

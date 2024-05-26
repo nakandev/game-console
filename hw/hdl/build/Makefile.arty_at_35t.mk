@@ -17,6 +17,8 @@ export SRCS_V = \
   ${HDL_ROOT}/cpu/cpu.sv \
   ${HDL_ROOT}/vpu/vpu.sv \
   ${HDL_ROOT}/vpu/vpu_core.sv \
+  ${HDL_ROOT}/vpu/vpu_bg.sv \
+  ${HDL_ROOT}/vpu/vpu_sp.sv \
   ${HDL_ROOT}/vpu/vram.sv \
   ${HDL_ROOT}/vpu/bram_tdp_rf_rf.sv \
 
@@ -35,7 +37,7 @@ ${PROJ_DIR}/${PROJ_NAME}.xdc: ${SRCS_DC} ${SRCS_V} ${SRCS_IP} ${SRCS_SIM}
 	cd ${PROJ_DIR}
 	vivado  -m64 -mode batch -source ${SCRIPT_DIR}/vivado/project.tcl
 
-${PROJ_DIR}/${PROJ_NAME}_synth.dcp: ${PROJ_DIR}/${PROJ_NAME}.xdc
+${PROJ_DIR}/${PROJ_NAME}_synth.dcp: ${SRCS_DC} ${SRCS_V} ${SRCS_IP} ${SRCS_SIM}
 	cd ${PROJ_DIR}
 	vivado  -m64 -mode batch -source ${SCRIPT_DIR}/vivado/synth.tcl
 

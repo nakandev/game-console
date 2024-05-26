@@ -7,6 +7,7 @@ set PROJ_DIR    $::env(PROJ_DIR)
 set SRCS_DC     $::env(SRCS_DC)
 set SRCS_V      $::env(SRCS_V)
 set SRCS_IP     $::env(SRCS_IP)
+set SRCS_SIM    $::env(SRCS_SIM)
 set TOP_NAME    $::env(TOP_NAME)
 set ENABLE_CHECKPOINT 1
 set ENABLE_REPORT 0

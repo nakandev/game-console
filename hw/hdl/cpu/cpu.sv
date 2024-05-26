@@ -4,6 +4,8 @@ module cpu
   input  wire        clk,
   input  wire        rst_n,
 
+  input  wire        vsync,  // [DEBUG]
+
   output wire        mem_en,
   output wire        mem_we,
   output wire [31:0] mem_addr,
@@ -31,8 +33,21 @@ logic [31:0] palcolor[7] = {
   32'hFF00FFFF/*Yellow*/,
   32'hFFFF00FF/*Purple*/,
   32'hFFFFFFFF/*While*/
-  //32'hFF7F7F7F/*Gray*/
+  // 32'hFF7F7F7F/*Gray*/
 };
+
+reg [8:0] bg_x;
+reg [7:0] bg_y;
+
+always_ff @(posedge vsync) begin
+  if (init_state < 5) begin
+    bg_x <= 0;
+    bg_y <= 0;
+  end else begin
+    bg_x <= bg_x + 1;
+    bg_y <= bg_y + 1;
+  end
+end
 
 always_ff @(posedge clk) begin
   if ((init_state == 0 && init_count == 100-1)
@@ -50,7 +65,7 @@ always_ff @(posedge clk) begin
   end
 
   if (init_state == 1) begin
-    // bg/sp
+    // bg/sp param
     init_en <= 1;
     init_we <= 1;
     init_addr <= 32'h0600_0000 + init_count;
@@ -77,10 +92,14 @@ always_ff @(posedge clk) begin
     init_addr <= 32'h0630_0000 + init_count;
     init_data <= palcolor[init_count % 7];
   end else begin
-    init_en <= 0;
-    init_we <= 0;
-    init_addr <= 32'h0000_0000;
-    init_data <= 0;
+    init_en <= 1;
+    init_we <= 1;
+    init_addr <= 32'h0600_0000 + 128*5 + 3*5 + 0;  // BG3 param[0]
+    init_data <= (1'b1 << 31) | (bg_x << 8) | (bg_y);
+    // init_en <= 0;
+    // init_we <= 0;
+    // init_addr <= 32'h0000_0000;
+    // init_data <= 0;
   end
 end
 
