@@ -13,7 +13,15 @@ module cpu
   input  wire [31:0] mem_dout  // read from mem
 );
 
-int init_state = 0;
+localparam INIT_BEGIN    = 0;
+localparam INIT_PARAM_SP = 1;
+localparam INIT_PARAM_BG = 2;
+localparam INIT_MAP      = 3;
+localparam INIT_TILE     = 4;
+localparam INIT_PAL      = 5;
+localparam INIT_FIN      = 6;
+int init_state = INIT_BEGIN;
+// int init_state = 0;
 int init_count = 0;
 reg [31:0] init_addr;
 reg [31:0] init_data;
@@ -36,61 +44,90 @@ logic [31:0] palcolor[7] = {
   // 32'hFF7F7F7F/*Gray*/
 };
 
+reg [1:0] layer;
 reg [8:0] bg_x;
 reg [7:0] bg_y;
 
 always_ff @(posedge vsync) begin
-  if (init_state < 5) begin
+  if (init_state < INIT_FIN) begin
     bg_x <= 0;
     bg_y <= 0;
   end else begin
-    bg_x <= bg_x + 1;
-    bg_y <= bg_y + 1;
+    layer <= layer + 1;
+    if (layer == 3) begin
+      bg_x <= bg_x + 1;
+      bg_y <= bg_y + 1;
+    end
   end
 end
 
 always_ff @(posedge clk) begin
-  if ((init_state == 0 && init_count == 100-1)
-    ||(init_state == 1 && init_count == 1024-1)
-    ||(init_state == 2 && init_count == 2048-1)
-    ||(init_state == 3 && init_count == 64*256-1)
-    ||(init_state == 4 && init_count == 256-1)
+  if ((init_state == INIT_BEGIN    && init_count == 100-1)
+    // ||(init_state == INIT_PARAM_SP && init_count == 128*5-1)
+    ||(init_state == INIT_PARAM_SP && init_count == 2*5-1)
+    ||(init_state == INIT_PARAM_BG && init_count == 4*5-1)
+    ||(init_state == INIT_MAP      && init_count == 2048-1)
+    ||(init_state == INIT_TILE     && init_count == 256*64-1)
+    ||(init_state == INIT_PAL      && init_count == 256-1)
   ) begin
     init_count <= 0;
     init_state <= init_state + 1;
-  end else if (init_state == 5) begin
-    init_count <= 0;
-  end else begin
+  end else if (init_state < INIT_FIN) begin
     init_count <= init_count + 1;
+  end else begin
+    init_count <= 0;
   end
 
-  if (init_state == 1) begin
-    // bg/sp param
+  if (init_state == INIT_PARAM_SP) begin
+    // param sp
     init_en <= 1;
     init_we <= 1;
     init_addr <= 32'h0600_0000 + init_count;
-    init_data <= 0;
+    init_data <= (1'b1 << 31) | ((10*(init_count/5+1)) << 8) | ((10*(init_count/5+1)) << 0);
+    // case (init_count % 5)
+    //   0: init_data <= (1'b1 << 31);
+    //   1: init_data <= 0;
+    //   2: init_data <= 0;
+    //   3: init_data <= 0;
+    //   4: init_data <= 0;
+    //   default: init_data <= 0;
+    // endcase
   end else
-  if (init_state == 2) begin
+  if (init_state == INIT_PARAM_BG) begin
+    // param bg
+    init_en <= 1;
+    init_we <= 1;
+    init_addr <= 32'h0600_0000 + 128*5 + init_count;
+    init_data <= (1'b1 << 31);
+    // case (init_count % 5)
+    //   0: init_data <= (1'b1 << 31);
+    //   1: init_data <= 0;
+    //   2: init_data <= 0;
+    //   3: init_data <= 0;
+    //   4: init_data <= 0;
+    //   default: init_data <= 0;
+    // endcase
+  end else
+  if (init_state == INIT_MAP) begin
     // map
     init_en <= 1;
     init_we <= 1;
     init_addr <= 32'h0610_0000 + init_count;
     init_data <= init_count % 256;
   end else
-  if (init_state == 3) begin
+  if (init_state == INIT_TILE) begin
     // tile
     init_en <= 1;
     init_we <= 1;
     init_addr <= 32'h0620_0000 + init_count;
     init_data <= init_count / 64;
   end else
-  if (init_state == 4) begin
+  if (init_state == INIT_PAL) begin
     // pal
     init_en <= 1;
     init_we <= 1;
     init_addr <= 32'h0630_0000 + init_count;
-    init_data <= palcolor[init_count % 7];
+    init_data <= palcolor[init_count % $size(palcolor)];
   end else begin
     init_en <= 1;
     init_we <= 1;

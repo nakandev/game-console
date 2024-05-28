@@ -4,6 +4,9 @@ module vpu_bg
   input  wire                   clk,
   input  wire                   rst_n,
 
+  input  wire [10:0]            line_cycle,
+  input  wire [8:0]             y,
+
   output wire                   param_en,
   output wire [BG_ADDR_W-1:0]   param_addr,
   input  wire [BG_DATA_W-1:0]   param_dout,
@@ -31,7 +34,7 @@ module vpu_bg
 
 localparam HMAX = SCREEN_W + SCREEN_HBLANK;
 localparam VMAX = SCREEN_H + SCREEN_VBLANK;
-localparam LINE_CYCLE_PARAM = 0;
+localparam LINE_CYCLE_PARAM = 20;
 localparam LINE_CYCLE_VISIBLE = LINE_CYCLE_PARAM + SCREEN_W * 4;
 localparam LINE_CYCLE_MAX = LINE_CYCLE_PARAM + HMAX * 4;
 
@@ -42,12 +45,6 @@ reg [31:0] bg_affine1_cache[4];
 reg [31:0] bg_affine2_cache[4];
 
 wire [8:0] x = 0;
-reg [8:0] y = 0;
-reg [10:0] line_cycle = 0;
-reg [10:0] pipeline_cycle = 0;
-reg [1:0] bg_layer = 0;
-
-reg param_done;
 
 reg pipeline_enable;
 
@@ -61,53 +58,15 @@ enum {
 assign x = line_cycle / 4;
 assign bg_param = state == STATE_PARAM;
 
-always_ff @(posedge clk) begin
-  if (~rst_n) begin
-    y <= 0;
-    line_cycle <= 0;
-    bg_layer <= 0;
-    //state <= STATE_INIT;
-  end
-  else begin
-    if (state < STATE_PIPELINE) begin
-      //line_cycle <= LINE_CYCLE_VISIBLE;
-      line_cycle <= 0;
-    end
-    else begin
-      if (line_cycle == LINE_CYCLE_MAX - 1) begin
-        line_cycle <= 0;
-        y <= (y < VMAX - 1) ? y + 1 : 0;
-      end
-      else begin
-        line_cycle <= line_cycle + 1;
-      end
-    end
+assign state = line_cycle < LINE_CYCLE_PARAM   ? STATE_PARAM :
+               line_cycle < LINE_CYCLE_VISIBLE ? STATE_PIPELINE :
+               STATE_WAITSYNC;
 
-    if (state == STATE_INIT) begin
-      state <= STATE_PARAM;
-    end
-    else if (state == STATE_PARAM) begin
-      if (param_done) begin
-        state <= STATE_PIPELINE;
-        //line_cycle <= 0;
-      end
-    end
-    else if (state == STATE_PIPELINE) begin
-      if (line_cycle == LINE_CYCLE_VISIBLE) begin
-        state <= STATE_WAITSYNC;
-      end
-    end
-    else /*if (state == STATE_WAITSYNC)*/ begin
-      if (line_cycle == 0) begin
-        state <= STATE_PARAM;
-      end
-    end
-  end
-end
-
+assign parameter_enable = (state == STATE_PARAM);
 vpu_bg_parameter_load vpu_bg_parameter_load (
   clk,
-  rst_n & (state == STATE_PARAM),
+  rst_n,
+  parameter_enable,
   param_en,
   param_addr,
   param_dout,
@@ -115,8 +74,7 @@ vpu_bg_parameter_load vpu_bg_parameter_load (
   bg_data1_cache,
   bg_affine0_cache,
   bg_affine1_cache,
-  bg_affine2_cache,
-  param_done
+  bg_affine2_cache
 );
 
 reg [31:0] color_debug;
@@ -156,6 +114,7 @@ module vpu_bg_parameter_load
 (
   input  wire        clk,
   input  wire        rst_n,
+  input  wire        parameter_enable,
   output wire        bg_en,
   output wire [ 9:0] bg_addr,
   input  wire [31:0] bg_dout,
@@ -163,8 +122,7 @@ module vpu_bg_parameter_load
   output reg  [31:0] bg_data1_cache[4],
   output reg  [31:0] bg_affine0_cache[4],
   output reg  [31:0] bg_affine1_cache[4],
-  output reg  [31:0] bg_affine2_cache[4],
-  output reg         done
+  output reg  [31:0] bg_affine2_cache[4]
 );
 
 localparam PARAM_SIZE = 5;
@@ -175,7 +133,7 @@ reg [2:0] offset;
 reg [2:0] offset_prev;
 
 always_ff @(posedge clk) begin
-  if (~rst_n) begin
+  if (~(rst_n & parameter_enable)) begin
     layer <= 0;
     offset <= 0;
   end
@@ -187,8 +145,6 @@ always_ff @(posedge clk) begin
   end
   offset_prev <= offset;
 end
-
-assign done = (offset == PARAM_SIZE-1 && layer == 3);
 
 always_comb begin
    case(offset_prev)
@@ -202,7 +158,7 @@ always_comb begin
 end
 
 assign bg_addr = SPRITE_RAM_BG_BASE + (layer * PARAM_SIZE) + offset;
-assign bg_en = !done;
+assign bg_en = parameter_enable;
 
 endmodule
 

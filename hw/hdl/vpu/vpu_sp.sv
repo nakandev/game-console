@@ -4,6 +4,9 @@ module vpu_sp
   input  wire                   clk,
   input  wire                   rst_n,
 
+  input  wire [10:0]            line_cycle,
+  input  wire [8:0]             y,
+
   output wire                   param_en,
   output wire [SP_ADDR_W-1:0]   param_addr,
   input  wire [SP_DATA_W-1:0]   param_dout,
@@ -21,8 +24,8 @@ module vpu_sp
 
 localparam HMAX = SCREEN_W + SCREEN_HBLANK;
 localparam VMAX = SCREEN_H + SCREEN_VBLANK;
-localparam LINE_CYCLE_BGPARAM = 0;
 localparam LINE_CYCLE_PARAM = 20;
+localparam LINE_CYCLE_SPPARAM = 0;
 localparam LINE_CYCLE_VISIBLE = LINE_CYCLE_PARAM + SCREEN_W * 4;
 localparam LINE_CYCLE_MAX = LINE_CYCLE_PARAM + HMAX * 4;
 
@@ -35,9 +38,7 @@ reg [31:0] sp_affine1_cache[4];
 reg [31:0] sp_affine2_cache[4];
 
 wire [8:0] x = 0;
-reg [8:0] y = 0;
-reg [10:0] line_cycle = 0;
-reg [10:0] pipeline_cycle = 0;
+reg [10:0] sp_cycle = 0;
 reg [1:0] sp_layer = 0;
 
 reg param_done;
@@ -46,67 +47,34 @@ reg pipeline_enable;
 
 enum {
   STATE_INIT,
-  STATE_BGPARAM,
   STATE_PARAM,
+  STATE_SPPARAM,
   STATE_PIPELINE,
   STATE_WAITSYNC
 } state;
 
 assign x = line_cycle / 4;
 
-always_ff @(posedge clk) begin
-  if (~rst_n) begin
-    y <= 0;
-    line_cycle <= 0;
-    sp_layer <= 0;
-    //state <= STATE_INIT;
+always_comb begin
+  if (line_cycle < LINE_CYCLE_PARAM) begin
+    state = STATE_PARAM;
+  end
+  else if (line_cycle < LINE_CYCLE_VISIBLE) begin
+    if (!param_done) begin
+      state = STATE_SPPARAM;
+    end else begin
+      state = STATE_PIPELINE;
+    end
   end
   else begin
-    if (state < STATE_PIPELINE) begin
-      //line_cycle <= LINE_CYCLE_VISIBLE;
-      line_cycle <= 0;
-    end
-    else begin
-      if (line_cycle == LINE_CYCLE_MAX - 1) begin
-        line_cycle <= 0;
-        y <= (y < VMAX - 1) ? y + 1 : 0;
-      end
-      else begin
-        line_cycle <= line_cycle + 1;
-      end
-    end
-
-    if (state == STATE_INIT) begin
-      state <= STATE_BGPARAM;
-    end
-    else if (state == STATE_BGPARAM) begin
-      if (line_cycle == LINE_CYCLE_VISIBLE) begin
-        state <= STATE_PARAM;
-        //line_cycle <= 0;
-      end
-    end
-    else if (state == STATE_PARAM) begin
-      if (param_done) begin
-        state <= STATE_PIPELINE;
-        //line_cycle <= 0;
-      end
-    end
-    else if (state == STATE_PIPELINE) begin
-      if (line_cycle == LINE_CYCLE_VISIBLE) begin
-        state <= STATE_WAITSYNC;
-      end
-    end
-    else /*if (state == STATE_WAITSYNC)*/ begin
-      if (line_cycle == 0) begin
-        state <= STATE_PARAM;
-      end
-    end
+    state = STATE_WAITSYNC;
   end
 end
 
 vpu_sp_parameter_load vpu_sp_parameter_load (
   clk,
-  rst_n & (state == STATE_PARAM),
+  rst_n,
+  // parameter_enable,
   param_en,
   param_addr,
   param_dout,

@@ -21,15 +21,15 @@ module arty_a7_35t_vpu_ili9341_parallel_8bit(
     output logic [3:0] led
 );
   
-localparam DOTCLKS = 5; //10/2;
-localparam PIXCLKS = 2; //2cycle
+localparam DOTCLKS = 1; // 1:50MHz, 2:25MHz.
+localparam PIXCLKS = 2; // 2cycle
 
 logic clk10MHZ = 1'b0;
-logic clkPixel = 1'b0; //4 clk10MHZ
+logic clkPixel = 1'b0; // 4 clk10MHZ
 logic clkTFT = 1'b0;
 logic [31:0] cnt0 = DOTCLKS-1;
 logic [31:0] cnt1 = PIXCLKS-1;
-logic [31:0] count = 0;
+// logic [31:0] count = 0;
 wire [7:0] data8;
 logic [7:0] lcd_col_r;
 logic [7:0] lcd_col_g;
@@ -42,9 +42,9 @@ logic vsync_out;
 logic prev_initialized;
 logic lcd_vblank;
 logic lcd_write;
-logic [8:0] lcd_x;
-logic [7:0] lcd_y;
-logic [7:0] lcd_frame;
+// logic [8:0] lcd_x;
+// logic [7:0] lcd_y;
+// logic [7:0] lcd_frame;
 logic [3:0] dummy_led;
 
 assign reset200 = btn[0];
@@ -94,7 +94,7 @@ end
 //);
 
 //always_ff @(posedge CLK200MHZ) begin
-always_ff @(posedge CLK100MHZ) begin
+always @(posedge CLK100MHZ) begin
     if (cnt0 > 0) begin
         cnt0 <= cnt0 - 1'b1;
     end else begin
@@ -113,26 +113,26 @@ always_ff @(posedge clk10MHZ) begin
 end
 
 always_ff @(posedge clkPixel) begin
-    if (reset) begin
-    lcd_x <= 0;
-    lcd_y <= 0;
-    lcd_frame <= 0;
-    end
-    if (hsync_out || lcd_x == 320 - 1) begin
-        lcd_x <= 0;
-        if (vsync_out || lcd_y == 240 - 1) begin
-            lcd_y <= 0;
-            lcd_frame <= lcd_frame + 1;
-        end else begin
-            lcd_y <= lcd_y + 1;
-        end
-    end else begin
-        lcd_x <= lcd_x + 1;
-    end
+    // if (reset) begin
+    // lcd_x <= 0;
+    // lcd_y <= 0;
+    // lcd_frame <= 0;
+    // end
+    // if (hsync_out || lcd_x == 320 - 1) begin
+    //     lcd_x <= 0;
+    //     if (vsync_out || lcd_y == 240 - 1) begin
+    //         lcd_y <= 0;
+    //         lcd_frame <= lcd_frame + 1;
+    //     end else begin
+    //         lcd_y <= lcd_y + 1;
+    //     end
+    // end else begin
+    //     lcd_x <= lcd_x + 1;
+    // end
     //lcd_col_r <= lcd_x;
     //lcd_col_g <= lcd_y;
     //lcd_col_b <= lcd_frame;
-    count <= count + 1;
+    // count <= count + 1;
     //lcd_col_a <= color[31:24];
     lcd_col_b <= color[23:16];
     lcd_col_g <= color[15: 8];

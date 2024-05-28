@@ -43,7 +43,7 @@ localparam LMAX = HMAX * 4;
 localparam VMAX = SCREEN_H + SCREEN_VBLANK;
 
 wire [31:0] sp_linebuffer[320];
-reg [8:0] y = 0;
+reg [8:0]  y = 0;
 reg [10:0] line_cycle = 0;
 
 always_ff @(posedge clk) begin
@@ -71,6 +71,9 @@ vpu_bg vpu_bg
 (
   .clk        (clk),
   .rst_n      (rst_n),
+
+  .line_cycle (line_cycle),
+  .y          (y),
 
   .param_en   (bg_param_en),
   .param_addr (bg_param_addr),
@@ -104,6 +107,9 @@ vpu_sp vpu_sp
 (
   .clk        (clk),
   .rst_n      (rst_n),
+
+  .line_cycle (line_cycle),
+  .y          (y),
 
   .param_en   (sp_param_en),
   .param_addr (sp_param_addr),
