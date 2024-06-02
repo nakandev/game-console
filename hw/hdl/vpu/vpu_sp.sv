@@ -1,3 +1,28 @@
+typedef enum {
+  STATE_INIT,
+  STATE_PARAM,
+  STATE_SPPARAM,
+  STATE_SPPIPELINE,
+  STATE_WAITSYNC
+} vpu_sp_state_t;
+
+function logic [7:0] get_tw(input [2:0] tilesize);
+   case(tilesize)
+     2'b00 : get_tw = 16'd8;
+     2'b01 : get_tw = 16'd16;
+     2'b10 : get_tw = 16'd32;
+     2'b11 : get_tw = 16'd64;
+   endcase
+endfunction
+function logic [7:0] get_th(input [2:0] tilesize);
+   case(tilesize)
+     2'b00 : get_th = 16'd8;
+     2'b01 : get_th = 16'd16;
+     2'b10 : get_th = 16'd32;
+     2'b11 : get_th = 16'd64;
+   endcase
+endfunction
+
 module vpu_sp
   import gameconsole_pkg::*;
 (
@@ -19,62 +44,75 @@ module vpu_sp
   output wire [PAL_ADDR_W-1:0]  pal_addr,
   input  wire [PAL_DATA_W-1:0]  pal_dout,
 
-  output wire [31:0]            sp_linebuffer[320]
+  output wire                       line_init,
+  output wire [LINEBUFF_BANK_W-1:0] line_web,
+  output wire [LINEBUFF_BANK_W-1:0] line_bankb,
+  output wire [LINEBUFF_ADDR_W-1:0] line_addrb,
+  output reg  [LINEBUFF_DATA_W-1:0] line_dinb,
+  input  wire [LINEBUFF_DATA_W-1:0] line_doutb
 );
 
 localparam HMAX = SCREEN_W + SCREEN_HBLANK;
 localparam VMAX = SCREEN_H + SCREEN_VBLANK;
 localparam LINE_CYCLE_PARAM = 20;
-localparam LINE_CYCLE_SPPARAM = 0;
+localparam LINE_CYCLE_SPPARAM = 5;
 localparam LINE_CYCLE_VISIBLE = LINE_CYCLE_PARAM + SCREEN_W * 4;
 localparam LINE_CYCLE_MAX = LINE_CYCLE_PARAM + HMAX * 4;
 
-reg [31:0] linebuffer[320];
-
-reg [31:0] sp_data0_cache[4];
-reg [31:0] sp_data1_cache[4];
-reg [31:0] sp_affine0_cache[4];
-reg [31:0] sp_affine1_cache[4];
-reg [31:0] sp_affine2_cache[4];
+reg [31:0] sp_data0_cache;
+reg [31:0] sp_data1_cache;
+reg [31:0] sp_affine0_cache;
+reg [31:0] sp_affine1_cache;
+reg [31:0] sp_affine2_cache;
 
 wire [8:0] x = 0;
-reg [10:0] sp_cycle = 0;
-reg [1:0] sp_layer = 0;
+reg [10:0] sp_cycle;
+reg [6:0]  sp_idx;
 
-reg param_done;
-
-reg pipeline_enable;
-
-enum {
-  STATE_INIT,
-  STATE_PARAM,
-  STATE_SPPARAM,
-  STATE_PIPELINE,
-  STATE_WAITSYNC
-} state;
+reg parameter_done;
+reg pipeline_done;
+vpu_sp_state_t state;
 
 assign x = line_cycle / 4;
 
-always_comb begin
+assign parameter_enable = (state == STATE_SPPARAM);
+assign pipeline_enable = (state == STATE_SPPIPELINE);
+assign line_init = (state <= STATE_PARAM);
+// always_comb begin
+always_ff @(posedge clk) begin
   if (line_cycle < LINE_CYCLE_PARAM) begin
-    state = STATE_PARAM;
+    state <= STATE_PARAM;
+    sp_cycle <= 0;
+    sp_idx <= 0;
   end
   else if (line_cycle < LINE_CYCLE_VISIBLE) begin
-    if (!param_done) begin
-      state = STATE_SPPARAM;
+    if (sp_cycle < LINE_CYCLE_SPPARAM) begin
+      state <= STATE_SPPARAM;
+      sp_cycle <= sp_cycle + 1;
+      sp_idx <= 0;
     end else begin
-      state = STATE_PIPELINE;
+      state <= STATE_SPPIPELINE;
+      if (!pipeline_done) begin
+        sp_cycle <= sp_cycle + 1;
+        sp_idx <= sp_idx;
+      end else begin
+        sp_cycle <= 0;
+        sp_idx <= sp_idx + 1;
+      end
     end
   end
   else begin
-    state = STATE_WAITSYNC;
+    state <= STATE_WAITSYNC;
+    sp_cycle <= 0;
+    sp_idx <= 0;
   end
 end
 
 vpu_sp_parameter_load vpu_sp_parameter_load (
   clk,
   rst_n,
-  // parameter_enable,
+  parameter_enable,
+  sp_idx,
   param_en,
   param_addr,
   param_dout,
@@ -83,16 +121,15 @@ vpu_sp_parameter_load vpu_sp_parameter_load (
   sp_affine0_cache,
   sp_affine1_cache,
   sp_affine2_cache,
-  param_done
+  parameter_done
 );
 
 reg [31:0] color_debug;
-assign pipeline_enable = (state == STATE_PIPELINE);
-reg dummy;
 vpu_sp_pipeline vpu_sp_pipeline (
   clk,
   rst_n,
   pipeline_enable,
+  sp_idx,
   y,
   sp_data0_cache,
   sp_data1_cache,
@@ -105,13 +142,14 @@ vpu_sp_pipeline vpu_sp_pipeline (
   pal_en,
   pal_addr,
   pal_dout,
+  line_web,
+  line_bankb,
+  line_addrb,
+  line_dinb,
+  line_doutb,
   color_debug,
-  dummy
+  pipeline_done
 );
-
-assign sp_linebuffer = linebuffer;
-// assign hsync = (state == STATE_PIPELINE) && (line_cycle < LINE_CYCLE_VISIBLE);
-// assign vsync = y < SCREEN_H;
 
 endmodule
 
@@ -121,52 +159,62 @@ module vpu_sp_parameter_load
 (
   input  wire        clk,
   input  wire        rst_n,
+  input  wire        parameter_enable,
+  input  wire [ 6:0] sp_idx,
   output wire        param_en,
   output wire [ 9:0] param_addr,
   input  wire [31:0] param_dout,
-  output reg  [31:0] sp_data0_cache[4],
-  output reg  [31:0] sp_data1_cache[4],
-  output reg  [31:0] sp_affine0_cache[4],
-  output reg  [31:0] sp_affine1_cache[4],
-  output reg  [31:0] sp_affine2_cache[4],
+  output reg  [31:0] sp_data0_cache,
+  output reg  [31:0] sp_data1_cache,
+  output reg  [31:0] sp_affine0_cache,
+  output reg  [31:0] sp_affine1_cache,
+  output reg  [31:0] sp_affine2_cache,
   output reg         done
 );
 
 localparam PARAM_SIZE = 5;
 
-reg [1:0] layer;
 reg [2:0] offset;
 reg [2:0] offset_prev;
 
 always_ff @(posedge clk) begin
-  if (~rst_n) begin
-    layer <= 0;
+  if (~(rst_n & parameter_enable)) begin
     offset <= 0;
+    done <= 0;
   end
   else begin
-    offset <= (offset < PARAM_SIZE-1) ? offset + 1 : 0;
-    if (offset == PARAM_SIZE-1) begin
-      layer <= (layer < 4-1) ? layer + 1 : 0;
+    if (offset < PARAM_SIZE-1) begin
+      offset <= offset +1;
+    end else begin
+      done <= 1;
     end
+    case(offset_prev)
+    0: sp_data0_cache   <= param_dout;
+    1: sp_data1_cache   <= param_dout;
+    2: sp_affine0_cache <= param_dout;
+    3: sp_affine1_cache <= param_dout;
+    4: sp_affine2_cache <= param_dout;
+    default: ;
+    endcase
   end
   offset_prev <= offset;
 end
 
-assign done = (offset == PARAM_SIZE-1 && layer == 3);
+// always_comb begin
+//   if (parameter_enable) begin
+//     case(offset_prev)
+//     0: sp_data0_cache   = param_dout;
+//     1: sp_data1_cache   = param_dout;
+//     2: sp_affine0_cache = param_dout;
+//     3: sp_affine1_cache = param_dout;
+//     4: sp_affine2_cache = param_dout;
+//     default: ;
+//     endcase
+//   end
+// end
 
-always_comb begin
-   case(offset_prev)
-   0: sp_data0_cache  [layer] = param_dout;
-   1: sp_data1_cache  [layer] = param_dout;
-   2: sp_affine0_cache[layer] = param_dout;
-   3: sp_affine1_cache[layer] = param_dout;
-   4: sp_affine2_cache[layer] = param_dout;
-   default: ;
-   endcase
-end
-
-assign param_addr = (layer * PARAM_SIZE) + offset;
-assign param_en = !done;
+assign param_addr = (sp_idx * PARAM_SIZE) + offset;
+assign param_en = parameter_enable;
 
 endmodule
 
@@ -177,25 +225,31 @@ module vpu_sp_pipeline
   input  wire        clk,
   input  wire        rst_n,
   input  wire        pipeline_enable,
+  input  wire [ 6:0] sp_idx,
   input  wire [ 7:0] y,
-  input  reg  [31:0] sp_data0_cache[4],
-  input  reg  [31:0] sp_data1_cache[4],
-  input  reg  [31:0] sp_affine0_cache[4],
-  input  reg  [31:0] sp_affine1_cache[4],
-  input  reg  [31:0] sp_affine2_cache[4],
+  input  reg  [31:0] sp_data0_cache,
+  input  reg  [31:0] sp_data1_cache,
+  input  reg  [31:0] sp_affine0_cache,
+  input  reg  [31:0] sp_affine1_cache,
+  input  reg  [31:0] sp_affine2_cache,
   output wire                 tile_en,
   output wire [TILE_ADDR_W-1:0] tile_addr,
   input  wire [TILE_DATA_W-1:0] tile_data,
   output wire                 pal_en,
   output wire [PAL_ADDR_W-1:0]  pal_addr,
   input  wire [PAL_DATA_W-1:0]  pal_data,
+  output wire [LINEBUFF_BANK_W-1:0] line_web,
+  output wire [LINEBUFF_BANK_W-1:0] line_bankb,
+  output wire [LINEBUFF_ADDR_W-1:0] line_addrb,
+  output reg  [LINEBUFF_DATA_W-1:0] line_dinb,
+  input  wire [LINEBUFF_DATA_W-1:0] line_doutb,
   output wire [31:0] color,
-  output wire        dummy
+  output reg         pipeline_done
 );
 
 reg [1:0] layer;
-
 reg [8:0] x;
+
 wire [ 0: 0]/*[31:31]*/ sp_enable;
 wire [ 0: 0]/*[30:30]*/ sp_afen;
 wire [ 1: 0]/*[29:28]*/ sp_layer;
@@ -206,8 +260,8 @@ wire [ 1: 0]/*[25:24]*/ sp_tilesize;
 wire [ 8: 0]/*[16: 8]*/ sp_x;
 wire [ 7: 0]/*[ 7: 0]*/ sp_y;
 
-wire [ 3: 0]/*[31:28]*/ sp_tilebank;
-wire [11: 0]/*[27:16]*/ sp_tileidx;
+wire [ 3: 0]/*[31:28]*/ sp_tile_bank;
+wire [11: 0]/*[27:16]*/ sp_tile_idx;
 //wire [ 3: 0]/*[15:12]*/ sp__palreserved0;
 wire [ 3: 0]/*[11: 8]*/ sp_pal_transparency;
 //wire [ 0: 0]/*[ 7: 7]*/ sp__palreserved1;
@@ -217,42 +271,43 @@ wire [ 3: 0]/*[ 3: 0]*/ sp_pal_no;
 
 wire [95: 0] sp_affine;
 
-assign sp_enable   = sp_data0_cache[layer][31:31];
-assign sp_afen     = sp_data0_cache[layer][30:30];
-assign sp_layer    = sp_data0_cache[layer][29:28];
-assign sp_hflip    = sp_data0_cache[layer][27:27];
-assign sp_vflip    = sp_data0_cache[layer][26:26];
-assign sp_tilesize = sp_data0_cache[layer][25:24];
-// assign sp__reserved = sp_data0_cache[layer][23:17];
-assign sp_x        = sp_data0_cache[layer][16: 8];
-assign sp_y        = sp_data0_cache[layer][ 7: 0];
+assign sp_enable   = sp_data0_cache[31:31];
+assign sp_afen     = sp_data0_cache[30:30];
+assign sp_layer    = sp_data0_cache[29:28];
+assign sp_hflip    = sp_data0_cache[27:27];
+assign sp_vflip    = sp_data0_cache[26:26];
+assign sp_tilesize = sp_data0_cache[25:24];
+// assign sp__reserved = sp_data0_cache[23:17];
+assign sp_x        = sp_data0_cache[16: 8];
+assign sp_y        = sp_data0_cache[ 7: 0];
 
-assign sp_tile_bank        = sp_data1_cache[layer][31:28];
-assign sp_tile_idx    = sp_data1_cache[layer][27:16];
-//assign sp__palreserved0    = sp_data1_cache[layer][15:12];
-assign sp_pal_transparency = sp_data1_cache[layer][11: 8];
-//assign sp__palreserved1    = sp_data1_cache[layer][ 7: 7];
-assign sp_pal_mode         = sp_data1_cache[layer][ 6: 6];
-assign sp_pal_bank         = sp_data1_cache[layer][ 5: 4];
-assign sp_pal_no           = sp_data1_cache[layer][ 3: 0];
+assign sp_tile_bank        = sp_data1_cache[31:28];
+assign sp_tile_idx    = sp_data1_cache[27:16];
+//assign sp__palreserved0    = sp_data1_cache[15:12];
+assign sp_pal_transparency = sp_data1_cache[11: 8];
+//assign sp__palreserved1    = sp_data1_cache[ 7: 7];
+assign sp_pal_mode         = sp_data1_cache[ 6: 6];
+assign sp_pal_bank         = sp_data1_cache[ 5: 4];
+assign sp_pal_no           = sp_data1_cache[ 3: 0];
 
-assign sp_affine = {sp_affine0_cache[layer], sp_affine1_cache[layer], sp_affine2_cache[layer]};
+assign sp_affine = {sp_affine0_cache, sp_affine1_cache, sp_affine2_cache};
 
 always_ff @(posedge clk) begin
   if (~rst_n) begin
-    layer <= 0;
     x <= 0;
+    pipeline_done = 0;
   end
   else begin
     if (pipeline_enable) begin
-      layer <= (layer < 4-1) ? layer + 1 : 0;
-      if (layer == 4-1) begin
-        x <= (x < SCREEN_W-1) ? x + 1 : 0;
+      if (x < tw-1) begin
+        x <= x + 1;
+      end else begin
+        pipeline_done = 1;
       end
     end
     else begin
-      layer <= 0;
       x <= 0;
+      pipeline_done = 0;
     end
   end
 end
@@ -281,7 +336,9 @@ vpu_sp_pipeline0_affine_transform sp_pipe0(
   th
 );
 
+reg       sp_enable_p02;
 reg [1:0] layer_p02;
+reg [8:0] x_p02;
 reg [8:0] objx_p02;
 reg [7:0] objy_p02;
 reg [7:0] tw_p02;
@@ -291,7 +348,9 @@ reg [0:0] pal_mode_p02;
 reg [1:0] pal_bank_p02;
 reg [3:0] pal_no_p02;
 always_ff @(posedge clk) begin
-  layer_p02 <= layer;
+  sp_enable_p02 <= sp_enable;
+  layer_p02 <= sp_layer;
+  x_p02 <= x;
   objx_p02 <= objx;
   objy_p02 <= objy;
   tw_p02 <= tw;
@@ -316,20 +375,28 @@ vpu_sp_pipeline2_tile_load sp_pipe2 (
   pal_idx
 );
 
+reg       sp_enable_p23;
 reg [1:0] layer_p23;
+reg [8:0] x_p23;
+reg [8:0] objx_p23;
+reg [7:0] tw_p23;
 reg [7:0] pal_idx_p23;
 reg [0:0] pal_mode_p23;
 reg [1:0] pal_bank_p23;
 reg [3:0] pal_no_p23;
 always_ff @(posedge clk) begin
+  sp_enable_p23 <= sp_enable_p02;
   layer_p23 <= layer_p02;
+  x_p23 <= x_p02;
+  objx_p23 <= objx_p02;
+  tw_p23 <= tw_p02;
   pal_mode_p23 <= pal_mode_p02;
   pal_bank_p23 <= pal_bank_p02;
   pal_no_p23 <= pal_no_p02;
   pal_idx_p23 <= pal_idx;
 end
 
-wire [31:0] color_n[4];
+wire [31:0] color_n;
 vpu_sp_pipeline3_palette_load  sp_pipe3 (
   clk,
   rst_n,
@@ -344,10 +411,18 @@ vpu_sp_pipeline3_palette_load  sp_pipe3 (
   color_n
 );
 
+reg       sp_enable_p34;
 reg [1:0] layer_p34;
-reg [31:0] color_n_p34[4];
+reg [8:0] x_p34;
+reg [8:0] objx_p34;
+reg [7:0] tw_p34;
+reg [31:0] color_n_p34;
 always_ff @(posedge clk) begin
+  sp_enable_p34 <= sp_enable_p23;
   layer_p34 <= layer_p23;
+  x_p34 <= x_p23;
+  objx_p34 <= objx_p23;
+  tw_p34 <= tw_p23;
   color_n_p34 <= color_n;
 end
 
@@ -356,14 +431,22 @@ reg done;
 vpu_sp_pipeline4_color_merge sp_pipe4 (
   clk,
   rst_n,
+  sp_enable_p34,
   layer_p34,
+  x_p34,
+  y,
+  tw_p34,
   color_n_p34,
-  color_out,
+  line_web,
+  line_bankb,
+  line_addrb,
+  line_dinb,
+  line_doutb,
   done
 );
 
-assign color = color_out;
-assign dummy = 1;
+assign color = line_doutb;
+// assign pipeline_done = done;
 
 endmodule
 
@@ -388,26 +471,9 @@ module vpu_sp_pipeline0_affine_transform
   output reg  [ 7:0] th
 );
 
-function logic [7:0] get_tw(input [2:0] tilesize);
-   case(tilesize)
-     2'b00 : get_tw = 16'd8;
-     2'b01 : get_tw = 16'd16;
-     2'b10 : get_tw = 16'd32;
-     2'b11 : get_tw = 16'd64;
-   endcase
-endfunction
-function logic [7:0] get_th(input [2:0] tilesize);
-   case(tilesize)
-     2'b00 : get_th = 16'd8;
-     2'b01 : get_th = 16'd16;
-     2'b10 : get_th = 16'd32;
-     2'b11 : get_th = 16'd64;
-   endcase
-endfunction
-
 always_comb begin
-  objx = xin - sp_x;
-  objy = yin - sp_y;
+  objx = xin + sp_x;
+  objy = yin + sp_y;
   tw = get_tw(sp_tilesize);
   th = get_th(sp_tilesize);
   // [TODO] affine transform
@@ -476,7 +542,7 @@ module vpu_sp_pipeline3_palette_load
   output wire        pal_en,
   output reg  [PAL_ADDR_W-1:0] pal_addr,
   input  reg  [PAL_DATA_W-1:0] pal_data,
-  output reg  [31:0] color_n[4]
+  output reg  [31:0] color_n
 );
 
 //always_comb begin
@@ -487,7 +553,7 @@ always_ff @(posedge clk) begin
   else begin
     pal_addr <= {pal_bank, pal_idx & 8'h0F + pal_no * 16};
   end
-  color_n[layer] <= pal_data;
+  color_n <= pal_data;
 end
 
 assign pal_en = 1;
@@ -500,18 +566,26 @@ module vpu_sp_pipeline4_color_merge
 (
   input  wire        clk,
   input  wire        rst_n,
+  input  wire        sp_enable,
   input  wire [ 1:0] layer,
-  input  wire [31:0] color_n[4],
-  output reg  [31:0] color_out,
+  input  wire [ 8:0] x,
+  input  wire [ 7:0] y,
+  input  wire [ 7:0] tw,
+  input  wire [31:0] color_n,
+  output wire [LINEBUFF_BANK_W-1:0] line_web,
+  output wire [LINEBUFF_BANK_W-1:0] line_bankb,
+  output wire [LINEBUFF_ADDR_W-1:0] line_addrb,
+  output reg  [LINEBUFF_DATA_W-1:0] line_dinb,
+  input  wire [LINEBUFF_DATA_W-1:0] line_doutb,
   output reg         done
 );
 
-function logic [31:0] color_merge(logic [31:0] cols[4]);
-  logic [31:0] dst = 0;
+function logic [31:0] color_merge(logic [31:0] col_buf, logic [31:0] col_n);
+  logic [31:0] dst = col_buf;
   logic [31:0] src;
   logic [ 7:0] src_a;
-  for (int i=0; i<4; i++) begin
-    src = cols[i];
+  // for (int i=0; i<4; i++) begin
+    src = col_n;
     src_a = src >> 24;
     if (src_a == 0) begin
       dst = dst;
@@ -525,17 +599,25 @@ function logic [31:0] color_merge(logic [31:0] cols[4]);
       dst[23:16] = ((dst[23:16] * (255 - src_a) + src[23:16] * src_a) / 256);
       dst[31:24] = (dst[31:24] + src[31:24]) / 2;
      end
-  end
+  // end
   return dst;
 endfunction
 
-//always_comb begin
+assign line_web = sp_enable;
+assign line_bankb = y & 1'b1;
+assign line_addrb = x;
+
 always_ff @(posedge clk) begin
-  if (layer == 3) begin
-    color_out <= color_merge(color_n);
-    done <= 1;
+  if (sp_enable) begin
+    line_dinb <= color_merge(line_doutb, color_n);
+    if (x == tw-1) begin
+      done <= 1;
+    end else begin
+      done <= 0;
+    end
   end
   else begin
+    // line_dinb <= line_doutb;
     done <= 0;
   end
 end

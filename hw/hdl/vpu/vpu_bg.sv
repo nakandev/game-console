@@ -23,7 +23,10 @@ module vpu_bg
   output wire [PAL_ADDR_W-1:0]  pal_addr,
   input  wire [PAL_DATA_W-1:0]  pal_dout,
 
-  input  wire [31:0]            sp_linebuffer[320],
+  output wire [LINEBUFF_BANK_W-1:0] line_wea,
+  output wire [LINEBUFF_ADDR_W-1:0] line_addra,
+  output reg  [LINEBUFF_DATA_W-1:0] line_dina,
+  input  wire [LINEBUFF_DATA_W-1:0] line_douta,
 
   output wire                   bg_param,
   output wire                   dot_clk,
@@ -56,13 +59,13 @@ enum {
 } state;
 
 assign x = line_cycle / 4;
-assign bg_param = state == STATE_PARAM;
 
 assign state = line_cycle < LINE_CYCLE_PARAM   ? STATE_PARAM :
                line_cycle < LINE_CYCLE_VISIBLE ? STATE_PIPELINE :
                STATE_WAITSYNC;
 
 assign parameter_enable = (state == STATE_PARAM);
+assign bg_param = parameter_enable;
 vpu_bg_parameter_load vpu_bg_parameter_load (
   clk,
   rst_n,
@@ -99,6 +102,10 @@ vpu_bg_pipeline vpu_bg_pipeline (
   pal_en,
   pal_addr,
   pal_dout,
+  line_wea,
+  line_addra,
+  line_dina,
+  line_douta,
   color,
   dummy
 );
@@ -147,18 +154,21 @@ always_ff @(posedge clk) begin
 end
 
 always_comb begin
-   case(offset_prev)
-   0: bg_data0_cache[layer] = bg_dout;
-   1: bg_data1_cache[layer] = bg_dout;
-   2: bg_affine0_cache[layer] = bg_dout;
-   3: bg_affine1_cache[layer] = bg_dout;
-   4: bg_affine2_cache[layer] = bg_dout;
-   default: ;
-   endcase
+  if (parameter_enable) begin
+    case(offset_prev)
+    0: bg_data0_cache[layer] = bg_dout;
+    1: bg_data1_cache[layer] = bg_dout;
+    2: bg_affine0_cache[layer] = bg_dout;
+    3: bg_affine1_cache[layer] = bg_dout;
+    4: bg_affine2_cache[layer] = bg_dout;
+    default: ;
+    endcase
+  end
 end
 
 assign bg_addr = SPRITE_RAM_BG_BASE + (layer * PARAM_SIZE) + offset;
 assign bg_en = parameter_enable;
+// assign bg_en = 1;
 
 endmodule
 
@@ -184,6 +194,10 @@ module vpu_bg_pipeline
   output wire                 pal_en,
   output wire [PAL_ADDR_W-1:0]  pal_addr,
   input  wire [PAL_DATA_W-1:0]  pal_data,
+  output wire [LINEBUFF_BANK_W-1:0] line_wea,
+  output wire [LINEBUFF_ADDR_W-1:0] line_addra,
+  output reg  [LINEBUFF_DATA_W-1:0] line_dina,
+  input  wire [LINEBUFF_DATA_W-1:0] line_douta,
   output wire [31:0] color,
   output wire        dummy
 );
@@ -279,6 +293,7 @@ vpu_bg_pipeline0_affine_transform bg_pipe0(
   th
 );
 
+reg [8:0] x_p01;
 reg [1:0] layer_p01;
 reg [8:0] objx_p01;
 reg [7:0] objy_p01;
@@ -289,6 +304,7 @@ reg [0:0] pal_mode_p01;
 reg [1:0] pal_bank_p01;
 reg [3:0] pal_no_p01;
 always_ff @(posedge clk) begin
+  x_p01 <= x;
   layer_p01 <= layer;
   objx_p01 <= objx;
   objy_p01 <= objy;
@@ -319,6 +335,7 @@ vpu_bg_pipeline1_map_load bg_pipe1 (
   tile_idx
 );
 
+reg [8:0] x_p12;
 reg [1:0] layer_p12;
 reg [8:0] objx_p12;
 reg [7:0] objy_p12;
@@ -327,6 +344,7 @@ reg [0:0] pal_mode_p12;
 reg [1:0] pal_bank_p12;
 reg [3:0] pal_no_p12;
 always_ff @(posedge clk) begin
+  x_p12 <= x_p01;
   layer_p12 <= layer_p01;
   objx_p12 <= objx_p01;
   objy_p12 <= objy_p01;
@@ -349,12 +367,14 @@ vpu_bg_pipeline2_tile_load bg_pipe2 (
   pal_idx
 );
 
+reg [8:0] x_p23;
 reg [1:0] layer_p23;
 reg [7:0] pal_idx_p23;
 reg [0:0] pal_mode_p23;
 reg [1:0] pal_bank_p23;
 reg [3:0] pal_no_p23;
 always_ff @(posedge clk) begin
+  x_p23 <= x_p12;
   layer_p23 <= layer_p12;
   pal_mode_p23 <= pal_mode_p12;
   pal_bank_p23 <= pal_bank_p12;
@@ -377,9 +397,11 @@ vpu_bg_pipeline3_palette_load  bg_pipe3 (
   color_n
 );
 
+reg [8:0] x_p34;
 reg [1:0] layer_p34;
 reg [31:0] color_n_p34[4];
 always_ff @(posedge clk) begin
+  x_p34 <= x_p23;
   layer_p34 <= layer_p23;
   color_n_p34 <= color_n;
 end
@@ -389,8 +411,13 @@ reg done;
 vpu_bg_pipeline4_color_merge bg_pipe4 (
   clk,
   rst_n,
+  x_p34,
   layer_p34,
   color_n_p34,
+  line_wea,
+  line_addra,
+  line_dina,
+  line_douta,
   color_out,
   done
 );
@@ -564,17 +591,22 @@ module vpu_bg_pipeline4_color_merge
 (
   input  wire        clk,
   input  wire        rst_n,
+  input  wire [ 8:0] x,
   input  wire [ 1:0] layer,
   input  wire [31:0] color_n[4],
+  output wire [LINEBUFF_BANK_W-1:0] line_wea,
+  output wire [LINEBUFF_ADDR_W-1:0] line_addra,
+  output reg  [LINEBUFF_DATA_W-1:0] line_dina,
+  input  wire [LINEBUFF_DATA_W-1:0] line_douta,
   output reg  [31:0] color_out,
   output reg         done
 );
 
-function logic [31:0] color_merge(logic [31:0] cols[4]);
+function logic [31:0] color_merge(logic [31:0] cols[5]);
   logic [31:0] dst = 0;
   logic [31:0] src;
   logic [ 7:0] src_a;
-  for (int i=0; i<4; i++) begin
+  for (int i=0; i<5; i++) begin
     src = cols[i];
     src_a = src >> 24;
     if (src_a == 0) begin
@@ -593,10 +625,24 @@ function logic [31:0] color_merge(logic [31:0] cols[4]);
   return dst;
 endfunction
 
+// assign line_wea = (layer == 3);
+assign line_wea = 0;
+assign line_addra = x;
+assign line_dina = 0;
+
+reg [31:0] colors[5];
+assign colors[0] = color_n[0];
+assign colors[1] = color_n[1];
+assign colors[2] = color_n[2];
+assign colors[3] = color_n[3];
+// assign colors[4] = line_douta;
+assign colors[4] = {line_douta, 16'h0, line_douta};
+
 //always_comb begin
 always_ff @(posedge clk) begin
   if (layer == 3) begin
-    color_out <= color_merge(color_n);
+    color_out <= color_merge(colors);
+    // color_out <= colors[4];
     done <= 1;
   end
   else begin

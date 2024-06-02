@@ -38,11 +38,22 @@ module vpu_core
   output wire                   vsync
 );
 
+wire                       line_init;
+wire [LINEBUFF_BANK_W-1:0] line_banka;
+wire                       line_wea;
+wire [LINEBUFF_ADDR_W-1:0] line_addra;
+wire [LINEBUFF_DATA_W-1:0] line_dina;
+wire [LINEBUFF_DATA_W-1:0] line_douta;
+wire                       line_web;
+wire [LINEBUFF_BANK_W-1:0] line_bankb;
+wire [LINEBUFF_ADDR_W-1:0] line_addrb;
+wire [LINEBUFF_DATA_W-1:0] line_dinb;
+wire [LINEBUFF_DATA_W-1:0] line_doutb;
+
 localparam HMAX = SCREEN_W + SCREEN_HBLANK;
 localparam LMAX = HMAX * 4;
 localparam VMAX = SCREEN_H + SCREEN_VBLANK;
 
-wire [31:0] sp_linebuffer[320];
 reg [8:0]  y = 0;
 reg [10:0] line_cycle = 0;
 
@@ -91,7 +102,10 @@ vpu_bg vpu_bg
   .pal_addr   (bg_pal_addr),
   .pal_dout   (bg_pal_dout),
 
-  .sp_linebuffer(sp_linebuffer),
+  .line_wea   (line_wea),
+  .line_addra (line_addra),
+  .line_dina  (line_dina ),
+  .line_douta (line_douta),
 
   .dot_clk    (dot_clk),
   .color      (color),
@@ -99,10 +113,6 @@ vpu_bg vpu_bg
   .vsync      (vsync)
 );
 
-reg         sp_dot_clk;
-reg  [31:0] sp_color;
-reg         sp_hsync;
-reg         sp_vsync;
 vpu_sp vpu_sp
 (
   .clk        (clk),
@@ -111,19 +121,123 @@ vpu_sp vpu_sp
   .line_cycle (line_cycle),
   .y          (y),
 
-  .param_en   (sp_param_en),
+  .param_en   (sp_param_en  ),
   .param_addr (sp_param_addr),
   .param_dout (sp_param_dout),
 
-  .tile_en    (sp_tile_en),
+  .tile_en    (sp_tile_en  ),
   .tile_addr  (sp_tile_addr),
   .tile_dout  (sp_tile_dout),
 
-  .pal_en     (sp_pal_en),
+  .pal_en     (sp_pal_en  ),
   .pal_addr   (sp_pal_addr),
   .pal_dout   (sp_pal_dout),
 
-  .sp_linebuffer(sp_linebuffer)
+  .line_init  (line_init),
+  .line_web   (line_web),
+  .line_bankb (line_bankb),
+  .line_addrb (line_addrb),
+  .line_dinb  (line_dinb ),
+  .line_doutb (line_doutb)
 );
+
+vpu_linebuffer vpu_linebuffer
+(
+  .clk   (clk),
+  .rst_n (rst_n),
+
+  .init  (line_init ),
+  // .banka (line_banka),
+  .wea   (line_wea  ),
+  .addra (line_addra),
+  .dina  (line_dina ),
+  .douta (line_douta),
+  .web   (line_web  ),
+  .bankb (line_bankb),
+  .addrb (line_addrb),
+  .dinb  (line_dinb ),
+  .doutb (line_doutb)
+);
+
+endmodule
+
+module vpu_linebuffer
+  import gameconsole_pkg::*;
+(
+  input  wire        clk,
+  input  wire        rst_n,
+
+  input  wire                       init,
+  // input  wire [LINEBUFF_BANK_W-1:0] banka,
+  input  wire                       wea,
+  input  wire [LINEBUFF_ADDR_W-1:0] addra,
+  input  wire [LINEBUFF_DATA_W-1:0] dina,
+  output reg  [LINEBUFF_DATA_W-1:0] douta,
+  input  wire                       web,
+  input  wire [LINEBUFF_BANK_W-1:0] bankb,
+  input  wire [LINEBUFF_ADDR_W-1:0] addrb,
+  input  wire [LINEBUFF_DATA_W-1:0] dinb,
+  output reg  [LINEBUFF_DATA_W-1:0] doutb
+);
+
+wire [0:0] banka;
+reg [LINEBUFF_DATA_W-1:0] linebuffer0[SCREEN_W];
+reg [LINEBUFF_DATA_W-1:0] linebuffer1[SCREEN_W];
+reg lstate = 0;
+
+assign banka = ~bankb;
+
+always @(posedge clk) begin
+  if (~rst_n) begin
+    lstate <= 0;
+    douta <= 0;
+    doutb <= 0;
+    for (int i=0; i<SCREEN_W; i++) begin
+      linebuffer0[i] = 0;
+      linebuffer1[i] = 0;
+    end
+  end else begin
+    if (lstate == 0) begin
+      if (init) begin
+        for (int i=0; i<SCREEN_W; i++) begin
+          if (bankb) begin
+            linebuffer1[i] = 0;
+          end else begin
+            linebuffer0[i] = 0;
+          end
+        end
+        lstate <= 1;
+      end
+    end
+    else begin
+      if (addrb < SCREEN_W) begin
+        if (bankb) begin
+          doutb <= linebuffer1[addrb];
+          if (web) begin
+            linebuffer1[addrb] <= dinb;
+          end
+        end else begin
+          doutb <= linebuffer0[addrb];
+          if (web) begin
+            linebuffer0[addrb] <= dinb;
+          end
+        end
+      end
+      if (addra < SCREEN_W) begin
+        if (banka) begin
+          douta <= linebuffer1[addra];
+          // if (wea) begin
+          //   linebuffer1[addra] <= dina;
+          // end
+        end else begin
+          douta <= linebuffer0[addra];
+          // if (wea) begin
+          //   linebuffer0[addra] <= dina;
+          // end
+        end
+      end
+    end
+  end
+end
 
 endmodule

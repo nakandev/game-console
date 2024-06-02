@@ -8,11 +8,13 @@ parameter BG_ADDR_W     =  10;
 parameter BG_DATA_W     =  32;
 parameter SP_ADDR_W     =  10;
 parameter SP_DATA_W     =  32;
-parameter MAP_BANK_W    =   4;
+// parameter MAP_BANK_W    =   4;
+parameter MAP_BANK_W    =   1;  // debug
 parameter MAP_INDX_W    =  12;
 parameter MAP_ADDR_W    = MAP_BANK_W + MAP_INDX_W;
 parameter MAP_DATA_W    =  16;
-parameter TILE_BANK_W   =   4;
+// parameter TILE_BANK_W   =   4;
+parameter TILE_BANK_W   =   1;  // debug
 parameter TILE_INDX_W   =  16;
 parameter TILE_ADDR_W   = TILE_BANK_W + TILE_INDX_W;
 parameter TILE_DATA_W   =   8;
@@ -20,5 +22,9 @@ parameter PAL_BANK_W    =   2;
 parameter PAL_INDX_W    =   8;
 parameter PAL_ADDR_W    = PAL_BANK_W + PAL_INDX_W;
 parameter PAL_DATA_W    =  32;
+parameter LINEBUFF_BANK_W = 2;
+parameter LINEBUFF_ADDR_W = 9;  // 0..(320)..511
+// parameter LINEBUFF_DATA_W = 32;
+parameter LINEBUFF_DATA_W = 8;  // debug
 
 endpackage

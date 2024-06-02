@@ -63,8 +63,7 @@ end
 
 always_ff @(posedge clk) begin
   if ((init_state == INIT_BEGIN    && init_count == 100-1)
-    // ||(init_state == INIT_PARAM_SP && init_count == 128*5-1)
-    ||(init_state == INIT_PARAM_SP && init_count == 2*5-1)
+    ||(init_state == INIT_PARAM_SP && init_count == 128*5-1)
     ||(init_state == INIT_PARAM_BG && init_count == 4*5-1)
     ||(init_state == INIT_MAP      && init_count == 2048-1)
     ||(init_state == INIT_TILE     && init_count == 256*64-1)
@@ -83,7 +82,11 @@ always_ff @(posedge clk) begin
     init_en <= 1;
     init_we <= 1;
     init_addr <= 32'h0600_0000 + init_count;
-    init_data <= (1'b1 << 31) | ((10*(init_count/5+1)) << 8) | ((10*(init_count/5+1)) << 0);
+    if (init_count inside {0, 5}) begin
+      init_data <= (1'b1 << 31) | ((10*(init_count/5+1)) << 8) | ((10*(init_count/5+1)) << 0);
+    end else begin
+      init_data <= 0;
+    end
     // case (init_count % 5)
     //   0: init_data <= (1'b1 << 31);
     //   1: init_data <= 0;

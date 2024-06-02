@@ -1,6 +1,6 @@
 export HDL_ROOT = /home/nyalry/nakan/dev/hobby/game-console/hw/hdl
 export SCRIPT_DIR = ${HDL_ROOT}/script
-export MAXJOBS = 2
+export MAXJOBS = 4
 export BOARD_PART1 = xc7a35ticsg324-1L
 export BOARD_PART2 = digilentinc.com:arty-a7-35:part0:1.1
 export PROJ_NAME = nirvana_arty
