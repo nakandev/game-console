@@ -140,7 +140,11 @@ reg [2:0] offset;
 reg [2:0] offset_prev;
 
 always_ff @(posedge clk) begin
-  if (~(rst_n & parameter_enable)) begin
+  if (~rst_n) begin
+    layer <= 0;
+    offset <= 0;
+  end
+  else if (~parameter_enable) begin
     layer <= 0;
     offset <= 0;
   end
@@ -156,11 +160,11 @@ end
 always_comb begin
   if (parameter_enable) begin
     case(offset_prev)
-    0: bg_data0_cache[layer] = bg_dout;
-    1: bg_data1_cache[layer] = bg_dout;
-    2: bg_affine0_cache[layer] = bg_dout;
-    3: bg_affine1_cache[layer] = bg_dout;
-    4: bg_affine2_cache[layer] = bg_dout;
+      0: bg_data0_cache  [layer] = bg_dout;
+      1: bg_data1_cache  [layer] = bg_dout;
+      2: bg_affine0_cache[layer] = bg_dout;
+      3: bg_affine1_cache[layer] = bg_dout;
+      4: bg_affine2_cache[layer] = bg_dout;
     default: ;
     endcase
   end
@@ -216,7 +220,7 @@ wire [ 0: 0]/*[23:23]*/ bg_mode;
 wire [ 8: 0]/*[16: 8]*/ bg_x;
 wire [ 7: 0]/*[ 7: 0]*/ bg_y;
 
-wire [ 3: 0]/*[31:28]*/ bg_bank;
+wire [ 3: 0]/*[31:28]*/ bg_tile_bank;
 wire [ 3: 0]/*[27:24]*/ bg_map_bank;
 //wire [ 7: 0]/*[23:16]*/ bg__tilereserved;
 //wire [ 3: 0]/*[15:12]*/ bg__palreserved0;
@@ -238,7 +242,7 @@ assign bg_mode     = bg_data0_cache[layer][23:23];
 assign bg_x        = bg_data0_cache[layer][16: 8];
 assign bg_y        = bg_data0_cache[layer][ 7: 0];
 
-assign bg_bank             = bg_data1_cache[layer][31:28];
+assign bg_tile_bank        = bg_data1_cache[layer][31:28];
 assign bg_map_bank         = bg_data1_cache[layer][27:24];
 //assign bg__tilereserved    = bg_data1_cache[layer][23:16];
 //assign bg__palreserved0    = bg_data1_cache[layer][15:12];
@@ -299,17 +303,23 @@ reg [8:0] objx_p01;
 reg [7:0] objy_p01;
 reg [7:0] tw_p01;
 reg [7:0] th_p01;
+reg [3:0] tile_bank_p01;
 reg [3:0] map_bank_p01;
 reg [0:0] pal_mode_p01;
 reg [1:0] pal_bank_p01;
 reg [3:0] pal_no_p01;
+assign objx_p01 = objx;
+assign objy_p01 = objy;
+assign tw_p01 = tw;
+assign th_p01 = th;
 always_ff @(posedge clk) begin
   x_p01 <= x;
   layer_p01 <= layer;
-  objx_p01 <= objx;
-  objy_p01 <= objy;
-  tw_p01 <= tw;
-  th_p01 <= th;
+  // objx_p01 <= objx;
+  // objy_p01 <= objy;
+  // tw_p01 <= tw;
+  // th_p01 <= th;
+  tile_bank_p01 <= bg_tile_bank;
   map_bank_p01 <= bg_map_bank;
   pal_mode_p01 <= bg_pal_mode;
   pal_bank_p01 <= bg_pal_bank;
@@ -339,7 +349,8 @@ reg [8:0] x_p12;
 reg [1:0] layer_p12;
 reg [8:0] objx_p12;
 reg [7:0] objy_p12;
-reg [15:0] tile_idx_p12;
+reg [3:0] tile_bank_p12;
+// reg [15:0] tile_idx_p12;
 reg [0:0] pal_mode_p12;
 reg [1:0] pal_bank_p12;
 reg [3:0] pal_no_p12;
@@ -348,7 +359,8 @@ always_ff @(posedge clk) begin
   layer_p12 <= layer_p01;
   objx_p12 <= objx_p01;
   objy_p12 <= objy_p01;
-  tile_idx_p12 <= tile_idx;
+  tile_bank_p12 <= tile_bank_p01;
+  // tile_idx_p12 <= tile_idx;
   pal_mode_p12 <= pal_mode_p01;
   pal_bank_p12 <= pal_bank_p01;
   pal_no_p12 <= pal_no_p01;
@@ -360,7 +372,8 @@ vpu_bg_pipeline2_tile_load bg_pipe2 (
   rst_n,
   objx_p12,
   objy_p12,
-  tile_idx_p12,
+  tile_bank_p12,
+  tile_idx,
   tile_en,
   tile_addr,
   tile_data,
@@ -373,13 +386,14 @@ reg [7:0] pal_idx_p23;
 reg [0:0] pal_mode_p23;
 reg [1:0] pal_bank_p23;
 reg [3:0] pal_no_p23;
+assign pal_idx_p23 = pal_idx;
 always_ff @(posedge clk) begin
   x_p23 <= x_p12;
   layer_p23 <= layer_p12;
   pal_mode_p23 <= pal_mode_p12;
   pal_bank_p23 <= pal_bank_p12;
   pal_no_p23 <= pal_no_p12;
-  pal_idx_p23 <= pal_idx;
+  // pal_idx_p23 <= pal_idx;
 end
 
 wire [31:0] color_n[4];
@@ -400,10 +414,11 @@ vpu_bg_pipeline3_palette_load  bg_pipe3 (
 reg [8:0] x_p34;
 reg [1:0] layer_p34;
 reg [31:0] color_n_p34[4];
+assign color_n_p34 = color_n;
 always_ff @(posedge clk) begin
   x_p34 <= x_p23;
   layer_p34 <= layer_p23;
-  color_n_p34 <= color_n;
+  // color_n_p34 <= color_n;
 end
 
 reg [31:0] color_out;
@@ -448,31 +463,35 @@ module vpu_bg_pipeline0_affine_transform
   output reg  [ 7:0] th
 );
 
+reg [8:0] lobjx;
+reg [7:0] lobjy;
+
 function logic [7:0] get_tw(input [2:0] tilesize);
    case(tilesize)
-     2'b00 : get_tw = 16'd8;
-     2'b01 : get_tw = 16'd16;
-     2'b10 : get_tw = 16'd32;
-     2'b11 : get_tw = 16'd64;
+     2'b00 : get_tw = 8'd8;
+     2'b01 : get_tw = 8'd16;
+     2'b10 : get_tw = 8'd32;
+     2'b11 : get_tw = 8'd64;
    endcase
 endfunction
 function logic [7:0] get_th(input [2:0] tilesize);
    case(tilesize)
-     2'b00 : get_th = 16'd8;
-     2'b01 : get_th = 16'd16;
-     2'b10 : get_th = 16'd32;
-     2'b11 : get_th = 16'd64;
+     2'b00 : get_th = 8'd8;
+     2'b01 : get_th = 8'd16;
+     2'b10 : get_th = 8'd32;
+     2'b11 : get_th = 8'd64;
    endcase
 endfunction
 
-always_comb begin
-  objx = xin - bg_x;
-  objy = yin - bg_y;
-  tw = get_tw(bg_tilesize);
-  th = get_th(bg_tilesize);
+// always_comb begin
+always_ff @(posedge clk) begin
+  objx <= xin - bg_x;
+  objy <= yin - bg_y;
+  tw   <= get_tw(bg_tilesize);
+  th   <= get_th(bg_tilesize);
   // [TODO] affine transform
-  if (bg_afen) begin
-  end
+  // if (bg_afen) begin
+  // end
 end
 
 endmodule
@@ -527,6 +546,7 @@ module vpu_bg_pipeline2_tile_load
   input  wire        rst_n,
   input  wire [ 8:0] objx,
   input  wire [ 7:0] objy,
+  input  wire [TILE_BANK_W-1:0] tile_bank,
   input  wire [TILE_INDX_W-1:0] tile_idx,
   output wire        tile_en,
   output reg  [TILE_ADDR_W-1:0] tile_addr,
@@ -541,11 +561,13 @@ localparam HW_TILEMAP_H = 512;
 
 shortint tilex;
 shortint tiley;
+reg  [TILE_INDX_W-1:0] tile_addr_lo;
 
 always_comb begin
   tilex = (objx & (HW_TILEMAP_W-1)) & (HW_TILE_W-1);
   tiley = (objy & (HW_TILEMAP_H-1)) & (HW_TILE_H-1);
-  tile_addr = (tile_idx * HW_TILE_W * HW_TILE_H) + (tiley * HW_TILE_W) + tilex;
+  tile_addr_lo = ((tile_idx * HW_TILE_W * HW_TILE_H) + (tiley * HW_TILE_W) + tilex);
+  tile_addr = {tile_bank, tile_addr_lo};
 end
 
 assign tile_en = 1;
@@ -570,18 +592,22 @@ module vpu_bg_pipeline3_palette_load
   output reg  [31:0] color_n[4]
 );
 
-//always_comb begin
+reg [1:0] layer_prev = 0;
+
+assign pal_addr = (pal_mode == 0) ? {pal_bank, pal_idx} : {pal_bank, pal_idx & 8'h0F + pal_no * 16};
+
 always_ff @(posedge clk) begin
-  if (pal_mode == 0) begin
-    pal_addr <= {pal_bank, pal_idx};
-  end
-  else begin
-    pal_addr <= {pal_bank, pal_idx & 8'h0F + pal_no * 16};
-  end
-  color_n[layer] <= pal_data;
+  layer_prev <= layer;
 end
 
 assign pal_en = 1;
+// assign color_n[0] = (layer_prev == 0) ? pal_data : color_n[0];
+// assign color_n[1] = (layer_prev == 1) ? pal_data : color_n[1];
+// assign color_n[2] = (layer_prev == 2) ? pal_data : color_n[2];
+// assign color_n[3] = (layer_prev == 3) ? pal_data : color_n[3];
+always_comb begin
+  color_n[layer_prev] = pal_data;
+end
 
 endmodule
 
@@ -594,7 +620,7 @@ module vpu_bg_pipeline4_color_merge
   input  wire [ 8:0] x,
   input  wire [ 1:0] layer,
   input  wire [31:0] color_n[4],
-  output wire [LINEBUFF_BANK_W-1:0] line_wea,
+  output reg  [LINEBUFF_BANK_W-1:0] line_wea,
   output wire [LINEBUFF_ADDR_W-1:0] line_addra,
   output reg  [LINEBUFF_DATA_W-1:0] line_dina,
   input  wire [LINEBUFF_DATA_W-1:0] line_douta,
@@ -625,8 +651,8 @@ function logic [31:0] color_merge(logic [31:0] cols[5]);
   return dst;
 endfunction
 
-// assign line_wea = (layer == 3);
-assign line_wea = 0;
+assign done = (layer == 3);
+assign line_wea = (layer == 3);
 assign line_addra = x;
 assign line_dina = 0;
 
@@ -635,18 +661,20 @@ assign colors[0] = color_n[0];
 assign colors[1] = color_n[1];
 assign colors[2] = color_n[2];
 assign colors[3] = color_n[3];
-// assign colors[4] = line_douta;
 assign colors[4] = {line_douta, 16'h0, line_douta};
 
 //always_comb begin
 always_ff @(posedge clk) begin
+  if (layer == 0) begin
+  end
   if (layer == 3) begin
     color_out <= color_merge(colors);
-    // color_out <= colors[4];
-    done <= 1;
+    // line_wea <= 1;
+    // done <= 1;
   end
   else begin
-    done <= 0;
+    // line_wea <= 0;
+    // done <= 0;
   end
 end
 

@@ -3,6 +3,7 @@ typedef enum {
   STATE_PARAM,
   STATE_SPPARAM,
   STATE_SPPIPELINE,
+  STATE_SPIDLE,
   STATE_WAITSYNC
 } vpu_sp_state_t;
 
@@ -86,19 +87,46 @@ always_ff @(posedge clk) begin
     sp_idx <= 0;
   end
   else if (line_cycle < LINE_CYCLE_VISIBLE) begin
-    if (sp_cycle < LINE_CYCLE_SPPARAM) begin
+    if (state == STATE_PARAM) begin
       state <= STATE_SPPARAM;
-      sp_cycle <= sp_cycle + 1;
-      sp_idx <= 0;
-    end else begin
+      sp_cycle <= 0;
+      sp_idx <= sp_idx + 0;
+    end
+    else if (state == STATE_SPPARAM && sp_idx != 127 && parameter_done && sp_cycle == 1) begin
+      state <= STATE_SPPARAM;
+      sp_cycle <= 0;
+      sp_idx <= sp_idx + 1;
+    end
+    else if (state == STATE_SPPARAM && sp_idx != 127 && parameter_done && sp_cycle > 1) begin
       state <= STATE_SPPIPELINE;
-      if (!pipeline_done) begin
-        sp_cycle <= sp_cycle + 1;
-        sp_idx <= sp_idx;
-      end else begin
-        sp_cycle <= 0;
-        sp_idx <= sp_idx + 1;
-      end
+      sp_cycle <= sp_cycle + 1;
+    end
+    else if (state == STATE_SPPARAM && sp_idx == 127 && parameter_done) begin
+      state <= STATE_SPIDLE;
+      // sp_cycle <= 0;
+    end
+    else if (state == STATE_SPPARAM) begin
+      sp_cycle <= sp_cycle + 1;
+    end
+    else if (state == STATE_SPPIPELINE && sp_idx != 127 && pipeline_done) begin
+      state <= STATE_SPPARAM;
+      sp_cycle <= 0;
+      sp_idx <= sp_idx + 1;
+    end
+    else if (state == STATE_SPPIPELINE && sp_idx == 127 && pipeline_done) begin
+      state <= STATE_SPIDLE;
+      // sp_cycle <= 0;
+    end
+    else if (state == STATE_SPPIPELINE) begin
+      sp_cycle <= sp_cycle + 1;
+    end
+    else if (state == STATE_SPIDLE) begin
+    end
+    else begin
+      // unreachable
+      // state <= STATE_WAITSYNC;
+      // sp_cycle <= 0;
+      // sp_idx <= 0;
     end
   end
   else begin
@@ -113,6 +141,7 @@ vpu_sp_parameter_load vpu_sp_parameter_load (
   rst_n,
   parameter_enable,
   sp_idx,
+  y,
   param_en,
   param_addr,
   param_dout,
@@ -161,6 +190,7 @@ module vpu_sp_parameter_load
   input  wire        rst_n,
   input  wire        parameter_enable,
   input  wire [ 6:0] sp_idx,
+  input  wire [ 7:0] y,
   output wire        param_en,
   output wire [ 9:0] param_addr,
   input  wire [31:0] param_dout,
@@ -178,40 +208,48 @@ reg [2:0] offset;
 reg [2:0] offset_prev;
 
 always_ff @(posedge clk) begin
-  if (~(rst_n & parameter_enable)) begin
+  if (~rst_n) begin
     offset <= 0;
-    done <= 0;
+  end
+  else if (done) begin
+    offset <= 0;
+  end
+  else if (~parameter_enable) begin
+    offset <= 0;
   end
   else begin
     if (offset < PARAM_SIZE-1) begin
       offset <= offset +1;
-    end else begin
-      done <= 1;
     end
-    case(offset_prev)
-    0: sp_data0_cache   <= param_dout;
-    1: sp_data1_cache   <= param_dout;
-    2: sp_affine0_cache <= param_dout;
-    3: sp_affine1_cache <= param_dout;
-    4: sp_affine2_cache <= param_dout;
-    default: ;
-    endcase
   end
+
   offset_prev <= offset;
 end
 
-// always_comb begin
-//   if (parameter_enable) begin
-//     case(offset_prev)
-//     0: sp_data0_cache   = param_dout;
-//     1: sp_data1_cache   = param_dout;
-//     2: sp_affine0_cache = param_dout;
-//     3: sp_affine1_cache = param_dout;
-//     4: sp_affine2_cache = param_dout;
-//     default: ;
-//     endcase
-//   end
-// end
+always_comb begin
+  if (parameter_enable) begin
+    case(offset_prev)
+      0: sp_data0_cache   = param_dout;
+      1: sp_data1_cache   = param_dout;
+      2: sp_affine0_cache = param_dout;
+      3: sp_affine1_cache = param_dout;
+      4: sp_affine2_cache = param_dout;
+    endcase
+  end
+end
+
+assign done = (~rst_n) ? 0 :
+  (~area_in && offset == 1) ? 1 :
+  (area_in && offset == PARAM_SIZE-1) ? 1 : 0;
+  // (area_in) ? 0 : done;
+
+wire [ 0: 0]/*[31:31]*/ sp_enable;
+wire [ 1: 0]/*[25:24]*/ sp_tilesize;
+wire [ 7: 0]/*[ 7: 0]*/ sp_y;
+assign sp_enable   = sp_data0_cache[31:31];
+assign sp_tilesize = sp_data0_cache[25:24];
+assign sp_y        = sp_data0_cache[ 7: 0];
+assign area_in = (sp_enable && sp_y <= y && y < (sp_y + get_th(sp_tilesize)));
 
 assign param_addr = (sp_idx * PARAM_SIZE) + offset;
 assign param_en = parameter_enable;
@@ -244,7 +282,7 @@ module vpu_sp_pipeline
   output reg  [LINEBUFF_DATA_W-1:0] line_dinb,
   input  wire [LINEBUFF_DATA_W-1:0] line_doutb,
   output wire [31:0] color,
-  output reg         pipeline_done
+  output wire        pipeline_done
 );
 
 reg [1:0] layer;
@@ -292,32 +330,32 @@ assign sp_pal_no           = sp_data1_cache[ 3: 0];
 
 assign sp_affine = {sp_affine0_cache, sp_affine1_cache, sp_affine2_cache};
 
-always_ff @(posedge clk) begin
-  if (~rst_n) begin
-    x <= 0;
-    pipeline_done = 0;
-  end
-  else begin
-    if (pipeline_enable) begin
-      if (x < tw-1) begin
-        x <= x + 1;
-      end else begin
-        pipeline_done = 1;
-      end
-    end
-    else begin
-      x <= 0;
-      pipeline_done = 0;
-    end
-  end
-end
-
 reg [8:0] objx;
 reg [7:0] objy;
 reg [8:0] xbegin;
 reg [8:0] xend;
 reg [7:0] tw;
 reg [7:0] th;
+reg       area_in;
+
+always_ff @(posedge clk) begin
+  if (~rst_n) begin
+    objx <= 0;
+  end
+  else begin
+    if (pipeline_enable) begin
+      if (objx < tw-1) begin
+        objx <= objx + 1;
+      end else begin
+      end
+    end
+    else begin
+      objx <= 0;
+    end
+  end
+end
+// assign objy = y;
+
 vpu_sp_pipeline0_affine_transform sp_pipe0(
   clk,
   rst_n,
@@ -333,28 +371,40 @@ vpu_sp_pipeline0_affine_transform sp_pipe0(
   xbegin,
   xend,
   tw,
-  th
+  th,
+  area_in
 );
 
 reg       sp_enable_p02;
+reg       area_in_p02;
 reg [1:0] layer_p02;
 reg [8:0] x_p02;
+reg [7:0] y_p02;
 reg [8:0] objx_p02;
 reg [7:0] objy_p02;
 reg [7:0] tw_p02;
 reg [7:0] th_p02;
-reg [15:0] tile_idx_p02;
+reg [3:0]  tile_bank_p02;
+reg [11:0] tile_idx_p02;
 reg [0:0] pal_mode_p02;
 reg [1:0] pal_bank_p02;
 reg [3:0] pal_no_p02;
+assign area_in_p02 = area_in;
+assign x_p02 = x;
+assign objy_p02 = objy;
+assign tw_p02 = tw;
+assign th_p02 = th;
 always_ff @(posedge clk) begin
   sp_enable_p02 <= sp_enable;
+  // area_in_p02 <= area_in;
   layer_p02 <= sp_layer;
-  x_p02 <= x;
+  // x_p02 <= x;
+  y_p02 <= y;
   objx_p02 <= objx;
-  objy_p02 <= objy;
-  tw_p02 <= tw;
-  th_p02 <= th;
+  // objy_p02 <= objy;
+  // tw_p02 <= tw;
+  // th_p02 <= th;
+  tile_bank_p02 <= sp_tile_bank;
   tile_idx_p02 <= sp_tile_idx;
   pal_mode_p02 <= sp_pal_mode;
   pal_bank_p02 <= sp_pal_bank;
@@ -368,6 +418,7 @@ vpu_sp_pipeline2_tile_load sp_pipe2 (
   objx_p02,
   objy_p02,
   tw_p02,
+  tile_bank_p02,
   tile_idx_p02,
   tile_en,
   tile_addr,
@@ -376,6 +427,7 @@ vpu_sp_pipeline2_tile_load sp_pipe2 (
 );
 
 reg       sp_enable_p23;
+reg       area_in_p23;
 reg [1:0] layer_p23;
 reg [8:0] x_p23;
 reg [8:0] objx_p23;
@@ -384,8 +436,10 @@ reg [7:0] pal_idx_p23;
 reg [0:0] pal_mode_p23;
 reg [1:0] pal_bank_p23;
 reg [3:0] pal_no_p23;
+assign pal_idx_p23 = pal_idx;
 always_ff @(posedge clk) begin
   sp_enable_p23 <= sp_enable_p02;
+  area_in_p23 <= area_in_p02;
   layer_p23 <= layer_p02;
   x_p23 <= x_p02;
   objx_p23 <= objx_p02;
@@ -393,7 +447,7 @@ always_ff @(posedge clk) begin
   pal_mode_p23 <= pal_mode_p02;
   pal_bank_p23 <= pal_bank_p02;
   pal_no_p23 <= pal_no_p02;
-  pal_idx_p23 <= pal_idx;
+  // pal_idx_p23 <= pal_idx;
 end
 
 wire [31:0] color_n;
@@ -412,18 +466,21 @@ vpu_sp_pipeline3_palette_load  sp_pipe3 (
 );
 
 reg       sp_enable_p34;
+reg       area_in_p34;
 reg [1:0] layer_p34;
 reg [8:0] x_p34;
 reg [8:0] objx_p34;
 reg [7:0] tw_p34;
 reg [31:0] color_n_p34;
+assign color_n_p34 = color_n;
 always_ff @(posedge clk) begin
   sp_enable_p34 <= sp_enable_p23;
+  area_in_p34 <= area_in_p23;
   layer_p34 <= layer_p23;
   x_p34 <= x_p23;
   objx_p34 <= objx_p23;
   tw_p34 <= tw_p23;
-  color_n_p34 <= color_n;
+  // color_n_p34 <= color_n;
 end
 
 reg [31:0] color_out;
@@ -432,9 +489,11 @@ vpu_sp_pipeline4_color_merge sp_pipe4 (
   clk,
   rst_n,
   sp_enable_p34,
+  area_in_p34,
   layer_p34,
   x_p34,
   y,
+  objx_p34,
   tw_p34,
   color_n_p34,
   line_web,
@@ -445,8 +504,8 @@ vpu_sp_pipeline4_color_merge sp_pipe4 (
   done
 );
 
+assign pipeline_done = done;
 assign color = line_doutb;
-// assign pipeline_done = done;
 
 endmodule
 
@@ -456,29 +515,39 @@ module vpu_sp_pipeline0_affine_transform
 (
   input  wire        clk,
   input  wire        rst_n,
-  input  wire [ 8:0] xin,
+  output reg  [ 8:0] xout,
   input  wire [ 7:0] yin,
   input  wire [ 1:0] sp_tilesize,
   input  wire [ 8:0] sp_x,
   input  wire [ 7:0] sp_y,
   input  wire        sp_afen,
   input  wire [95:0] sp_affine,
-  output reg  [ 8:0] objx,
+  input  wire [ 8:0] objx,
   output reg  [ 7:0] objy,
   output reg  [ 8:0] xbegin,
   output reg  [ 8:0] xend,
   output reg  [ 7:0] tw,
-  output reg  [ 7:0] th
+  output reg  [ 7:0] th,
+  output reg         area_in
 );
 
+reg [8:0] lx = 0;
+
+always_ff @(posedge clk) begin
+  xout <= lx;
+  objy <= yin - sp_y;
+  tw <= get_tw(sp_tilesize);
+  th <= get_th(sp_tilesize);
+  area_in <= (0 <= lx && lx < SCREEN_W) && (sp_y <= yin && yin < (sp_y + get_tw(sp_tilesize)));
+end
+
 always_comb begin
-  objx = xin + sp_x;
-  objy = yin + sp_y;
-  tw = get_tw(sp_tilesize);
-  th = get_th(sp_tilesize);
+  lx = objx + sp_x;
+  xbegin = xout;
+  xend = xout + tw;
   // [TODO] affine transform
-  if (sp_afen) begin
-  end
+  // if (sp_afen) begin
+  // end
 end
 
 endmodule
@@ -492,6 +561,7 @@ module vpu_sp_pipeline2_tile_load
   input  wire [ 8:0] objx,
   input  wire [ 7:0] objy,
   input  wire [ 7:0] tw,
+  input  wire [TILE_BANK_W-1:0] sp_tile_bank,
   input  wire [TILE_INDX_W-1:0] sp_tile_idx,
   output wire        tile_en,
   output reg  [TILE_ADDR_W-1:0] tile_addr,
@@ -510,7 +580,8 @@ shortint tilex;
 shortint tiley;
 reg  [ 8:0] tx0;
 reg  [ 8:0] ty0;
-reg  [15:0] tile_idx;
+reg  [TILE_INDX_W-1:0] tile_idx;
+reg  [TILE_INDX_W-1:0] tile_addr_lo;
 
 always_comb begin
   tx0 = objx & (HW_TILEMAP_W-1);
@@ -520,7 +591,8 @@ always_comb begin
 
   tilex = (objx & (HW_TILEMAP_W-1)) & (HW_TILE_W-1);
   tiley = (objy & (HW_TILEMAP_H-1)) & (HW_TILE_H-1);
-  tile_addr = (tile_idx * HW_TILE_W * HW_TILE_H) + (tiley * HW_TILE_W) + tilex;
+  tile_addr_lo = ((tile_idx * HW_TILE_W * HW_TILE_H) + (tiley * HW_TILE_W) + tilex);
+  tile_addr = {sp_tile_bank, tile_addr_lo};
 end
 
 assign tile_en = 1;
@@ -545,17 +617,8 @@ module vpu_sp_pipeline3_palette_load
   output reg  [31:0] color_n
 );
 
-//always_comb begin
-always_ff @(posedge clk) begin
-  if (pal_mode == 0) begin
-    pal_addr <= {pal_bank, pal_idx};
-  end
-  else begin
-    pal_addr <= {pal_bank, pal_idx & 8'h0F + pal_no * 16};
-  end
-  color_n <= pal_data;
-end
-
+assign pal_addr = (pal_mode == 0) ? {pal_bank, pal_idx} : {pal_bank, pal_idx & 8'h0F + pal_no * 16};
+assign color_n = pal_data;
 assign pal_en = 1;
 
 endmodule
@@ -567,14 +630,16 @@ module vpu_sp_pipeline4_color_merge
   input  wire        clk,
   input  wire        rst_n,
   input  wire        sp_enable,
+  input  wire        area_in,
   input  wire [ 1:0] layer,
   input  wire [ 8:0] x,
   input  wire [ 7:0] y,
+  input  wire [ 8:0] objx,
   input  wire [ 7:0] tw,
   input  wire [31:0] color_n,
-  output wire [LINEBUFF_BANK_W-1:0] line_web,
+  output reg                        line_web,
   output wire [LINEBUFF_BANK_W-1:0] line_bankb,
-  output wire [LINEBUFF_ADDR_W-1:0] line_addrb,
+  output reg  [LINEBUFF_ADDR_W-1:0] line_addrb,
   output reg  [LINEBUFF_DATA_W-1:0] line_dinb,
   input  wire [LINEBUFF_DATA_W-1:0] line_doutb,
   output reg         done
@@ -603,23 +668,11 @@ function logic [31:0] color_merge(logic [31:0] col_buf, logic [31:0] col_n);
   return dst;
 endfunction
 
-assign line_web = sp_enable;
 assign line_bankb = y & 1'b1;
+assign line_web = sp_enable & area_in;
 assign line_addrb = x;
+assign line_dinb = color_merge(line_doutb, color_n);
 
-always_ff @(posedge clk) begin
-  if (sp_enable) begin
-    line_dinb <= color_merge(line_doutb, color_n);
-    if (x == tw-1) begin
-      done <= 1;
-    end else begin
-      done <= 0;
-    end
-  end
-  else begin
-    // line_dinb <= line_doutb;
-    done <= 0;
-  end
-end
+assign done = sp_enable & area_in & (objx == tw-1);
 
 endmodule

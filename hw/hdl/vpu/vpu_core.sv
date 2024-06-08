@@ -172,72 +172,114 @@ module vpu_linebuffer
   input  wire                       wea,
   input  wire [LINEBUFF_ADDR_W-1:0] addra,
   input  wire [LINEBUFF_DATA_W-1:0] dina,
-  output reg  [LINEBUFF_DATA_W-1:0] douta,
+  output wire [LINEBUFF_DATA_W-1:0] douta,
   input  wire                       web,
   input  wire [LINEBUFF_BANK_W-1:0] bankb,
   input  wire [LINEBUFF_ADDR_W-1:0] addrb,
   input  wire [LINEBUFF_DATA_W-1:0] dinb,
-  output reg  [LINEBUFF_DATA_W-1:0] doutb
+  output wire [LINEBUFF_DATA_W-1:0] doutb
 );
 
 wire [0:0] banka;
-reg [LINEBUFF_DATA_W-1:0] linebuffer0[SCREEN_W];
-reg [LINEBUFF_DATA_W-1:0] linebuffer1[SCREEN_W];
+reg [LINEBUFF_DATA_W-1:0] douta0;
+reg [LINEBUFF_DATA_W-1:0] douta1;
+reg [LINEBUFF_DATA_W-1:0] doutb0;
+reg [LINEBUFF_DATA_W-1:0] doutb1;
+// reg [LINEBUFF_DATA_W-1:0] linebuffer0[SCREEN_W];
+// reg [LINEBUFF_DATA_W-1:0] linebuffer1[SCREEN_W];
 reg lstate = 0;
 
 assign banka = ~bankb;
+assign douta = (banka==0) ? douta0 : douta1;
+assign doutb = (bankb==0) ? doutb0 : doutb1;
 
-always @(posedge clk) begin
-  if (~rst_n) begin
-    lstate <= 0;
-    douta <= 0;
-    doutb <= 0;
-    for (int i=0; i<SCREEN_W; i++) begin
-      linebuffer0[i] = 0;
-      linebuffer1[i] = 0;
-    end
-  end else begin
-    if (lstate == 0) begin
-      if (init) begin
-        for (int i=0; i<SCREEN_W; i++) begin
-          if (bankb) begin
-            linebuffer1[i] = 0;
-          end else begin
-            linebuffer0[i] = 0;
-          end
-        end
-        lstate <= 1;
-      end
-    end
-    else begin
-      if (addrb < SCREEN_W) begin
-        if (bankb) begin
-          doutb <= linebuffer1[addrb];
-          if (web) begin
-            linebuffer1[addrb] <= dinb;
-          end
-        end else begin
-          doutb <= linebuffer0[addrb];
-          if (web) begin
-            linebuffer0[addrb] <= dinb;
-          end
-        end
-      end
-      if (addra < SCREEN_W) begin
-        if (banka) begin
-          douta <= linebuffer1[addra];
-          // if (wea) begin
-          //   linebuffer1[addra] <= dina;
-          // end
-        end else begin
-          douta <= linebuffer0[addra];
-          // if (wea) begin
-          //   linebuffer0[addra] <= dina;
-          // end
-        end
-      end
-    end
-  end
-end
+bram_tdp_rf_rf #(
+  .ADDR_W(LINEBUFF_ADDR_W),
+  .DATA_W(LINEBUFF_DATA_W)
+) linebuffer_ram0 (
+  .clka (clk),
+  .ena  (banka==0),
+  .wea  (wea  ),
+  .addra(addra),
+  .dina (dina ),
+  .douta(douta0),
+  .clkb (clk),
+  .enb  (bankb==0),
+  .web  (web  ),
+  .addrb(addrb),
+  .dinb (dinb ),
+  .doutb(doutb0)
+);
+
+bram_tdp_rf_rf #(
+  .ADDR_W(LINEBUFF_ADDR_W),
+  .DATA_W(LINEBUFF_DATA_W)
+) linebuffer_ram1 (
+  .clka (clk),
+  .ena  (banka==1),
+  .wea  (wea  ),
+  .addra(addra),
+  .dina (dina ),
+  .douta(douta1),
+  .clkb (clk),
+  .enb  (bankb==1),
+  .web  (web  ),
+  .addrb(addrb),
+  .dinb (dinb ),
+  .doutb(doutb1)
+);
+
+// always @(posedge clk) begin
+//   if (~rst_n) begin
+//     lstate <= 0;
+//     douta <= 0;
+//     doutb <= 0;
+//     for (int i=0; i<SCREEN_W; i++) begin
+//       linebuffer0[i] = 0;
+//       linebuffer1[i] = 0;
+//     end
+//   end else begin
+//     if (lstate == 0) begin
+//       if (init) begin
+//         for (int i=0; i<SCREEN_W; i++) begin
+//           if (bankb) begin
+//             linebuffer1[i] = 0;
+//           end else begin
+//             linebuffer0[i] = 0;
+//           end
+//         end
+//         lstate <= 1;
+//       end
+//     end
+//     else begin
+//       if (addrb < SCREEN_W) begin
+//         if (bankb) begin
+//           doutb <= linebuffer1[addrb];
+//           if (web) begin
+//             linebuffer1[addrb] <= dinb;
+//           end
+//         end else begin
+//           doutb <= linebuffer0[addrb];
+//           if (web) begin
+//             linebuffer0[addrb] <= dinb;
+//           end
+//         end
+//       end
+//       if (addra < SCREEN_W) begin
+//         if (banka) begin
+//           douta <= linebuffer1[addra];
+//           // if (wea) begin
+//           //   linebuffer1[addra] <= dina;
+//           // end
+//         end else begin
+//           douta <= linebuffer0[addra];
+//           // if (wea) begin
+//           //   linebuffer0[addra] <= dina;
+//           // end
+//         end
+//       end
+//     end
+//   end
+// end
 
 endmodule
