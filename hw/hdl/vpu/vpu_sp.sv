@@ -204,6 +204,7 @@ module vpu_sp_parameter_load
 
 localparam PARAM_SIZE = 5;
 
+reg parameter_enable_prev;
 reg [2:0] offset;
 reg [2:0] offset_prev;
 
@@ -223,11 +224,12 @@ always_ff @(posedge clk) begin
     end
   end
 
+  parameter_enable_prev <= parameter_enable;
   offset_prev <= offset;
 end
 
 always_comb begin
-  if (parameter_enable) begin
+  if (parameter_enable_prev) begin
     case(offset_prev)
       0: sp_data0_cache   = param_dout;
       1: sp_data1_cache   = param_dout;
@@ -253,6 +255,7 @@ assign area_in = (sp_enable && sp_y <= y && y < (sp_y + get_th(sp_tilesize)));
 
 assign param_addr = (sp_idx * PARAM_SIZE) + offset;
 assign param_en = parameter_enable;
+// assign param_en = parameter_enable | parameter_enable_prev;
 
 endmodule
 
@@ -286,7 +289,6 @@ module vpu_sp_pipeline
 );
 
 reg [1:0] layer;
-reg [8:0] x;
 
 wire [ 0: 0]/*[31:31]*/ sp_enable;
 wire [ 0: 0]/*[30:30]*/ sp_afen;
@@ -330,6 +332,7 @@ assign sp_pal_no           = sp_data1_cache[ 3: 0];
 
 assign sp_affine = {sp_affine0_cache, sp_affine1_cache, sp_affine2_cache};
 
+reg [8:0] x;
 reg [8:0] objx;
 reg [7:0] objy;
 reg [8:0] xbegin;
@@ -337,24 +340,26 @@ reg [8:0] xend;
 reg [7:0] tw;
 reg [7:0] th;
 reg       area_in;
+reg       area_inA;
 
 always_ff @(posedge clk) begin
   if (~rst_n) begin
-    objx <= 0;
+    // x <= 0;
+    x <= sp_x;
   end
   else begin
     if (pipeline_enable) begin
-      if (objx < tw-1) begin
-        objx <= objx + 1;
+      // if (x < tw-1) begin
+      if (x < sp_afen ? (sp_x + tw-1) : (sp_x + tw + (tw>>2)-1)) begin
+        x <= x + 1;
       end else begin
       end
     end
     else begin
-      objx <= 0;
+      x <= sp_afen ? sp_x : sp_x - (tw>>2);
     end
   end
 end
-// assign objy = y;
 
 vpu_sp_pipeline0_affine_transform sp_pipe0(
   clk,
@@ -372,7 +377,8 @@ vpu_sp_pipeline0_affine_transform sp_pipe0(
   xend,
   tw,
   th,
-  area_in
+  area_in,
+  area_inA
 );
 
 reg       sp_enable_p02;
@@ -389,8 +395,11 @@ reg [11:0] tile_idx_p02;
 reg [0:0] pal_mode_p02;
 reg [1:0] pal_bank_p02;
 reg [3:0] pal_no_p02;
-assign area_in_p02 = area_in;
-assign x_p02 = x;
+// assign area_in_p02 = area_in;
+assign area_in_p02 = area_inA;
+// assign x_p02 = x;
+// assign y_p02 = y;
+assign objx_p02 = objx;
 assign objy_p02 = objy;
 assign tw_p02 = tw;
 assign th_p02 = th;
@@ -398,9 +407,9 @@ always_ff @(posedge clk) begin
   sp_enable_p02 <= sp_enable;
   // area_in_p02 <= area_in;
   layer_p02 <= sp_layer;
-  // x_p02 <= x;
+  x_p02 <= x;
   y_p02 <= y;
-  objx_p02 <= objx;
+  // objx_p02 <= objx;
   // objy_p02 <= objy;
   // tw_p02 <= tw;
   // th_p02 <= th;
@@ -515,39 +524,78 @@ module vpu_sp_pipeline0_affine_transform
 (
   input  wire        clk,
   input  wire        rst_n,
-  output reg  [ 8:0] xout,
+  input  wire [ 8:0] xin,
   input  wire [ 7:0] yin,
   input  wire [ 1:0] sp_tilesize,
   input  wire [ 8:0] sp_x,
   input  wire [ 7:0] sp_y,
   input  wire        sp_afen,
   input  wire [95:0] sp_affine,
-  input  wire [ 8:0] objx,
+  output reg  [ 8:0] objx,
   output reg  [ 7:0] objy,
   output reg  [ 8:0] xbegin,
   output reg  [ 8:0] xend,
   output reg  [ 7:0] tw,
   output reg  [ 7:0] th,
-  output reg         area_in
+  output reg         area_in,
+  output reg         area_inA
 );
 
-reg [8:0] lx = 0;
+shortint objx0;
+shortint objy0;
+shortint x0, y0, Ba, Bb, Bc, Bd, Bx, By;
+int Bax0, Bby0, Bcx0, Bdy0;
+shortint x1, y1;
+byte tw0, th0;
+reg area_in1 = 0;
+reg area_inA1 = 0;
+
+assign Ba = sp_affine[16*6-1:16*5];
+assign Bb = sp_affine[16*5-1:16*4];
+assign Bc = sp_affine[16*4-1:16*3];
+assign Bd = sp_affine[16*3-1:16*2];
+assign Bx = sp_affine[16*2-1:16*1];
+assign By = sp_affine[16*1-1:16*0];
 
 always_ff @(posedge clk) begin
-  xout <= lx;
-  objy <= yin - sp_y;
+  objx <= x1;
+  objy <= y1;
   tw <= get_tw(sp_tilesize);
   th <= get_th(sp_tilesize);
-  area_in <= (0 <= lx && lx < SCREEN_W) && (sp_y <= yin && yin < (sp_y + get_tw(sp_tilesize)));
+  area_in <= area_in1;
+  area_inA <= area_inA1;
 end
 
 always_comb begin
-  lx = objx + sp_x;
-  xbegin = xout;
-  xend = xout + tw;
+  objx0 = shortint'(xin) - shortint'(sp_x);
+  objy0 = shortint'(yin) - shortint'(sp_y);
+  tw0 = get_tw(sp_tilesize);
+  th0 = get_th(sp_tilesize);
+  xbegin = xin;
+  xend = xin + tw;
   // [TODO] affine transform
-  // if (sp_afen) begin
-  // end
+  if (sp_afen) begin
+    area_in1 = (-tw0 <= objx0 && objx0 < tw0+(tw0>>2)) && (-th0 <= objy0 && objy0 < th0+(th0>>2));
+    // x0 = {7'h0, objx0} - Bx;
+    // y0 = {8'h0, objy0} - By;
+    x0 = objx0 - Bx;
+    y0 = objy0 - By;
+    Bax0 = Ba * x0;
+    Bby0 = Bb * y0;
+    Bcx0 = Bc * x0;
+    Bdy0 = Bd * y0;
+    x1 = (Bax0 >> 8) + (Bby0 >> 8) + Bx;
+    y1 = (Bcx0 >> 8) + (Bdy0 >> 8) + By;
+    area_inA1 = (0 <= x1 && x1 < tw0) && (0 <= y1 && y1 < th0);
+    xbegin = xbegin - (tw>>2);
+    xend   = xend   + (tw>>2);
+  end
+  else begin
+    area_in1 = (0 <= objx0 && objx0 < tw0) && (0 <= objy0 && objy0 < th0);
+    x1 = objx0;
+    y1 = objy0;
+    area_inA1 = (0 <= x1 && x1 < tw0) && (0 <= y1 && y1 < th0);
+  end
 end
 
 endmodule

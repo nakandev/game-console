@@ -100,14 +100,30 @@ always_ff @(posedge clk) begin
       else if (init_count inside {40, 45}) begin
         init_data <= 0 
           | (1'b1 << 31)          // sp_enable=1
+          | (1'b1 << 30)          // sp_affineEnable=1
           | (2'b11 << 24)         // sp_tilesize
-          | ((20*(init_count/5)+20) << 8)  // sp_x
-          | (( 1*(init_count/5)+20) << 0); // sp_y
+          | ((20*(init_count/5-8)+100) << 8)  // sp_x
+          | (( 1*(init_count/5-8)+100) << 0); // sp_y
       end
       else if (init_count inside {41, 46}) begin
         init_data <= 0
           | (4'h1 << 28)          // tile_bank=1
           | (2'h1 << 4);          // pal_bank=1
+      end
+      else if (init_count inside {42, 47}) begin
+        init_data <= 0
+          | (( 181 & 16'hffff) << 16)  // Ba
+          | ((-181 & 16'hffff) << 0);  // Bb
+      end
+      else if (init_count inside {43, 48}) begin
+        init_data <= 0
+          | (( 181 & 16'hffff) << 16)  // Bc
+          | (( 181 & 16'hffff) << 0);  // Bd
+      end
+      else if (init_count inside {44, 49}) begin
+        init_data <= 0
+          | ((  32 & 16'hffff) << 16)  // Bx
+          | ((  32 & 16'hffff) << 0);  // By
       end
       else if (init_count inside {124*5, 125*5, 126*5, 127*5}) begin
         init_data <= 0 
