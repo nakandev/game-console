@@ -97,30 +97,30 @@ always_ff @(posedge clk) begin
           | (4'h1 << 28)          // tile_bank=1
           | (2'h1 << 4);          // pal_bank=1
       end
-      else if (init_count inside {40, 45}) begin
+      else if (init_count == 40) begin
         init_data <= 0 
           | (1'b1 << 31)          // sp_enable=1
           | (1'b1 << 30)          // sp_affineEnable=1
           | (2'b11 << 24)         // sp_tilesize
-          | ((20*(init_count/5-8)+100) << 8)  // sp_x
-          | (( 1*(init_count/5-8)+100) << 0); // sp_y
+          | ((20*(init_count/5-8)+50) << 8)  // sp_x
+          | (( 1*(init_count/5-8)+50) << 0); // sp_y
       end
-      else if (init_count inside {41, 46}) begin
+      else if (init_count == 41) begin
         init_data <= 0
           | (4'h1 << 28)          // tile_bank=1
           | (2'h1 << 4);          // pal_bank=1
       end
-      else if (init_count inside {42, 47}) begin
+      else if (init_count == 42) begin
         init_data <= 0
           | (( 181 & 16'hffff) << 16)  // Ba
           | ((-181 & 16'hffff) << 0);  // Bb
       end
-      else if (init_count inside {43, 48}) begin
+      else if (init_count == 43) begin
         init_data <= 0
           | (( 181 & 16'hffff) << 16)  // Bc
           | (( 181 & 16'hffff) << 0);  // Bd
       end
-      else if (init_count inside {44, 49}) begin
+      else if (init_count == 44) begin
         init_data <= 0
           | ((  32 & 16'hffff) << 16)  // Bx
           | ((  32 & 16'hffff) << 0);  // By
@@ -172,7 +172,7 @@ always_ff @(posedge clk) begin
       init_en <= 1;
       init_we <= 1;
       init_addr <= 32'h0621_0000 + init_count;
-      init_data <= init_count / 64;
+      init_data <= 1;  // pal_idx[1]
     end
     else if (init_state == INIT_PAL_SP) begin
       // pal

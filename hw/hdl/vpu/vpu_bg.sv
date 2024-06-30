@@ -297,6 +297,7 @@ vpu_bg_pipeline0_affine_transform bg_pipe0(
   th
 );
 
+reg       bg_enable_p01;
 reg [8:0] x_p01;
 reg [1:0] layer_p01;
 reg [8:0] objx_p01;
@@ -313,6 +314,7 @@ assign objy_p01 = objy;
 assign tw_p01 = tw;
 assign th_p01 = th;
 always_ff @(posedge clk) begin
+  bg_enable_p01 <= bg_enable;
   x_p01 <= x;
   layer_p01 <= layer;
   // objx_p01 <= objx;
@@ -345,6 +347,7 @@ vpu_bg_pipeline1_map_load bg_pipe1 (
   tile_idx
 );
 
+reg       bg_enable_p12;
 reg [8:0] x_p12;
 reg [1:0] layer_p12;
 reg [8:0] objx_p12;
@@ -355,6 +358,7 @@ reg [0:0] pal_mode_p12;
 reg [1:0] pal_bank_p12;
 reg [3:0] pal_no_p12;
 always_ff @(posedge clk) begin
+  bg_enable_p12 <= bg_enable_p01;
   x_p12 <= x_p01;
   layer_p12 <= layer_p01;
   objx_p12 <= objx_p01;
@@ -380,6 +384,7 @@ vpu_bg_pipeline2_tile_load bg_pipe2 (
   pal_idx
 );
 
+reg       bg_enable_p23;
 reg [8:0] x_p23;
 reg [1:0] layer_p23;
 reg [7:0] pal_idx_p23;
@@ -388,6 +393,7 @@ reg [1:0] pal_bank_p23;
 reg [3:0] pal_no_p23;
 assign pal_idx_p23 = pal_idx;
 always_ff @(posedge clk) begin
+  bg_enable_p23 <= bg_enable_p12;
   x_p23 <= x_p12;
   layer_p23 <= layer_p12;
   pal_mode_p23 <= pal_mode_p12;
@@ -411,11 +417,13 @@ vpu_bg_pipeline3_palette_load  bg_pipe3 (
   color_n
 );
 
+reg       bg_enable_p34;
 reg [8:0] x_p34;
 reg [1:0] layer_p34;
 reg [31:0] color_n_p34[4];
 assign color_n_p34 = color_n;
 always_ff @(posedge clk) begin
+  bg_enable_p34 <= bg_enable_p23;
   x_p34 <= x_p23;
   layer_p34 <= layer_p23;
   // color_n_p34 <= color_n;

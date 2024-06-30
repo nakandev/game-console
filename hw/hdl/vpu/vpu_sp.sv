@@ -383,6 +383,7 @@ vpu_sp_pipeline0_affine_transform sp_pipe0(
 
 reg       sp_enable_p02;
 reg       area_in_p02;
+reg       area_inA_p02;
 reg [1:0] layer_p02;
 reg [8:0] x_p02;
 reg [7:0] y_p02;
@@ -391,12 +392,12 @@ reg [7:0] objy_p02;
 reg [7:0] tw_p02;
 reg [7:0] th_p02;
 reg [3:0]  tile_bank_p02;
-reg [11:0] tile_idx_p02;
+reg [15:0] tile_idx_p02;
 reg [0:0] pal_mode_p02;
 reg [1:0] pal_bank_p02;
 reg [3:0] pal_no_p02;
-// assign area_in_p02 = area_in;
-assign area_in_p02 = area_inA;
+assign area_in_p02 = area_in;
+assign area_inA_p02 = area_inA;
 // assign x_p02 = x;
 // assign y_p02 = y;
 assign objx_p02 = objx;
@@ -406,6 +407,7 @@ assign th_p02 = th;
 always_ff @(posedge clk) begin
   sp_enable_p02 <= sp_enable;
   // area_in_p02 <= area_in;
+  // area_inA_p02 <= area_inA;
   layer_p02 <= sp_layer;
   x_p02 <= x;
   y_p02 <= y;
@@ -414,7 +416,7 @@ always_ff @(posedge clk) begin
   // tw_p02 <= tw;
   // th_p02 <= th;
   tile_bank_p02 <= sp_tile_bank;
-  tile_idx_p02 <= sp_tile_idx;
+  tile_idx_p02 <= {4'b0000, sp_tile_idx};
   pal_mode_p02 <= sp_pal_mode;
   pal_bank_p02 <= sp_pal_bank;
   pal_no_p02 <= sp_pal_no;
@@ -437,6 +439,7 @@ vpu_sp_pipeline2_tile_load sp_pipe2 (
 
 reg       sp_enable_p23;
 reg       area_in_p23;
+reg       area_inA_p23;
 reg [1:0] layer_p23;
 reg [8:0] x_p23;
 reg [8:0] objx_p23;
@@ -449,6 +452,7 @@ assign pal_idx_p23 = pal_idx;
 always_ff @(posedge clk) begin
   sp_enable_p23 <= sp_enable_p02;
   area_in_p23 <= area_in_p02;
+  area_inA_p23 <= area_inA_p02;
   layer_p23 <= layer_p02;
   x_p23 <= x_p02;
   objx_p23 <= objx_p02;
@@ -476,6 +480,7 @@ vpu_sp_pipeline3_palette_load  sp_pipe3 (
 
 reg       sp_enable_p34;
 reg       area_in_p34;
+reg       area_inA_p34;
 reg [1:0] layer_p34;
 reg [8:0] x_p34;
 reg [8:0] objx_p34;
@@ -485,6 +490,7 @@ assign color_n_p34 = color_n;
 always_ff @(posedge clk) begin
   sp_enable_p34 <= sp_enable_p23;
   area_in_p34 <= area_in_p23;
+  area_inA_p34 <= area_inA_p23;
   layer_p34 <= layer_p23;
   x_p34 <= x_p23;
   objx_p34 <= objx_p23;
@@ -498,7 +504,8 @@ vpu_sp_pipeline4_color_merge sp_pipe4 (
   clk,
   rst_n,
   sp_enable_p34,
-  area_in_p34,
+  // area_in_p34,
+  area_inA_p34,
   layer_p34,
   x_p34,
   y,
@@ -678,7 +685,7 @@ module vpu_sp_pipeline4_color_merge
   input  wire        clk,
   input  wire        rst_n,
   input  wire        sp_enable,
-  input  wire        area_in,
+  input  wire        area_inA,
   input  wire [ 1:0] layer,
   input  wire [ 8:0] x,
   input  wire [ 7:0] y,
@@ -717,10 +724,10 @@ function logic [31:0] color_merge(logic [31:0] col_buf, logic [31:0] col_n);
 endfunction
 
 assign line_bankb = y & 1'b1;
-assign line_web = sp_enable & area_in;
+assign line_web = sp_enable & area_inA;
 assign line_addrb = x;
 assign line_dinb = color_merge(line_doutb, color_n);
 
-assign done = sp_enable & area_in & (objx == tw-1);
+assign done = sp_enable & area_inA & (objx == tw-1);
 
 endmodule

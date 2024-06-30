@@ -117,7 +117,7 @@ assign map_ram_wea    = mem_we;
 assign map_ram_addra  = mem_addr[MAP_ADDR_W-1:0];
 assign map_ram_dina   = mem_din [MAP_DATA_W-1:0];
 
-assign tile_ram_ena   = mem_en && mem_addr[31:16] == 16'h0620;
+assign tile_ram_ena   = mem_en && mem_addr[31:20] == 12'h062;
 assign tile_ram_wea   = mem_we;
 assign tile_ram_addra = mem_addr[TILE_ADDR_W-1:0];
 assign tile_ram_dina  = mem_din [TILE_DATA_W-1:0];
@@ -172,6 +172,8 @@ bram_tdp_rf_rf #(
   .doutb(param_ram_doutb)
 );
 
+wire [MAP_BANK_W-1:0]    map_ram_addra_sel;
+wire [MAP_BANK_W-1:0] bg_map_ram_addrb_sel;
 assign    map_ram_addra_sel =    map_ram_addra[MAP_ADDR_W-1:MAP_INDX_W];
 assign bg_map_ram_addrb_sel = bg_map_ram_addrb[MAP_ADDR_W-1:MAP_INDX_W];
 always_comb begin
@@ -209,6 +211,9 @@ generate
   end
 endgenerate
 
+wire [TILE_BANK_W-1:0]    tile_ram_addra_sel;
+wire [TILE_BANK_W-1:0] bg_tile_ram_addrb_sel;
+wire [TILE_BANK_W-1:0] sp_tile_ram_addrb_sel;
 
 assign    tile_ram_addra_sel =    tile_ram_addra[TILE_ADDR_W-1:TILE_INDX_W];
 assign bg_tile_ram_addrb_sel = bg_tile_ram_addrb[TILE_ADDR_W-1:TILE_INDX_W];
@@ -253,6 +258,9 @@ generate
   end
 endgenerate
 
+wire [PAL_BANK_W-1:0]     pal_ram_addra_sel;
+wire [PAL_BANK_W-1:0]  bg_pal_ram_addrb_sel;
+wire [PAL_BANK_W-1:0]  sp_pal_ram_addrb_sel;
 assign    pal_ram_addra_sel =    pal_ram_addra[PAL_ADDR_W-1:PAL_INDX_W];
 assign bg_pal_ram_addrb_sel = bg_pal_ram_addrb[PAL_ADDR_W-1:PAL_INDX_W];
 assign sp_pal_ram_addrb_sel = sp_pal_ram_addrb[PAL_ADDR_W-1:PAL_INDX_W];
