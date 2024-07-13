@@ -20,7 +20,7 @@ export SRCS_V = \
   ${HDL_ROOT}/vpu/vpu_bg.sv \
   ${HDL_ROOT}/vpu/vpu_sp.sv \
   ${HDL_ROOT}/vpu/vram.sv \
-  ${HDL_ROOT}/vpu/bram_tdp_rf_rf.sv \
+  ${HDL_ROOT}/memory/bram_tdp_rf_rf.sv \
 
 export SRCS_IP = \
 
