@@ -82,6 +82,14 @@ auto Elf::allocMemory(Memory& memory) -> void
   // memory.initMinimumSections();
 
   uint8_t* buffer = data.data();
+  auto& system = memory.section("system");
+  for (auto& section: sections) {
+    auto begin = section.addr;
+    auto end = section.addr + section.size - 1;
+    if (system.isin(begin) && system.isin(end)) {
+      system.copy(section.addr, section.size, (buffer + section.offset));
+    }
+  }
   auto& program = memory.section("program");
   for (auto& section: sections) {
     uint32_t programEnd = program.addr + program.size - 1;

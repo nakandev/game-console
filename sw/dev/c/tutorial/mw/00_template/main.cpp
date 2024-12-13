@@ -156,7 +156,7 @@ int main()
       auto tilemapBank = tileram.bg[0].tilemapBank;
       int tileX = (camera_bg3_x + HW_SCREEN_W) % 512 / 8;
       int texX = (camera_bg3_x + HW_SCREEN_W) % 384 / 8;
-      tileram.tilemap[tilemapBank].tileIdx[tileX + y*HW_TILEMAP_XTILE].data = texX + y*48;
+      tileram.tilemap[tilemapBank].tileIdx[tileX + y*HW_TILEMAP_XTILE].idx = texX + y*48;
     }
   }
 

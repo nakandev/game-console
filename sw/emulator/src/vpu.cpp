@@ -126,16 +126,18 @@ static auto drawLineBGTile(HwTileRam& tileram, HwBG& bg, int x, int y, vector<ui
   uint32_t ty0 = ((uint32_t)y0) % HW_TILEMAP_H;
   uint8_t tw = widthTable[bg.tileSize];
   uint8_t th = heightTable[bg.tileSize];
-  uint16_t offset0 = (tx0 / tw) + (ty0 / tw) * (HW_TILEMAP_W / tw);
+  uint16_t offset0 = (tx0 / tw) + (ty0 / th) * (HW_TILEMAP_W / tw);
   uint8_t tilemapBank = bg.tilemapBank;
-  uint16_t tilemapIdx = tileram.tilemap[tilemapBank].tileIdx[offset0].data;
+  uint16_t tilemapIdx = tileram.tilemap[tilemapBank].tileIdx[offset0].idx;
   uint16_t offset1x = tx0 % tw / HW_TILE_W;
   uint16_t offset1y = ty0 % th / HW_TILE_H * (tw / HW_TILE_W);
   uint16_t tileIdx = tilemapIdx * (tw * th / HW_TILE_H / HW_TILE_W) + offset1x + offset1y;
-  uint32_t tilex = ty0 % HW_TILE_H;
-  uint32_t tiley = tx0 % HW_TILE_W;
+  // uint32_t tilex = ty0 % HW_TILE_H;
+  // uint32_t tiley = tx0 % HW_TILE_W;
+  uint32_t tilex = ((uint32_t)x0) % HW_TILEMAP_W % HW_TILE_W;
+  uint32_t tiley = ((uint32_t)y0) % HW_TILEMAP_H % HW_TILE_H;
   uint8_t tileBank = bg.tileBank;
-  uint8_t paletteIdx = tileram.tile[tileBank][tileIdx].data[tilex][tiley];
+  uint8_t paletteIdx = tileram.tile[tileBank][tileIdx].data[tiley][tilex];  // Memory Access
   uint8_t paletteBank = bg.paletteInfo.bank;
   uint8_t paletteNo = bg.paletteInfo.no;
   uint8_t paletteOffset;
@@ -163,8 +165,8 @@ static auto drawLineSprite(HwTileRam& tileram, VpuSprite& vpusp, int x, int y, v
     // float div = B.a/256. * B.d/256. - B.b/256. * B.c/256.;
     // x0 = (x00 * +B.d/256. + y00 * -B.b/256.) / div + B.x;
     // y0 = (x00 * -B.c/256. + y00 * +B.a/256.) / div + B.y;
-    x0 = (x00 * B.a/256. + y00 * B.b/256.) + B.x;
-    y0 = (x00 * B.c/256. + y00 * B.d/256.) + B.y;
+    x0 = ((x00 * B.a)/256) + ((y00 * B.b)/256) + B.x;
+    y0 = ((x00 * B.c)/256) + ((y00 * B.d)/256) + B.y;
   }
   if (x0 < 0 || x0 >= widthTable[sp.tileSize]) return;
   if (y0 < 0 || y0 >= heightTable[sp.tileSize]) return;
@@ -203,59 +205,6 @@ static void sortLayerIndex(int idxs[4], int layers[4])
         t = idxs[j]; idxs[j] = idxs[j+1]; idxs[j+1] = t;
       }
     }
-  }
-}
-
-auto Vpu::drawLine(int y) -> void
-{
-  HwTileRam& tileram = *(HwTileRam*)memory.section("tile").buffer();
-  uint8_t* vram = (uint8_t*)memory.section("vram").buffer();
-  int spnum = prepareVpuSprite(tileram, vpuSprite, y);
-  for (auto& buf: lineBufferBg) {
-    std::fill(buf.begin(), buf.end(), 0);
-  }
-  for (auto& buf: lineBufferSp) {
-    std::fill(buf.begin(), buf.end(), 0);
-  }
-  int idxs[4] = {0, 1, 2, 3};
-  int layers[4];
-  for (int i=0; i<4; i++) layers[i] = tileram.bg[i].layer;
-  sortLayerIndex(idxs, layers);
-  for (int x=0; x<HW_SCREEN_W; x++) {
-    for (int i=0; i<4; i++) {
-      uint8_t layer = idxs[i];
-      auto& bg = tileram.bg[layer];
-      if (debug.enableBg[layer].v1 && bg.enable) {
-        if (bg.mode == HW_BG_PIXEL_MODE) {
-          drawLineBGPixel(vram, tileram.bg[layer], x, y, lineBufferBg[layer]);
-        } else {
-          drawLineBGTile(tileram, tileram.bg[layer], x, y, lineBufferBg[layer]);
-        }
-      }
-    }
-  }
-  if (debug.enableSp.v1) {
-    for (int x=0; x<HW_SCREEN_W; x++) {
-      HwSP& hwsp = tileram.sp[0];
-      for (int si=0; si<spnum; si++) {
-        auto& vpusp = vpuSprite[si];
-        uint8_t layer = vpusp.hwsp.layer;
-        if (x < vpusp.beginX || vpusp.endX < x) continue;
-        drawLineSprite(tileram, vpusp, x, y, lineBufferSp[layer]);
-      }
-    }
-  }
-  for (int x=0; x<HW_SCREEN_W; x++) {
-    HwColor finalColor = {.data = 0};
-    for (int layer=0; layer<4; layer++) {
-      HwColor spColor = {.data=lineBufferSp[layer][x]};
-      if (color_merge(finalColor, spColor)) /*break*/;
-      HwColor bgColor = {.data=lineBufferBg[layer][x]};
-      if (color_merge(finalColor, bgColor)) /*break*/;
-    }
-    finalColor.a = 255;
-
-    screenBuffer[x + y*HW_SCREEN_W] = finalColor.data;
   }
 }
 
@@ -316,7 +265,7 @@ static auto getTileIdxBG(HwTileRam& tileram, uint8_t objSize, int16_t objXa, int
   uint8_t tw = widthTable[objSize];
   uint8_t th = heightTable[objSize];
   uint16_t offset0 = (tx0 / tw) + (ty0 / th) * (HW_TILEMAP_W / tw);
-  uint16_t tilemapIdx = tileram.tilemap[tilemapBank].tileIdx[offset0].data;
+  uint16_t tilemapIdx = tileram.tilemap[tilemapBank].tileIdx[offset0].idx;
   uint16_t offset1x = tx0 % tw / HW_TILE_W;
   uint16_t offset1y = ty0 % th / HW_TILE_H * (tw / HW_TILE_W);
   uint16_t tileIdx = tilemapIdx * (tw * th / HW_TILE_H / HW_TILE_W) + offset1x + offset1y;
@@ -331,7 +280,7 @@ static auto getPaletteIdx(HwTileRam& tileram, int16_t objXa, int16_t objYa, uint
   return paletteIdx;
 }
 
-auto colorMergeSP(HwTileRam& tileram, int16_t objXa, uint8_t paletteIdx, HwPaletteInfo& paletteInfo, vector<uint32_t>& buffer) -> uint8_t
+static auto colorMergeSP(HwTileRam& tileram, int16_t objXa, uint8_t paletteIdx, HwPaletteInfo& paletteInfo, vector<uint32_t>& buffer) -> uint8_t
 {
   uint8_t paletteBank = paletteInfo.bank;
   uint8_t paletteNo = paletteInfo.no;
@@ -348,7 +297,7 @@ auto colorMergeSP(HwTileRam& tileram, int16_t objXa, uint8_t paletteIdx, HwPalet
   return true;
 }
 
-auto colorMergeBG(HwTileRam& tileram, int16_t objXa, uint8_t paletteIdx, HwPaletteInfo& paletteInfo, vector<uint32_t>& buffer) -> uint8_t
+static auto colorMergeBG(HwTileRam& tileram, int16_t objXa, uint8_t paletteIdx, HwPaletteInfo& paletteInfo, vector<uint32_t>& buffer) -> uint8_t
 {
   uint8_t paletteBank = paletteInfo.bank;
   uint8_t paletteNo = paletteInfo.no;
@@ -363,11 +312,10 @@ auto colorMergeBG(HwTileRam& tileram, int16_t objXa, uint8_t paletteIdx, HwPalet
   return true;
 }
 
-auto Vpu::drawLineRtl(int y) -> void
+auto Vpu::drawLine(int y) -> void
 {
   HwTileRam& tileram = *(HwTileRam*)memory.section("tile").buffer();
   uint8_t* vram = (uint8_t*)memory.section("vram").buffer();
-  auto spWrittenFlag = vector<uint8_t>(HW_SCREEN_W);
   uint32_t fillColor = 0x00000000;  // Memory Access
   for (int x=0; x<HW_SCREEN_W; x++) {
     int layer = 0;
@@ -376,35 +324,15 @@ auto Vpu::drawLineRtl(int y) -> void
   for (auto& buf: lineBufferBg) {
     std::fill(buf.begin(), buf.end(), 0);
   }
-  int lineSPCycles = 0;
-  lineSPCycles += 5 + 4;
-  if (debug.enableSp.v1) {
-    for (int i=0; i<HW_SPRITE_NUM; i++) {
-      HwSprite& sp = tileram.sp[0].sprite[i];  // Memory Access * sp_num
-      if (!sp.enable) continue;
-      if (!isInDrawAreaY(sp.tileSize, sp.x, sp.y)) continue;
-      int layer = 0;
-      uint32_t x0x1 = getDrawAreaX(sp.tileSize, sp.x, sp.affineEnable);
-      int16_t beginX = x0x1 >> 16, endX = x0x1 & 0xFFFF;
-      for (int x=beginX; x<endX; x++) {
-        // if (!spWrittenFlag[x]) {
-        auto xaya = affineTransform(x, y, sp.x, sp.y, sp.affineEnable, sp.affineInv);
-        int16_t xa = xaya >> 16, ya = xaya & 0xFFFF;
-        auto tileIdx = getTileIdxSP(tileram, sp.tileSize, xa, ya, sp.tileIdx);
-        auto paletteIdx = getPaletteIdx(tileram, xa, ya, sp.tileBank, tileIdx);
-        spWrittenFlag[x] = colorMergeSP(tileram, sp.x, paletteIdx, sp.paletteInfo, lineBufferSp[layer]);
-        lineSPCycles += 1;
-        // }
-      }
-    }
-  }
+  const int HW_SCANLINE_CYCLES = HW_SCREEN_W * HW_VPU_CPUCYCLE_RATIO;
   int idxs[4] = {0, 1, 2, 3};
   int layers[4];
   for (int i=0; i<4; i++) layers[i] = tileram.bg[i].layer;
   sortLayerIndex(idxs, layers);
   int lineBGCycles = 0;
-  lineBGCycles += 5 + 5;
   for (int i=0; i<4; i++) {
+    lineBGCycles += 2;
+    if (lineBGCycles >= HW_SCANLINE_CYCLES) break;
     uint8_t layer = idxs[i];
     auto& bg = tileram.bg[layer];
     if (debug.enableBg[layer].v1 && bg.enable) {
@@ -419,13 +347,34 @@ auto Vpu::drawLineRtl(int y) -> void
           auto tileIdx = getTileIdxBG(tileram, bg.tileSize, xa, ya, bg.tilemapBank);
           auto paletteIdx = getPaletteIdx(tileram, xa, ya, bg.tileBank, tileIdx);
           colorMergeBG(tileram, x, paletteIdx, bg.paletteInfo, lineBufferBg[layer]);
-          lineBGCycles += 1;
         }
+        lineBGCycles += 1;
+        if (lineBGCycles >= HW_SCANLINE_CYCLES) break;
       }
     }
   }
-  fmt::print("y={}, cycles SP={}, BG={} Total={}\n",
-    y, lineSPCycles, lineBGCycles, lineSPCycles+lineBGCycles);
+  int lineSPCycles = lineBGCycles;
+  if (debug.enableSp.v1) {
+    for (int i=0; i<HW_SPRITE_NUM; i++) {
+      lineSPCycles += 2;
+      if (lineSPCycles >= HW_SCANLINE_CYCLES) break;
+      HwSprite& sp = tileram.sp[0].sprite[i];  // Memory Access * sp_num
+      if (!sp.enable) continue;
+      if (!isInDrawAreaY(sp.tileSize, sp.x, sp.y)) continue;
+      int layer = 0;
+      uint32_t x0x1 = getDrawAreaX(sp.tileSize, sp.x, sp.affineEnable);
+      int16_t beginX = x0x1 >> 16, endX = x0x1 & 0xFFFF;
+      for (int x=beginX; x<endX; x++) {
+        auto xaya = affineTransform(x, y, sp.x, sp.y, sp.affineEnable, sp.affineInv);
+        int16_t xa = xaya >> 16, ya = xaya & 0xFFFF;
+        auto tileIdx = getTileIdxSP(tileram, sp.tileSize, xa, ya, sp.tileIdx);
+        auto paletteIdx = getPaletteIdx(tileram, xa, ya, sp.tileBank, tileIdx);
+        colorMergeSP(tileram, sp.x, paletteIdx, sp.paletteInfo, lineBufferSp[layer]);
+      }
+      lineSPCycles += 6 + widthTable[sp.tileSize];
+      if (lineSPCycles >= HW_SCANLINE_CYCLES) break;
+    }
+  }
   for (int x=0; x<HW_SCREEN_W; x++) {
     HwColor finalColor = {.data = lineBufferSp[0][x]};
     for (int layer=0; layer<4; layer++) {

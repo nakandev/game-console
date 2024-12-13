@@ -33,7 +33,7 @@ void setTilemap(uint8_t mapBank, uint32_t offset, const uint16_t* mapData, uint3
 {
   HwTileRam& tileram = *(HwTileRam*)HWREG_TILERAM_BASEADDR;
   for (int i=0; i<size; i++) {
-    tileram.tilemap[mapBank].tileIdx[i].data = mapData[i];
+    tileram.tilemap[mapBank].tileIdx[i].idx = mapData[i];
   }
 }
 
@@ -50,7 +50,7 @@ void setTilemap2D(
     for (int x=0; x<dataRectW; x++) {
       int tileIdx = (x + mapOffsetX) % mapSizeW + (y + mapOffsetY) % mapSizeH * mapSizeW;
       int dataIdx = (x + dataRectX) % dataSizeW + (y + dataRectY) % dataSizeH * dataSizeW;
-      tileram.tilemap[mapBank].tileIdx[tileIdx].data = mapData[dataIdx];
+      tileram.tilemap[mapBank].tileIdx[tileIdx].idx = mapData[dataIdx];
     }
   }
 }
@@ -69,7 +69,7 @@ void setTilemap2DLambda(
       int tileIdx = (x + mapOffsetX) % mapSizeW + (y + mapOffsetY) % mapSizeH * mapSizeW;
       int dataIdxX = (x + dataRectX) % dataSizeW;
       int dataIdxY = (y + dataRectY) % dataSizeH;
-      tileram.tilemap[mapBank].tileIdx[tileIdx].data = mapData(dataIdxX, dataIdxY);
+      tileram.tilemap[mapBank].tileIdx[tileIdx].idx = mapData(dataIdxX, dataIdxY);
     }
   }
 }
@@ -99,7 +99,7 @@ void putsBG(uint8_t bg, uint16_t x, uint16_t y, const char* str, uint8_t n)
   HwBG& hwbg = tileram.bg[bg];
   int tilemapOffset = x + y * HW_TILEMAP_XTILE;
   for (int i=0; i<strlen(str, n); i++) {
-    tileram.tilemap[hwbg.tilemapBank].tileIdx[tilemapOffset + i].data = str[i];
+    tileram.tilemap[hwbg.tilemapBank].tileIdx[tilemapOffset + i].idx = str[i];
   }
 }
 }; /* namespace nkx*/

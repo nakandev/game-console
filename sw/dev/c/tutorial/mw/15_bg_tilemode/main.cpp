@@ -90,14 +90,16 @@ int main()
 
   /* tilemap settings */
   for (int i=0; i<1024; i++) {
-    tileram.tilemap[0].tileIdx[i].data = i % 8;
+    // tileram.tilemap[0].tileIdx[i].data = i % 8;
+    tileram.tilemap[0].tileIdx[i].idx = i % 8;
   }
 
   // tileram.tilemap[1].tileIdx[0].data = 0;
   for (int ty=20; ty<30; ty++) {
     for (int tx=2; tx<40-2; tx++) {
       int tOffset = ty*64 + tx;
-      tileram.tilemap[1].tileIdx[tOffset].data = 1;
+      // tileram.tilemap[1].tileIdx[tOffset].data = 1;
+      tileram.tilemap[1].tileIdx[tOffset].idx = 1;
     }
   }
 
