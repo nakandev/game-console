@@ -8,11 +8,11 @@ export PROJ_DIR = ${PWD}
 export TOP_NAME = arty_a7_35t_vpu_ili9341_parallel_8bit
 
 export SRCS_DC = \
-  ${HDL_ROOT}/platform/fpga/arty_a7_35t/arty_a7_35t.xdc \
+  ${HDL_ROOT}/platform/fpga/arty_a7_35t/constrs/arty_a7_35t.xdc \
 
 export SRCS_V = \
   ${HDL_ROOT}/defines.sv \
-  ${HDL_ROOT}/platform/fpga/arty_a7_35t/arty_a7_35t_vpu_ili9341_parallel_8bit.sv \
+  ${HDL_ROOT}/platform/fpga/arty_a7_35t/srcs/arty_a7_35t_vpu_ili9341_parallel_8bit.sv \
   ${HDL_ROOT}/platform/video/ili9341_parallel_8bit.sv \
   ${HDL_ROOT}/cpu/cpu.sv \
   ${HDL_ROOT}/vpu/vpu.sv \
@@ -33,6 +33,8 @@ ENABLE_REPORT = 0
 
 .PHONY = all synth impl bit
 
+all: sim bit
+
 ${PROJ_DIR}/${PROJ_NAME}.xdc: ${SRCS_DC} ${SRCS_V} ${SRCS_IP} ${SRCS_SIM}
 	cd ${PROJ_DIR}
 	vivado  -m64 -mode batch -source ${SCRIPT_DIR}/vivado/project.tcl
@@ -49,8 +51,6 @@ ${PROJ_DIR}/${PROJ_NAME}.bit: ${PROJ_DIR}/${PROJ_NAME}_routed.dcp
 	cd ${PROJ_DIR}
 	vivado  -m64 -mode batch -source ${SCRIPT_DIR}/vivado/bit.tcl
 
-all: sim bit
-
 project: ${PROJ_DIR}/${PROJ_NAME}.xdc
 
 synth: ${PROJ_DIR}/${PROJ_NAME}_synth.dcp
@@ -66,6 +66,9 @@ sim:
 	xsim --gui --runall ${TOP_NAME} &
 
 clean:
+	rm -rf ${PROJ_DIR}/${PROJ_NAME}.*/
+	rm -rf ${PROJ_DIR}/.Xil/
+	rm -rf ${PROJ_DIR}/xsim.dir/
 	rm -f ${PROJ_DIR}/${PROJ_NAME}.xpr
 	rm -f ${PROJ_DIR}/${PROJ_NAME}*.dcp
 	rm -f ${PROJ_DIR}/${PROJ_NAME}.bit
@@ -75,6 +78,3 @@ clean:
 	rm -f ${PROJ_DIR}/xsim.*
 	rm -f ${PROJ_DIR}/xsim_*
 	rm -f ${PROJ_DIR}/work.*.wdb
-	rm -rf ${PROJ_DIR}/.Xil/
-	rm -rf ${PROJ_DIR}/xsim.dir/
-	rm -rf ${PROJ_DIR}/${PROJ_NAME}.*/
