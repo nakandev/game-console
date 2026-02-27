@@ -155,7 +155,7 @@ int main(int argc, char* argv[])
   if(window==NULL){
     return 1;
   }
-  SDL_SetWindowSize(window, 1024, 768);
+  SDL_SetWindowSize(window, 1024, 1024 * HW_SCREEN_H / HW_SCREEN_W);
   SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
 
   SDL_GLContext gl_context = SDL_GL_CreateContext(window);
