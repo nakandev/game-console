@@ -23,7 +23,7 @@ localparam INIT_PAL_SP   = 6;
 localparam INIT_PAL_BG   = 7;
 localparam INIT_FIN      = 8;
 int init_state = INIT_BEGIN;
-int init_count = 0;
+longint init_count = 0;
 reg [31:0] init_addr;
 reg [31:0] init_data;
 reg        init_en;
@@ -51,6 +51,8 @@ assign mem_we = init_we;
 
 always_ff @(posedge clk) begin
   if (~rst_n) begin
+    init_state <= INIT_BEGIN;
+    init_count <= 0;
     bg_x <= 0;
     bg_y <= 0;
     prev_vsync <= 0;
@@ -70,7 +72,7 @@ always_ff @(posedge clk) begin
     end else if (init_state < INIT_FIN) begin
       init_count <= init_count + 1;
     end else begin
-      if (init_count == (320+80)*(240+80)*4-1) begin
+      if (init_count >= (320+80)*4*(240+80) -1) begin
         init_count <= 0;
         bg_x <= bg_x + 1;
         bg_y <= bg_y + 1;
@@ -100,6 +102,7 @@ always_ff @(posedge clk) begin
       else if (init_count == 40) begin
         init_data <= 0 
           | (1'b1 << 31)          // sp_enable=1
+          // | (1'b0 << 31)          // sp_enable=0
           | (1'b1 << 30)          // sp_affineEnable=1
           | (2'b11 << 24)         // sp_tilesize
           | ((20*(init_count/5-8)+50) << 8)  // sp_x
@@ -172,7 +175,7 @@ always_ff @(posedge clk) begin
       init_en <= 1;
       init_we <= 1;
       init_addr <= 32'h0621_0000 + init_count;
-      init_data <= 1;  // pal_idx[1]
+      init_data <= init_count / 64;
     end
     else if (init_state == INIT_PAL_SP) begin
       // pal
@@ -192,13 +195,11 @@ always_ff @(posedge clk) begin
     else begin
       // init_en <= 1;
       init_en <= (vsync && !prev_vsync);
+      // init_en <= !vsync;
       init_we <= 1;
       init_addr <= 32'h0600_0000 + 128*5 + 3*5 + 0;  // BG3 param[0]
-      init_data <= (1'b1 << 31) | (bg_x << 8) | (bg_y);
-      // init_en <= 0;
-      // init_we <= 0;
-      // init_addr <= 32'h0000_0000;
-      // init_data <= 0;
+      // init_data <= (1'b1 << 31) | ((bg_x) << 8) | (bg_y);
+      init_data <= (1'b1 << 31) | ((bg_x>>2) << 8) | (bg_y>>2);
     end
     prev_vsync <= vsync;
   end

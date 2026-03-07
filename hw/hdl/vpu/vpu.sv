@@ -12,8 +12,8 @@ module vpu
 
   output wire        dot_clk,
   output reg  [31:0] color,
-  output wire        hsync,
-  output wire        vsync
+  output reg         hsync,
+  output reg         vsync
 );
 
 wire                   bg_param_ram_ena  , bg_param_ram_enb  , sp_param_ram_enb  ;

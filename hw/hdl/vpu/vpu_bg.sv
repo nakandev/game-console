@@ -31,8 +31,8 @@ module vpu_bg
   output wire                   bg_param,
   output wire                   dot_clk,
   output reg  [31:0]            color,
-  output wire                   hsync,
-  output wire                   vsync
+  output reg                    hsync,
+  output reg                    vsync
 );
 
 localparam HMAX = SCREEN_W + SCREEN_HBLANK;
@@ -110,8 +110,23 @@ vpu_bg_pipeline vpu_bg_pipeline (
   dummy
 );
 
-assign hsync = (state == STATE_PIPELINE) && (line_cycle < LINE_CYCLE_VISIBLE);
-assign vsync = y < SCREEN_H;
+// assign hsync = (state == STATE_PIPELINE) && (line_cycle < LINE_CYCLE_VISIBLE);
+// assign vsync = y < SCREEN_H;
+localparam VH_DELAY = 16;
+logic [0:0] vdelay[VH_DELAY];
+logic [0:0] hdelay[VH_DELAY];
+always_ff @(posedge clk) begin
+  hdelay[0] <= (state == STATE_PIPELINE) && (line_cycle < LINE_CYCLE_VISIBLE);
+  vdelay[0] <= y < SCREEN_H;
+  for (int i=1; i<VH_DELAY; i++) begin
+    hdelay[i] <= hdelay[i-1];
+    vdelay[i] <= vdelay[i-1];
+  end
+  // hsync <= hdelay[10-1];
+  // vsync <= vdelay[10-1];
+  hsync <= hdelay[12-1];
+  vsync <= vdelay[12-1];
+end
 
 endmodule
 
@@ -474,7 +489,7 @@ module vpu_bg_pipeline0_affine_transform
 reg [8:0] lobjx;
 reg [7:0] lobjy;
 
-function logic [7:0] get_tw(input [2:0] tilesize);
+function logic [7:0] get_tw(input [1:0] tilesize);
    case(tilesize)
      2'b00 : get_tw = 8'd8;
      2'b01 : get_tw = 8'd16;
@@ -482,7 +497,7 @@ function logic [7:0] get_tw(input [2:0] tilesize);
      2'b11 : get_tw = 8'd64;
    endcase
 endfunction
-function logic [7:0] get_th(input [2:0] tilesize);
+function logic [7:0] get_th(input [1:0] tilesize);
    case(tilesize)
      2'b00 : get_th = 8'd8;
      2'b01 : get_th = 8'd16;
@@ -528,9 +543,9 @@ localparam HW_TILE_H = 8;
 localparam HW_TILEMAP_W = 512;
 localparam HW_TILEMAP_H = 512;
 
-shortint offset0 = 0;
-shortint offset1x = 0;
-shortint offset1y = 0;
+shortint offset0;
+shortint offset1x;
+shortint offset1y;
 
 always_comb begin
   tx0 = objx & (HW_TILEMAP_W-1);

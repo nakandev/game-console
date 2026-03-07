@@ -7,7 +7,7 @@ typedef enum {
   STATE_WAITSYNC
 } vpu_sp_state_t;
 
-function logic [7:0] get_tw(input [2:0] tilesize);
+function logic [7:0] get_tw(input [1:0] tilesize);
    case(tilesize)
      2'b00 : get_tw = 16'd8;
      2'b01 : get_tw = 16'd16;
@@ -15,7 +15,7 @@ function logic [7:0] get_tw(input [2:0] tilesize);
      2'b11 : get_tw = 16'd64;
    endcase
 endfunction
-function logic [7:0] get_th(input [2:0] tilesize);
+function logic [7:0] get_th(input [1:0] tilesize);
    case(tilesize)
      2'b00 : get_th = 16'd8;
      2'b01 : get_th = 16'd16;
@@ -248,10 +248,12 @@ assign done = (~rst_n) ? 0 :
 wire [ 0: 0]/*[31:31]*/ sp_enable;
 wire [ 1: 0]/*[25:24]*/ sp_tilesize;
 wire [ 7: 0]/*[ 7: 0]*/ sp_y;
+wire [ 8: 0]/*[ 7: 0]*/ sp_y1;
 assign sp_enable   = sp_data0_cache[31:31];
 assign sp_tilesize = sp_data0_cache[25:24];
 assign sp_y        = sp_data0_cache[ 7: 0];
-assign area_in = (sp_enable && sp_y <= y && y < (sp_y + get_th(sp_tilesize)));
+assign sp_y1       = sp_y + get_th(sp_tilesize);
+assign area_in = (sp_enable && sp_y <= y && y < sp_y1);
 
 assign param_addr = (sp_idx * PARAM_SIZE) + offset;
 assign param_en = parameter_enable;
@@ -350,7 +352,7 @@ always_ff @(posedge clk) begin
   else begin
     if (pipeline_enable) begin
       // if (x < tw-1) begin
-      if (x < sp_afen ? (sp_x + tw-1) : (sp_x + tw + (tw>>2)-1)) begin
+      if (x < (sp_afen ? (sp_x + tw-1) : (sp_x + tw + (tw>>2)-1))) begin
         x <= x + 1;
       end else begin
       end
@@ -554,8 +556,8 @@ shortint x0, y0, Ba, Bb, Bc, Bd, Bx, By;
 int Bax0, Bby0, Bcx0, Bdy0;
 shortint x1, y1;
 byte tw0, th0;
-reg area_in1 = 0;
-reg area_inA1 = 0;
+reg area_in1;
+reg area_inA1;
 
 assign Ba = sp_affine[16*6-1:16*5];
 assign Bb = sp_affine[16*5-1:16*4];
@@ -630,7 +632,7 @@ localparam HW_TILEMAP_W = 512;
 localparam HW_TILEMAP_H = 512;
 
 
-shortint offset = 0;
+shortint offset;
 shortint tilex;
 shortint tiley;
 reg  [ 8:0] tx0;
@@ -701,9 +703,10 @@ module vpu_sp_pipeline4_color_merge
 );
 
 function logic [31:0] color_merge(logic [31:0] col_buf, logic [31:0] col_n);
-  logic [31:0] dst = col_buf;
+  logic [31:0] dst;
   logic [31:0] src;
   logic [ 7:0] src_a;
+  dst = col_buf;
   // for (int i=0; i<4; i++) begin
     src = col_n;
     src_a = src >> 24;

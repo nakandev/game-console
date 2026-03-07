@@ -29,14 +29,14 @@ module ili9341_parallel_8bit(
 
     localparam INIT_LEN = 49;
     reg [8:0] INIT_DAT [0:INIT_LEN-1];
-    reg [5:0] init_cnt;
+    reg [5:0] init_cnt = 0;
 
-    localparam INIT2_LEN = 11;
+    localparam INIT2_LEN = 12;
     reg [8:0] INIT2_DAT [0:INIT2_LEN-1];
-    reg [5:0] init2_cnt;
+    reg [3:0] init2_cnt = 0;
     
-    reg [9:0] data_count_x;
-    reg [8:0] data_count_y;
+    reg [9:0] data_count_x = 0;
+    reg [8:0] data_count_y = 0;
 
     initial begin
         // Display OFF
@@ -107,6 +107,7 @@ module ili9341_parallel_8bit(
         INIT_DAT[47]  = {1'b0, 8'h29};
         // Start memory write (all following data is pixel data)
         INIT_DAT[48]  = {1'b0, 8'h2C};
+        // Clear screen...
 
 
         // Set column range: 0..319
@@ -123,6 +124,7 @@ module ili9341_parallel_8bit(
          INIT2_DAT[9] = {1'b1, 8'hef};//((SCREEN_H-1) & 8'hFF)};
         // Start memory write (all following data is pixel data)
         INIT2_DAT[10]  = {1'b0, 8'h2C};
+        // Write screen...
     end
 
     localparam RESET_START = 0,
@@ -133,15 +135,15 @@ module ili9341_parallel_8bit(
                RESET_INIT2 = 5,
                RESET_DONE  = 6;
     localparam RESET_CLKS = 24'd500000; // ~30ms
-    reg [2:0] reset_stage;
-    reg [23:0] reset_clks;
+    reg [2:0] reset_stage = 0;
+    reg [23:0] reset_clks = 0;
 
-    reg [17:0] clear_cnt;
+    reg [17:0] clear_cnt = 0;
 
-    reg write_busy;
-    reg [8:0] write_data;
-    reg send_pix_lo;
-    reg [17:0] send_cnt;
+    reg write_busy = 0;
+    reg [8:0] write_data = 0;
+    reg send_pix_lo = 0;
+    reg [17:0] send_cnt = 0;
 
     assign tft_rst = reset_stage != RESET_LO;
     assign tft_cs = 0; // Chip select enable (active low)
@@ -150,17 +152,22 @@ module ili9341_parallel_8bit(
     assign tft_rs = write_data[8]; // Command/Data select
     assign tft_data = write_data[7:0];
     assign initialized = !rst && reset_stage == RESET_DONE;
+    // assign initialized = !rst && (reset_stage >= RESET_INIT2 && init2_cnt >= INIT2_LEN-8);
     //assign initialized = !rst && reset_stage == RESET_DONE &&
     //                     reset_clks == 0 && init_cnt == INIT_LEN;
-    assign hsync_out = data_count_x == 0;
-    assign vsync_out = data_count_y == 0;
+    // assign hsync_out = data_count_x == SCREEN_W - 1; //0;
+    // assign vsync_out = data_count_y == SCREEN_H - 1; //0;
+    assign hsync_out = data_count_x == SCREEN_W - 1; //0;
+    assign vsync_out = data_count_y == SCREEN_H - 1; //0;
 
     /* Convert RGB888 to RGB565 */
     function [7:0] col_hi(input [7:0] r, input [7:0] g, input [7:0] b); // RRRRRGGG bits
-        col_hi = {r[7:3], g[7:5]};
+        // col_hi = {r[7:3], g[7:5]};
+        col_hi = {g[4:2], b[7:3]};
     endfunction
     function [7:0] col_lo(input [7:0] r, input [7:0] g, input [7:0] b); // GGGBBBBB bits
-        col_lo = {g[4:2], b[7:3]};
+        // col_lo = {g[4:2], b[7:3]};
+        col_lo = {r[7:3], g[7:5]};
     endfunction
 
     always @ (posedge clk) begin
@@ -173,8 +180,8 @@ module ili9341_parallel_8bit(
             reset_stage <= RESET_START;
             reset_clks <= RESET_CLKS;
             clear_cnt <= SCREEN_W * SCREEN_H * 2;
-            data_count_x <= SCREEN_W - 1;
-            data_count_y <= SCREEN_H - 1;
+            data_count_x <= 0; //SCREEN_W - 1;
+            data_count_y <= 0; //SCREEN_H - 1;
         end else if (|reset_clks) begin
             reset_clks <= reset_clks - 1;
         end else if (reset_stage == RESET_START ||
@@ -182,9 +189,9 @@ module ili9341_parallel_8bit(
                      reset_stage == RESET_WAIT ||
                     (reset_stage == RESET_INIT && init_cnt == INIT_LEN) ||
                     (reset_stage == RESET_CLEAR && clear_cnt == 0) ||
-                    (reset_stage == RESET_CLEAR) ||
                     (reset_stage == RESET_INIT2 && init2_cnt == INIT2_LEN)) begin
             reset_stage <= reset_stage + 1;
+            write_busy <= 0;
         end else if (write_busy) begin
             write_busy <= 0;
         end else if (init_cnt < INIT_LEN) begin
@@ -214,7 +221,7 @@ module ili9341_parallel_8bit(
                     data_count_y <= 0;
                 end
             end
-        end else if (lcd_write) begin
+        end else if (reset_stage < RESET_DONE || lcd_write) begin
             send_pix_lo <= 1;
             write_busy <= 1;
             write_data <= {1'b1, col_hi(lcd_col_r, lcd_col_g, lcd_col_b)};

@@ -1,6 +1,6 @@
 `default_nettype none
 
-module arty_a7_35t_vpu_ili9341_parallel_8bit(
+module arty_a7_35t_simple_ili9341_parallel_8bit(
     input wire CLK100MHZ,
     input wire [3:0] btn,
     output logic ck_a5,  // none
@@ -28,6 +28,7 @@ logic clkPixel = 1'b0; // 4 clk10MHZ
 logic clkTFT = 1'b0;
 logic [31:0] cnt0 = DOTCLKS-1;
 logic [31:0] cnt1 = PIXCLKS-1;
+logic [31:0] count = 0;
 wire [7:0] data8;
 logic [7:0] lcd_col_r;
 logic [7:0] lcd_col_g;
@@ -40,14 +41,16 @@ logic vsync_out;
 logic prev_initialized;
 logic lcd_vblank;
 logic lcd_write;
+logic [8:0] lcd_x = 0;
+logic [7:0] lcd_y = 0;
+logic [7:0] lcd_frame = 0;
 logic [3:0] dummy_led;
 
 assign reset200 = btn[0];
 assign reset = btn[1];
-// assign data8 = {ck_io7, ck_io6, ck_io5, ck_io4, ck_io3, ck_io2, ck_io9, ck_io8};
 assign {ck_io7, ck_io6, ck_io5, ck_io4, ck_io3, ck_io2, ck_io9, ck_io8} = data8;
 
-assign led = {1'b0, hsync_vpu, vsync_vpu, initialized};
+assign led = {1'b0, hsync_out, vsync_out, initialized};
 
 logic CLK200MHZ;
 logic locked;
@@ -72,6 +75,9 @@ initial begin
       // prev_vsync_out = 1'b0;
       // lcd_vblank = 1'b0;
       // lcd_write = 1'b1;
+      // lcd_x = 0;
+      // lcd_y = 0;
+      // lcd_frame = 0;
       // dummy_led = 0;
 end
 
@@ -105,64 +111,46 @@ always_ff @(posedge clk10MHZ) begin
     end
 end
 
-logic [7:0] count = 0;
-
 always_ff @(posedge clkPixel) begin
-    //lcd_col_a <= color[31:24];
-    lcd_col_b <= color[23:16];
-    lcd_col_g <= color[15: 8];
-    lcd_col_r <= color[ 7: 0];
-    count <= count + 1;
+    if (reset | ~initialized) begin
+        lcd_x <= 0;
+        lcd_y <= 0;
+        lcd_frame <= 0;
+        //count <= 0;
+    end else begin
+        if (hsync_out || lcd_x == 320 - 1) begin
+        // if (lcd_x == 320 - 1) begin
+            lcd_x <= 0;
+            if (vsync_out || lcd_y == 240 - 1) begin
+            // if (lcd_y == 240 - 1) begin
+                lcd_y <= 0;
+                lcd_frame <= lcd_frame + 1;
+            end else begin
+                lcd_y <= lcd_y + 1;
+            end
+        end else begin
+            lcd_x <= lcd_x + 1;
+        end
+        //lcd_col_r <= lcd_x;
+        //lcd_col_g <= lcd_y;
+        //lcd_col_b <= lcd_frame;
+        ////count <= count + 1;
+        ////lcd_col_a <= color[31:24];
+        ////lcd_col_b <= color[23:16];
+        ////lcd_col_g <= color[15: 8];
+        ////lcd_col_r <= color[ 7: 0];
+    end
 end
-// assign lcd_col_b = color[23:16];
-// assign lcd_col_g = color[15: 8];
-// assign lcd_col_r = color[ 7: 0];
+assign lcd_col_r = lcd_x == (320-1) ? 255 : lcd_x[7:0];
+assign lcd_col_g = lcd_x == (320-1) ? 255 : lcd_y;
+assign lcd_col_b = lcd_x == (320-1) ? 255 : lcd_frame;
 
-cpu cpu(
-  .clk     (clk10MHZ),
-  .rst_n   (initialized),
-  // .rst_n   (~reset),
-  .vsync   (vsync_vpu),  // [DEBUG]
-  .mem_en  (mem_en  ),
-  .mem_we  (mem_we  ),
-  .mem_addr(mem_addr),
-  .mem_din (mem_din ),
-  .mem_dout(mem_dout)
-);
-
-vpu vpu(
-  .clk     (clk10MHZ   ),
-  .rst_n   (initialized),
-  // .rst_n   (~reset),
-  .mem_en  (mem_en     ),
-  .mem_we  (mem_we     ),
-  .mem_addr(mem_addr   ),
-  .mem_din (mem_din    ),
-  .mem_dout(mem_dout   ),
-  .dot_clk (dot_clk    ),
-  .color   (color      ),
-  .hsync   (hsync_vpu  ),
-  .vsync   (vsync_vpu  )
-);
-
-localparam VH_DELAY = 16;
-logic [0:0] vdelay[VH_DELAY];
-logic [0:0] hdelay[VH_DELAY];
-always_ff @(posedge clk10MHZ) begin
-  hdelay[0] <= hsync_vpu;
-  vdelay[0] <= vsync_vpu;
-  for (int i=1; i<VH_DELAY; i++) begin
-    hdelay[i] <= hdelay[i-1];
-    vdelay[i] <= vdelay[i-1];
-  end
-end
-
-assign lcd_write = hsync_vpu && vsync_vpu;
-// assign lcd_write = hdelay[VH_DELAY-1] && vdelay[VH_DELAY-1];
-// assign lcd_write = hdelay[16-1] && vdelay[16-1];
+assign lcd_vblank = 0;
+//assign lcd_write = hsync_vpu && vsync_vpu;
+assign lcd_write = 1;
 
 ili9341_parallel_8bit tft0(
-    clk10MHZ,  // 4clk per pixel
+    clk10MHZ,  // 4clk per pixel (2clk per write * {lo,hi})
     reset,
     lcd_vblank,
     lcd_write,

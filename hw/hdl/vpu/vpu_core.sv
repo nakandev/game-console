@@ -34,8 +34,8 @@ module vpu_core
 
   output wire                   dot_clk,
   output reg  [31:0]            color,
-  output wire                   hsync,
-  output wire                   vsync
+  output reg                    hsync,
+  output reg                    vsync
 );
 
 wire                       line_init;
