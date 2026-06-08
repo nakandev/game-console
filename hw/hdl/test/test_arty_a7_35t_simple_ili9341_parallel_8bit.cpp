@@ -148,8 +148,6 @@ int main(int argc, char **argv) {
       // fmt::print("data8=0x{:02x}\n", data8);
       if (is_lo) {
         data_lo = data8;
-      } else {
-        data_hi = data8;
         pixels[px_ptr * 3 + 0] = data_lo & 0x1f;
         pixels[px_ptr * 3 + 1] = ((data_hi & 0x7) << 3) | ((data_lo >> 5) & 0x7);
         pixels[px_ptr * 3 + 2] = data_hi >> 3;
@@ -157,6 +155,8 @@ int main(int argc, char **argv) {
         SDL_RenderClear(renderer);
         SDL_RenderCopy(renderer, texture, NULL, NULL); // ウィンドウいっぱいに引き伸ばして表示
         SDL_RenderPresent(renderer);
+      } else {
+        data_hi = data8;
       }
     }
     if ((time_counter % 80) == 0) {

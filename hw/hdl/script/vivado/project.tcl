@@ -6,6 +6,10 @@ set PROJ_NAME   $::env(PROJ_NAME)
 set PROJ_DIR    $::env(PROJ_DIR)
 set SRCS_DC     $::env(SRCS_DC)
 set SRCS_V      $::env(SRCS_V)
+set BD_TCL      $::env(BD_TCL)
+set BD_FILE     $::env(BD_FILE)
+set BD_WRAPPER_V  $::env(BD_WRAPPER_V)
+set BD_SYNTH_V  $::env(BD_SYNTH_V)
 set SRCS_IP     $::env(SRCS_IP)
 set SRCS_SIM    $::env(SRCS_SIM)
 set TOP_NAME    $::env(TOP_NAME)
@@ -39,3 +43,9 @@ foreach src_dc ${SRCS_DC} {
   set_property used_in_implementation false [get_files ${src_dc}]
 }
 
+source ${BD_TCL}
+set bd_files [get_files ${BD_FILE}]
+read_bd $bd_files
+make_wrapper -files $bd_files -top
+add_files -norecurse ${BD_WRAPPER_V}
+update_compile_order -fileset sources_1

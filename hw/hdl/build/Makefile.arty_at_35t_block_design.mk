@@ -5,39 +5,57 @@ export BOARD_PART1 = xc7a35ticsg324-1L
 export BOARD_PART2 = digilentinc.com:arty-a7-35:part0:1.1
 export PROJ_NAME = nirvana_arty
 export PROJ_DIR = ${PWD}
-export TOP_NAME = arty_a7_35t_vpu_ili9341_parallel_8bit
+export TOP_NAME = arty_a7_35t_top
 
 export SRCS_DC = \
   ${HDL_ROOT}/platform/fpga/arty_a7_35t/constrs/arty_a7_35t.xdc \
 
-# export SRCS_V = \
-#   ${HDL_ROOT}/defines.sv \
-#   ${HDL_ROOT}/platform/fpga/arty_a7_35t/srcs/arty_a7_35t_simple_ili9341_parallel_8bit.sv \
-#   ${HDL_ROOT}/platform/video/ili9341_parallel_8bit.sv \
-
 export SRCS_V = \
   ${HDL_ROOT}/defines.sv \
-  ${HDL_ROOT}/platform/fpga/arty_a7_35t/srcs/arty_a7_35t_simple_ili9341_parallel_8bit.sv \
-  ${HDL_ROOT}/platform/video/ili9341_parallel_8bit2.sv \
+  ${HDL_ROOT}/platform/fpga/arty_a7_35t/srcs/arty_a7_35t_block_design.sv \
+  ${HDL_ROOT}/platform/video/ili9341_parallel_8bit.sv \
+  ${HDL_ROOT}/platform/video/vga.sv \
+  ${HDL_ROOT}/cpu/cpu.sv \
+  ${HDL_ROOT}/vpu/vpu.sv \
+  ${HDL_ROOT}/vpu/vpu_core.sv \
+  ${HDL_ROOT}/vpu/vpu_bg.sv \
+  ${HDL_ROOT}/vpu/vpu_sp.sv \
+  ${HDL_ROOT}/vpu/vram.sv \
+  ${HDL_ROOT}/memory/bram_tdp_rf_rf.sv \
+  # ${HDL_ROOT}/platform/fpga/arty_a7_35t/srcs/arty_a7_35t_vpu_ili9341_parallel_8bit.sv \
+
+# BD_FILE: .bd file ... Block Design file.
+# Block Design is created in Vivado GUI, and exported from Vivado.
+export BD_TCL = \
+  ${HDL_ROOT}/platform/fpga/arty_a7_35t/nirvana_microblazev_block_design.tcl
+
+export BD_FILE = \
+  ${HDL_ROOT}/build/nirvana_arty.srcs/sources_1/bd/design_1/design_1.bd
+
+export BD_WRAPPER_V = \
+  ${HDL_ROOT}/build/nirvana_arty.gen/sources_1/bd/design_1/hdl/design_1_wrapper.v
+
+export BD_SYNTH_V = \
+  ${HDL_ROOT}/build/nirvana_arty.gen/sources_1/bd/design_1/synth/design_1.v
 
 export SRCS_IP = \
 
 export SRCS_SIM = \
-  ${HDL_ROOT}/test/test_arty_a7_35t_simple_ili9341_parallel_8bit.sv \
+  ${HDL_ROOT}/test/test_arty_a7_35t_vpu_ili9341_parallel_8bit.sv \
 
 SRCS_VERILATOR = \
-  ${HDL_ROOT}/test/test_arty_a7_35t_simple_ili9341_parallel_8bit.cpp \
+  ${HDL_ROOT}/test/test_arty_a7_35t_vpu_ili9341_parallel_8bit.cpp \
 
 VERILATOR_BUILD_FLAGS = \
   --cc --exe --build -j 0 \
 	-Wno-fatal \
 	--timing \
 	--trace --trace-params --trace-structs --trace-underscore \
-	-CFLAGS "-DVL_DEBUG `sdl2-config --cflags`" \
+	-CFLAGS "-I${HDL_ROOT}/../spec/ -DVL_DEBUG `sdl2-config --cflags`" \
 	-LDFLAGS "-lfmt `sdl2-config --libs`"
 # -Wno-fatal
 
-TOP_NAME = arty_a7_35t_simple_ili9341_parallel_8bit
+TOP_NAME = arty_a7_35t_top
 ENABLE_CHECKPOINT = 1
 ENABLE_REPORT = 0
 
@@ -49,7 +67,7 @@ ${PROJ_DIR}/${PROJ_NAME}.xdc: ${SRCS_DC} ${SRCS_V} ${SRCS_IP} ${SRCS_SIM}
 	cd ${PROJ_DIR}
 	vivado  -m64 -mode batch -source ${SCRIPT_DIR}/vivado/project.tcl
 
-${PROJ_DIR}/${PROJ_NAME}_synth.dcp: ${SRCS_DC} ${SRCS_V} ${SRCS_IP} ${SRCS_SIM}
+${PROJ_DIR}/${PROJ_NAME}_synth.dcp: ${BD_TCL} ${SRCS_V} ${SRCS_IP} ${SRCS_SIM}
 	cd ${PROJ_DIR}
 	vivado  -m64 -mode batch -source ${SCRIPT_DIR}/vivado/synth.tcl
 
@@ -69,12 +87,16 @@ impl: ${PROJ_DIR}/${PROJ_NAME}_routed.dcp
 
 bit: ${PROJ_DIR}/${PROJ_NAME}.bit
 
+write-bit: ${PROJ_DIR}/${PROJ_NAME}.bit
+	cd ${PROJ_DIR}
+	vivado  -m64 -mode batch -source ${SCRIPT_DIR}/vivado/write_bitstream.tcl
+
 sim:
 	cd ${PROJ_DIR}
 	xvlog -sv ${SRCS_SIM} ${SRCS_V}
 	xelab --debug all --notimingchecks ${TOP_NAME}
-	xsim --runall ${TOP_NAME} &
-	# xsim --gui --runall ${TOP_NAME} &
+	xsim --gui --runall ${TOP_NAME} &
+	# xsim --runall ${TOP_NAME} &
 
 # iverilog:
 # 	iverilog ${SRCS_SIM} ${SRCS_V} -s ${TOP_NAME}
@@ -98,5 +120,8 @@ clean:
 	rm -f ${PROJ_DIR}/xsim.*
 	rm -f ${PROJ_DIR}/xsim_*
 	rm -f ${PROJ_DIR}/work.*.wdb
-	# rm -f ${PROJ_DIR}/*.wcfg  # sim wave confing
 	rm -f ${PROJ_DIR}/clockInfo.txt
+	# rm -f ${PROJ_DIR}/*.wcfg  # sim wave confing
+	# clean-verilator
+	rm -rf obj_dir
+	rm -f test-verilator

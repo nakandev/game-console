@@ -1,8 +1,15 @@
 `default_nettype none
 
-module arty_a7_35t_vpu_ili9341_parallel_8bit(
+module arty_a7_35t_vpu_ili9341_parallel_8bit
+  import gameconsole_pkg::*;
+(
     input wire CLK100MHZ,
     input wire [3:0] btn,
+  output wire vga_hsync,      // Driven out via Pmod
+  output wire vga_vsync,      // Driven out via Pmod
+  output reg [3:0] vga_r,     // 4-bit Red
+  output reg [3:0] vga_g,     // 4-bit Green
+  output reg [3:0] vga_b,     // 4-bit Blue
     output logic ck_a5,  // none
     output logic ck_a4,  // LCD_RST
     output logic ck_a3,  // LCD_CS
@@ -20,12 +27,12 @@ module arty_a7_35t_vpu_ili9341_parallel_8bit(
     output logic [3:0] led
 );
   
-localparam DOTCLKS = 1; // 1:50MHz, 2:25MHz.
+localparam DOTCLKS = 2; // 1:50MHz, 2:25MHz.
 localparam PIXCLKS = 2; // 2cycle
 
 logic clk10MHZ = 1'b0;
 logic clkPixel = 1'b0; // 4 clk10MHZ
-logic clkTFT = 1'b0;
+// logic clkTFT = 1'b0;
 logic [31:0] cnt0 = DOTCLKS-1;
 logic [31:0] cnt1 = PIXCLKS-1;
 wire [7:0] data8;
@@ -47,8 +54,6 @@ assign reset = btn[1];
 // assign data8 = {ck_io7, ck_io6, ck_io5, ck_io4, ck_io3, ck_io2, ck_io9, ck_io8};
 assign {ck_io7, ck_io6, ck_io5, ck_io4, ck_io3, ck_io2, ck_io9, ck_io8} = data8;
 
-assign led = {1'b0, hdraw_vpu, vdraw_vpu, initialized};
-
 logic CLK200MHZ;
 logic locked;
 
@@ -62,6 +67,8 @@ logic dot_clk;
 logic [31:0] color;
 logic hdraw_vpu;
 logic vdraw_vpu;
+
+assign led = {1'b0, hdraw_vpu, vdraw_vpu, initialized};
   
 initial begin
       // initialized = 1'b0;
@@ -104,19 +111,6 @@ always_ff @(posedge clk10MHZ) begin
         clkPixel <= ~clkPixel;
     end
 end
-
-logic [7:0] count = 0;
-
-always_ff @(posedge clkPixel) begin
-    //lcd_col_a <= color[31:24];
-    lcd_col_b <= color[23:16];
-    lcd_col_g <= color[15: 8];
-    lcd_col_r <= color[ 7: 0];
-    count <= count + 1;
-end
-// assign lcd_col_b = color[23:16];
-// assign lcd_col_g = color[15: 8];
-// assign lcd_col_r = color[ 7: 0];
 
 cpu cpu(
   .clk     (clk10MHZ),
@@ -178,6 +172,103 @@ ili9341_parallel_8bit tft0(
     initialized,
     hdraw_out,
     vdraw_out
+);
+
+logic [7:0] count = 0;
+
+logic [15:0] color16;
+reg [31:0] color_buf_in;
+reg [31:0] color_buf_out;
+reg [9:0] buf_x = 0;
+reg [9:0] buf_y = 0;
+
+assign color16 = {1'd0, color[24:20], color[15:11], color[7:3]};
+
+always_ff @(posedge clkPixel) begin
+    //lcd_col_a <= color[31:24];
+    // lcd_col_b <= color[23:16];
+    // lcd_col_g <= color[15: 8];
+    lcd_col_g <= color[23:16];
+    lcd_col_b <= color[15: 8];
+    lcd_col_r <= color[ 7: 0];
+    color_buf_in[31:0] <= color[31:0];
+    count <= count + 1;
+end
+
+always_ff @(posedge clkPixel) begin
+  if (!hdraw_vpu) begin
+    buf_x <= 0;
+  end
+  else
+  begin
+    if (buf_x < (SCREEN_W + SCREEN_HBLANK)-1) begin
+      buf_x <= buf_x + 1;
+    end else begin
+      buf_x <= 0;
+    end
+  end
+end
+
+always_ff @(posedge clkPixel) begin
+  if (!vdraw_vpu) begin
+    buf_y <= 0;
+  end
+  else
+  begin
+    if (buf_y < (SCREEN_H + SCREEN_VBLANK)-1) begin
+      buf_y <= buf_y + 1;
+    end else begin
+      buf_y <= 0;
+    end
+  end
+end
+
+wire [9:0] vga_x;
+wire [9:0] vga_y;
+wire video_on;
+
+// Instantiate your sync controller
+vga_controller vga_inst (
+    .clk_100MHz(CLK100MHZ),
+    .reset(btn[0]),
+    .hsync(vga_hsync),
+    .vsync(vga_vsync),
+    .pixel_x(vga_x),
+    .pixel_y(vga_y),
+    .video_on(video_on)
+);
+
+always @(*) begin
+    if (!video_on) begin
+        vga_r = 4'h0;
+        vga_g = 4'h0;
+        vga_b = 4'h0;
+    end else begin
+        vga_b <= color_buf_out[23:16];
+        vga_g <= color_buf_out[15: 8];
+        vga_r <= color_buf_out[ 7: 0];
+    end
+end
+
+
+bram_tdp_rf_rf #(
+  // .ADDR_W(15),
+  // .DATA_W(16)
+  .ADDR_W(10),
+  .DATA_W(32)
+) colorbuf_ram (
+  .clka (clkPixel),
+  .ena  (hdraw_vpu),
+  .wea  (1),
+  .addra(buf_x),
+  .dina (color_buf_in),
+  .douta(0),
+  .clkb (CLK100MHZ),
+  .enb  (1),
+  .web  (0),
+  .addrb({1'd0, vga_x[9:1]}),
+  .dinb (0),
+  .doutb(color_buf_out)
 );
 
 endmodule

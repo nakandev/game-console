@@ -21,6 +21,7 @@ export SRCS_V = \
   ${HDL_ROOT}/vpu/vpu_sp.sv \
   ${HDL_ROOT}/vpu/vram.sv \
   ${HDL_ROOT}/memory/bram_tdp_rf_rf.sv \
+  # ${HDL_ROOT}/platform/fpga/arty_a7_35t/srcs/arty_a7_35t_vpu_ili9341_parallel_8bit.sv \
 
 export SRCS_IP = \
 
@@ -35,7 +36,7 @@ VERILATOR_BUILD_FLAGS = \
 	-Wno-fatal \
 	--timing \
 	--trace --trace-params --trace-structs --trace-underscore \
-	-CFLAGS "-DVL_DEBUG `sdl2-config --cflags`" \
+	-CFLAGS "-I${HDL_ROOT}/../spec/ -DVL_DEBUG `sdl2-config --cflags`" \
 	-LDFLAGS "-lfmt `sdl2-config --libs`"
 # -Wno-fatal
 

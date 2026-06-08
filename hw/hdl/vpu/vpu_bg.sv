@@ -28,11 +28,11 @@ module vpu_bg
   output reg  [LINEBUFF_DATA_W-1:0] line_dina,
   input  wire [LINEBUFF_DATA_W-1:0] line_douta,
 
-  output wire                   bg_param,
+  // output wire                   bg_param,
   output wire                   dot_clk,
   output reg  [31:0]            color,
-  output reg                    hsync,
-  output reg                    vsync
+  output wire/*reg*/            hdraw,
+  output wire/*reg*/            vdraw
 );
 
 localparam HMAX = SCREEN_W + SCREEN_HBLANK;
@@ -64,8 +64,9 @@ assign state = line_cycle < LINE_CYCLE_PARAM   ? STATE_PARAM :
                line_cycle < LINE_CYCLE_VISIBLE ? STATE_PIPELINE :
                STATE_WAITSYNC;
 
+wire parameter_enable;
 assign parameter_enable = (state == STATE_PARAM);
-assign bg_param = parameter_enable;
+// assign bg_param = parameter_enable;
 vpu_bg_parameter_load vpu_bg_parameter_load (
   clk,
   rst_n,
@@ -110,23 +111,23 @@ vpu_bg_pipeline vpu_bg_pipeline (
   dummy
 );
 
-// assign hsync = (state == STATE_PIPELINE) && (line_cycle < LINE_CYCLE_VISIBLE);
-// assign vsync = y < SCREEN_H;
-localparam VH_DELAY = 16;
-logic [0:0] vdelay[VH_DELAY];
-logic [0:0] hdelay[VH_DELAY];
-always_ff @(posedge clk) begin
-  hdelay[0] <= (state == STATE_PIPELINE) && (line_cycle < LINE_CYCLE_VISIBLE);
-  vdelay[0] <= y < SCREEN_H;
-  for (int i=1; i<VH_DELAY; i++) begin
-    hdelay[i] <= hdelay[i-1];
-    vdelay[i] <= vdelay[i-1];
-  end
-  // hsync <= hdelay[10-1];
-  // vsync <= vdelay[10-1];
-  hsync <= hdelay[12-1];
-  vsync <= vdelay[12-1];
-end
+assign hdraw = (state == STATE_PIPELINE) && (line_cycle < LINE_CYCLE_VISIBLE);
+assign vdraw = y < SCREEN_H;
+// localparam VH_DELAY = 16;
+// logic [0:0] vdelay[VH_DELAY];
+// logic [0:0] hdelay[VH_DELAY];
+// always_ff @(posedge clk) begin
+//   hdelay[0] <= (state == STATE_PIPELINE) && (line_cycle < LINE_CYCLE_VISIBLE);
+//   vdelay[0] <= y < SCREEN_H;
+//   for (int i=1; i<VH_DELAY; i++) begin
+//     hdelay[i] <= hdelay[i-1];
+//     vdelay[i] <= vdelay[i-1];
+//   end
+//   // hdraw <= hdelay[10-1];
+//   // vdraw <= vdelay[10-1];
+//   hdraw <= hdelay[12-1];
+//   vdraw <= vdelay[12-1];
+// end
 
 endmodule
 
@@ -299,6 +300,7 @@ vpu_bg_pipeline0_affine_transform bg_pipe0(
   rst_n,
   x,
   y,
+  bg_enable,
   bg_tilesize,
   bg_x,
   bg_y,
@@ -349,6 +351,7 @@ wire [15:0] tile_idx;
 vpu_bg_pipeline1_map_load bg_pipe1 (
   clk,
   rst_n,
+  bg_enable_p01,
   objx_p01,
   objy_p01,
   tw_p01,
@@ -389,6 +392,7 @@ reg [7:0] pal_idx;
 vpu_bg_pipeline2_tile_load bg_pipe2 (
   clk,
   rst_n,
+  bg_enable_p12,
   objx_p12,
   objy_p12,
   tile_bank_p12,
@@ -421,6 +425,7 @@ wire [31:0] color_n[4];
 vpu_bg_pipeline3_palette_load  bg_pipe3 (
   clk,
   rst_n,
+  bg_enable_p23,
   layer_p23,
   pal_mode_p23,
   pal_bank_p23,
@@ -432,13 +437,13 @@ vpu_bg_pipeline3_palette_load  bg_pipe3 (
   color_n
 );
 
-reg       bg_enable_p34;
+reg       bg_enable_p34[4];
 reg [8:0] x_p34;
 reg [1:0] layer_p34;
 reg [31:0] color_n_p34[4];
 assign color_n_p34 = color_n;
 always_ff @(posedge clk) begin
-  bg_enable_p34 <= bg_enable_p23;
+  bg_enable_p34[layer_p23] <= bg_enable_p23;
   x_p34 <= x_p23;
   layer_p34 <= layer_p23;
   // color_n_p34 <= color_n;
@@ -449,6 +454,7 @@ reg done;
 vpu_bg_pipeline4_color_merge bg_pipe4 (
   clk,
   rst_n,
+  bg_enable_p34,
   x_p34,
   layer_p34,
   color_n_p34,
@@ -473,6 +479,7 @@ module vpu_bg_pipeline0_affine_transform
   input  wire        rst_n,
   input  wire [ 8:0] xin,
   input  wire [ 7:0] yin,
+  input  wire        bg_enable,
   input  wire [ 1:0] bg_tilesize,
   input  wire [ 8:0] bg_x,
   input  wire [ 7:0] bg_y,
@@ -525,6 +532,7 @@ module vpu_bg_pipeline1_map_load
 (
   input  wire        clk,
   input  wire        rst_n,
+  input  wire        bg_enable,
   input  wire [ 8:0] objx,
   input  wire [ 7:0] objy,
   input  wire [ 7:0] tw,
@@ -538,25 +546,29 @@ module vpu_bg_pipeline1_map_load
   output reg  [15:0] tile_idx
 );
 
-localparam HW_TILE_W = 8;
-localparam HW_TILE_H = 8;
-localparam HW_TILEMAP_W = 512;
-localparam HW_TILEMAP_H = 512;
+// localparam HW_TILE_W = 8;
+// localparam HW_TILE_H = 8;
+// localparam HW_TILEMAP_W = 512;
+// localparam HW_TILEMAP_H = 256;
 
 shortint offset0;
 shortint offset1x;
 shortint offset1y;
 
 always_comb begin
-  tx0 = objx & (HW_TILEMAP_W-1);
-  ty0 = objy & (HW_TILEMAP_H-1);
-  offset0 = (tx0 / tw) + (ty0 / th) * (HW_TILEMAP_W / tw);
-  offset1x = (tx0 & (tw-1)) / HW_TILE_W;
-  offset1y = (ty0 & (th-1)) / HW_TILE_H * (tw / HW_TILE_W);
-  tile_idx = map_data * (tw * th / HW_TILE_H / HW_TILE_W) + offset1x + offset1y;
+  if (bg_enable) begin
+    tx0 = objx & (HW_TILEMAP_W-1);
+    ty0 = objy & (HW_TILEMAP_H-1);
+    offset0 = (tx0 / tw) + (ty0 / th) * (HW_TILEMAP_W / tw);
+    offset1x = (tx0 & (tw-1)) / HW_TILE_W;
+    offset1y = (ty0 & (th-1)) / HW_TILE_H * (tw / HW_TILE_W);
+    tile_idx = map_data * (tw * th / HW_TILE_H / HW_TILE_W) + offset1x + offset1y;
+  end else begin
+    tile_idx = 0;
+  end
 end
 
-assign map_en = 1;
+assign map_en = bg_enable;
 assign map_addr = {map_bank, offset0[10:0]};
 
 endmodule
@@ -567,6 +579,7 @@ module vpu_bg_pipeline2_tile_load
 (
   input  wire        clk,
   input  wire        rst_n,
+  input  wire        bg_enable,
   input  wire [ 8:0] objx,
   input  wire [ 7:0] objy,
   input  wire [TILE_BANK_W-1:0] tile_bank,
@@ -587,14 +600,18 @@ shortint tiley;
 reg  [TILE_INDX_W-1:0] tile_addr_lo;
 
 always_comb begin
-  tilex = (objx & (HW_TILEMAP_W-1)) & (HW_TILE_W-1);
-  tiley = (objy & (HW_TILEMAP_H-1)) & (HW_TILE_H-1);
-  tile_addr_lo = ((tile_idx * HW_TILE_W * HW_TILE_H) + (tiley * HW_TILE_W) + tilex);
-  tile_addr = {tile_bank, tile_addr_lo};
+  if (bg_enable) begin
+    tilex = (objx & (HW_TILEMAP_W-1)) & (HW_TILE_W-1);
+    tiley = (objy & (HW_TILEMAP_H-1)) & (HW_TILE_H-1);
+    tile_addr_lo = ((tile_idx * HW_TILE_W * HW_TILE_H) + (tiley * HW_TILE_W) + tilex);
+    tile_addr = {tile_bank, tile_addr_lo};
+  end else begin
+    tile_addr = 0;
+  end
 end
 
-assign tile_en = 1;
-assign pal_idx = tile_data;
+assign tile_en = bg_enable;
+assign pal_idx = bg_enable ? tile_data : 0;
 
 endmodule
 
@@ -604,6 +621,7 @@ module vpu_bg_pipeline3_palette_load
 (
   input  wire        clk,
   input  wire        rst_n,
+  input  wire        bg_enable,
   input  wire [ 1:0] layer,
   input  wire        pal_mode,
   input  wire [PAL_BANK_W-1:0] pal_bank,
@@ -617,19 +635,25 @@ module vpu_bg_pipeline3_palette_load
 
 reg [1:0] layer_prev = 0;
 
-assign pal_addr = (pal_mode == 0) ? {pal_bank, pal_idx} : {pal_bank, pal_idx & 8'h0F + pal_no * 16};
+assign pal_addr = bg_enable ? 
+  (pal_mode == 0) ? {pal_bank, pal_idx} : {pal_bank, pal_idx & 8'h0F + pal_no * 16}
+  : 0;
 
 always_ff @(posedge clk) begin
   layer_prev <= layer;
 end
 
-assign pal_en = 1;
+assign pal_en = bg_enable;
 // assign color_n[0] = (layer_prev == 0) ? pal_data : color_n[0];
 // assign color_n[1] = (layer_prev == 1) ? pal_data : color_n[1];
 // assign color_n[2] = (layer_prev == 2) ? pal_data : color_n[2];
 // assign color_n[3] = (layer_prev == 3) ? pal_data : color_n[3];
 always_comb begin
-  color_n[layer_prev] = pal_data;
+  if (bg_enable) begin
+    color_n[layer_prev] = pal_data;
+  end else begin
+    color_n[layer_prev] = 0;
+  end
 end
 
 endmodule
@@ -640,18 +664,20 @@ module vpu_bg_pipeline4_color_merge
 (
   input  wire        clk,
   input  wire        rst_n,
+  input  wire        bg_enable[4],
   input  wire [ 8:0] x,
   input  wire [ 1:0] layer,
   input  wire [31:0] color_n[4],
   output reg  [LINEBUFF_BANK_W-1:0] line_wea,
-  output wire [LINEBUFF_ADDR_W-1:0] line_addra,
+  // output wire [LINEBUFF_ADDR_W-1:0] line_addra,
+  output reg [LINEBUFF_ADDR_W-1:0] line_addra,
   output reg  [LINEBUFF_DATA_W-1:0] line_dina,
   input  wire [LINEBUFF_DATA_W-1:0] line_douta,
   output reg  [31:0] color_out,
   output reg         done
 );
 
-function logic [31:0] color_merge(logic [31:0] cols[5]);
+function automatic logic [31:0] color_merge(logic [31:0] cols[5]);
   logic [31:0] dst = 0;
   logic [31:0] src;
   logic [ 7:0] src_a;
@@ -675,30 +701,32 @@ function logic [31:0] color_merge(logic [31:0] cols[5]);
 endfunction
 
 assign done = (layer == 3);
-assign line_wea = (layer == 3);
+assign line_wea = (layer == 3);  // read linebuffer pixel --> clear the pixel
 assign line_addra = x;
 assign line_dina = 0;
 
 reg [31:0] colors[5];
-assign colors[0] = color_n[0];
-assign colors[1] = color_n[1];
-assign colors[2] = color_n[2];
-assign colors[3] = color_n[3];
-assign colors[4] = {line_douta, 16'h0, line_douta};
+assign colors[0] = bg_enable[0] ? color_n[0] : 0;
+assign colors[1] = bg_enable[1] ? color_n[1] : 0;
+assign colors[2] = bg_enable[2] ? color_n[2] : 0;
+assign colors[3] = bg_enable[3] ? color_n[3] : 0;
+assign colors[4] = line_douta;
+// assign colors[4] = 8'd0;
 
 //always_comb begin
 always_ff @(posedge clk) begin
-  if (layer == 0) begin
-  end
   if (layer == 3) begin
     color_out <= color_merge(colors);
     // line_wea <= 1;
     // done <= 1;
   end
-  else begin
-    // line_wea <= 0;
-    // done <= 0;
-  end
+  // else begin
+  //   color_out <= 0;
+  //   // line_wea <= 0;
+  //   // done <= 0;
+  // end
+  // line_wea <= (layer == 3);  // read linebuffer pixel --> clear the pixel
+  // line_addra <= x;
 end
 
 endmodule

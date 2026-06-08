@@ -34,8 +34,8 @@ module vpu_core
 
   output wire                   dot_clk,
   output reg  [31:0]            color,
-  output reg                    hsync,
-  output reg                    vsync
+  output wire                   hdraw,
+  output wire                   vdraw
 );
 
 wire                       line_init;
@@ -78,6 +78,9 @@ always_ff @(posedge clk) begin
   end
 end
 
+wire hdraw0;
+wire vdraw0;
+
 vpu_bg vpu_bg
 (
   .clk        (clk),
@@ -109,8 +112,8 @@ vpu_bg vpu_bg
 
   .dot_clk    (dot_clk),
   .color      (color),
-  .hsync      (hsync),
-  .vsync      (vsync)
+  .hdraw      (hdraw0),
+  .vdraw      (vdraw0)
 );
 
 vpu_sp vpu_sp
@@ -158,6 +161,28 @@ vpu_linebuffer vpu_linebuffer
   .dinb  (line_dinb ),
   .doutb (line_doutb)
 );
+
+// assign hdraw = (state == STATE_PIPELINE) && (line_cycle < LINE_CYCLE_VISIBLE);
+// assign vdraw = y < SCREEN_H;
+assign hdraw = hdraw0;
+assign vdraw = vdraw0;
+// localparam VH_DELAY = 16;
+// logic [0:0] vdelay[VH_DELAY];
+// logic [0:0] hdelay[VH_DELAY];
+// always_ff @(posedge clk) begin
+//   // hdelay[0] <= (state == STATE_PIPELINE) && (line_cycle < LINE_CYCLE_VISIBLE);
+//   // vdelay[0] <= y < SCREEN_H;
+//   hdelay[0] <= hdraw0;
+//   vdelay[0] <= vdraw0;
+//   for (int i=1; i<VH_DELAY; i++) begin
+//     hdelay[i] <= hdelay[i-1];
+//     vdelay[i] <= vdelay[i-1];
+//   end
+//   // hdraw <= hdelay[10-1];
+//   // vdraw <= vdelay[10-1];
+//   hdraw <= hdelay[12-1];
+//   vdraw <= vdelay[12-1];
+// end
 
 endmodule
 

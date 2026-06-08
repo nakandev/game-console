@@ -6,7 +6,9 @@
  * The module will write data to the ILI9341 at half this speed (i.e., 8 MHz).
  */
 
-module ili9341_parallel_8bit(
+module ili9341_parallel_8bit
+  import gameconsole_pkg::*;
+(
     input wire clk,
     input wire rst,
     input lcd_vblank,
@@ -24,8 +26,8 @@ module ili9341_parallel_8bit(
     output hsync_out,
     output vsync_out
 );
-    localparam SCREEN_W = 320;
-    localparam SCREEN_H = 240;
+    localparam LCD_SCREEN_W = 320;
+    localparam LCD_SCREEN_H = 240;
 
     localparam INIT_LEN = 49;
     reg [8:0] INIT_DAT [0:INIT_LEN-1];
@@ -86,7 +88,7 @@ module ili9341_parallel_8bit(
          INIT_DAT[33] = {1'b1, 8'h86};
         // Memory Access Control: ExchangeXY, RGB bit order
         INIT_DAT[34]  = {1'b0, 8'h36};
-         INIT_DAT[35] = {1'b1, 8'h28};
+         INIT_DAT[35] = {1'b1, 8'h20};
         // Pixel format: RGB565 (16 bits / pixel)
         INIT_DAT[36]  = {1'b0, 8'h3A};
          INIT_DAT[37] = {1'b1, 8'h55};
@@ -155,8 +157,6 @@ module ili9341_parallel_8bit(
     // assign initialized = !rst && (reset_stage >= RESET_INIT2 && init2_cnt >= INIT2_LEN-8);
     //assign initialized = !rst && reset_stage == RESET_DONE &&
     //                     reset_clks == 0 && init_cnt == INIT_LEN;
-    // assign hsync_out = data_count_x == SCREEN_W - 1; //0;
-    // assign vsync_out = data_count_y == SCREEN_H - 1; //0;
     assign hsync_out = data_count_x == SCREEN_W - 1; //0;
     assign vsync_out = data_count_y == SCREEN_H - 1; //0;
 
@@ -164,10 +164,12 @@ module ili9341_parallel_8bit(
     function [7:0] col_hi(input [7:0] r, input [7:0] g, input [7:0] b); // RRRRRGGG bits
         // col_hi = {r[7:3], g[7:5]};
         col_hi = {g[4:2], b[7:3]};
+        // col_hi = {g[4:2], r[7:3]};
     endfunction
     function [7:0] col_lo(input [7:0] r, input [7:0] g, input [7:0] b); // GGGBBBBB bits
         // col_lo = {g[4:2], b[7:3]};
         col_lo = {r[7:3], g[7:5]};
+        // col_lo = {b[7:3], g[7:5]};
     endfunction
 
     always @ (posedge clk) begin

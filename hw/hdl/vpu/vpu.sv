@@ -12,8 +12,8 @@ module vpu
 
   output wire        dot_clk,
   output reg  [31:0] color,
-  output reg         hsync,
-  output reg         vsync
+  output reg         hdraw,
+  output reg         vdraw
 );
 
 wire                   bg_param_ram_ena  , bg_param_ram_enb  , sp_param_ram_enb  ;
@@ -40,7 +40,7 @@ wire [31:0] sp_linebuffer[320];
 
 // reg        dot_clk;
 // reg [31:0] color;
-// reg        hsync, vsync;
+// reg        hdraw, vdraw;
 
 assign bg_param_ram_dinb = 0;
 assign bg_map_ram_dinb   = 0;
@@ -85,14 +85,17 @@ vpu_core vpu_core
 
   .dot_clk        (dot_clk),
   .color          (color),
-  .hsync          (hsync),
-  .vsync          (vsync)
+  .hdraw          (hdraw),
+  .vdraw          (vdraw)
 );
 
 vram vram
 (
   .clk                (clk),
   .rst_n              (rst_n),
+
+  .hdraw              (hdraw),
+  .vdraw              (vdraw),
 
   .mem_en             (mem_en),
   .mem_we             (mem_we),

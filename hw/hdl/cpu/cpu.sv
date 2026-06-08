@@ -4,7 +4,7 @@ module cpu
   input  wire        clk,
   input  wire        rst_n,
 
-  input  wire        vsync,  // [DEBUG]
+  input  wire        vdraw,  // [DEBUG]
 
   output wire        mem_en,
   output wire        mem_we,
@@ -31,13 +31,14 @@ reg        init_we;
 
 reg [8:0] bg_x;
 reg [7:0] bg_y;
-reg prev_vsync;
+reg prev_vdraw;
+longint frame;
 
 logic [31:0] palcolor[7] = {
   32'hFF000000/*Black*/,
   32'hFF0000FF/*Red*/,
-  32'hFF00FF00/*Blue*/,
-  32'hFFFF0000/*Green*/,
+  32'hFF00FF00/*Green*/,
+  32'hFFFF0000/*Blue*/,
   32'hFF00FFFF/*Yellow*/,
   32'hFFFF00FF/*Purple*/,
   32'hFFFFFFFF/*While*/
@@ -55,7 +56,8 @@ always_ff @(posedge clk) begin
     init_count <= 0;
     bg_x <= 0;
     bg_y <= 0;
-    prev_vsync <= 0;
+    prev_vdraw <= 0;
+    frame <= 0;
   end
   else begin
     if ((init_state == INIT_BEGIN    && init_count == 100-1)
@@ -70,15 +72,30 @@ always_ff @(posedge clk) begin
       init_count <= 0;
       init_state <= init_state + 1;
     end else if (init_state < INIT_FIN) begin
-      init_count <= init_count + 1;
-    end else begin
-      if (init_count >= (320+80)*4*(240+80) -1) begin
-        init_count <= 0;
-        bg_x <= bg_x + 1;
-        bg_y <= bg_y + 1;
-      end
-      else begin
+      if (!vdraw) begin
         init_count <= init_count + 1;
+      end else begin
+        init_count <= init_count;
+      end
+    end else begin
+      // if (init_count >= (320+80)*4*(240+80) -1) begin
+      //   init_count <= 0;
+      //   bg_x <= bg_x + 1;
+      //   bg_y <= bg_y + 1;
+      //   frame <= frame + 1;
+      // end
+      // else begin
+      //   init_count <= init_count + 1;
+      // end
+      if (!vdraw) begin
+        if (prev_vdraw) begin
+          bg_x <= bg_x + 1;
+          bg_y <= bg_y + 1;
+          frame <= frame + 1;
+        end
+        init_count <= init_count + 1;
+      end else begin
+        init_count <= 0;
       end
     end
 
@@ -103,7 +120,7 @@ always_ff @(posedge clk) begin
         init_data <= 0 
           | (1'b1 << 31)          // sp_enable=1
           // | (1'b0 << 31)          // sp_enable=0
-          | (1'b1 << 30)          // sp_affineEnable=1
+          // | (1'b1 << 30)          // sp_affineEnable=1
           | (2'b11 << 24)         // sp_tilesize
           | ((20*(init_count/5-8)+50) << 8)  // sp_x
           | (( 1*(init_count/5-8)+50) << 0); // sp_y
@@ -133,7 +150,7 @@ always_ff @(posedge clk) begin
           | (1'b1 << 31)          // sp_enable=1
           | (2'b11 << 24)         // sp_tilesize
           | ((20*(init_count/5-124)+200) << 8)  // sp_x
-          | ((-3*(init_count/5-124)+200) << 0); // sp_y
+          | ((-3*(init_count/5-124)+(SCREEN_H-40)) << 0); // sp_y
       end
       else if (init_count inside {124*5+1, 125*5+1, 126*5+1, 127*5+1}) begin
         init_data <= 0
@@ -174,7 +191,7 @@ always_ff @(posedge clk) begin
       // tile
       init_en <= 1;
       init_we <= 1;
-      init_addr <= 32'h0621_0000 + init_count;
+      init_addr <= 32'h0620_4000 + init_count;
       init_data <= init_count / 64;
     end
     else if (init_state == INIT_PAL_SP) begin
@@ -194,14 +211,23 @@ always_ff @(posedge clk) begin
     end
     else begin
       // init_en <= 1;
-      init_en <= (vsync && !prev_vsync);
-      // init_en <= !vsync;
+      init_en <= (!vdraw && prev_vdraw);
       init_we <= 1;
-      init_addr <= 32'h0600_0000 + 128*5 + 3*5 + 0;  // BG3 param[0]
-      // init_data <= (1'b1 << 31) | ((bg_x) << 8) | (bg_y);
-      init_data <= (1'b1 << 31) | ((bg_x>>2) << 8) | (bg_y>>2);
+      if ((frame & 1) == 0) begin
+        init_addr <= 32'h0600_0000 + 128*5 + 3*5 + 0;  // BG3 param[0]
+        // init_data <= (1'b1 << 31) | ((bg_x>>2) << 8) | (bg_y>>2);
+        init_data <= (1'b1 << 31) | ((bg_x) << 8) | (bg_y);
+      end
+      // else begin
+      //   init_addr <= 32'h0600_0000 + 7*5 + 0;  // sp[7] param[0]
+      //   init_data <= 0 
+      //     | (1'b1 << 31)          // sp_enable=1
+      //     | (2'b00 << 24)         // sp_tilesize
+      //     | ((20*7+20) << 8)  // sp_x
+      //     | (( 1*7+20+(bg_y&63)) << 0); // sp_y
+      // end
     end
-    prev_vsync <= vsync;
+    prev_vdraw <= vdraw;
   end
 end
 

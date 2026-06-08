@@ -6,6 +6,10 @@ set PROJ_NAME   $::env(PROJ_NAME)
 set PROJ_DIR    $::env(PROJ_DIR)
 set SRCS_DC     $::env(SRCS_DC)
 set SRCS_V      $::env(SRCS_V)
+set BD_TCL      $::env(BD_TCL)
+set BD_FILE     $::env(BD_FILE)
+set BD_WRAPPER_V  $::env(BD_WRAPPER_V)
+set BD_SYNTH_V  $::env(BD_SYNTH_V)
 set SRCS_IP     $::env(SRCS_IP)
 set SRCS_SIM    $::env(SRCS_SIM)
 set TOP_NAME    $::env(TOP_NAME)
@@ -15,7 +19,8 @@ set ENABLE_REPORT 0
 # --------------------------------
 # synth_1/top.tcl
 cd ${PROJ_DIR}
-open_checkpoint -part ${BOARD_PART1} ${PROJ_DIR}/${PROJ_NAME}_routed.dcp
+# open_checkpoint -part ${BOARD_PART1} ${PROJ_DIR}/${PROJ_NAME}_routed.dcp
+open_checkpoint ${PROJ_DIR}/${PROJ_NAME}_routed.dcp
 set_param chipscope.maxJobs ${MAXJOBS}
 set_param project.singleFileAddWarning.threshold 0
 set_param project.compositeFile.enableAutoGeneration 0

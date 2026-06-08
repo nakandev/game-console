@@ -5,7 +5,7 @@ export BOARD_PART1 = xc7a35ticsg324-1L
 export BOARD_PART2 = digilentinc.com:arty-a7-35:part0:1.1
 export PROJ_NAME = nirvana_arty
 export PROJ_DIR = ${PWD}
-export TOP_NAME = arty_a7_35t_vpu_ili9341_parallel_8bit
+export TOP_NAME = top_vga
 
 export SRCS_DC = \
   ${HDL_ROOT}/platform/fpga/arty_a7_35t/constrs/arty_a7_35t.xdc \
@@ -16,17 +16,16 @@ export SRCS_DC = \
 #   ${HDL_ROOT}/platform/video/ili9341_parallel_8bit.sv \
 
 export SRCS_V = \
-  ${HDL_ROOT}/defines.sv \
-  ${HDL_ROOT}/platform/fpga/arty_a7_35t/srcs/arty_a7_35t_simple_ili9341_parallel_8bit.sv \
-  ${HDL_ROOT}/platform/video/ili9341_parallel_8bit2.sv \
+  ${HDL_ROOT}/test/test_vga.sv \
+  ${HDL_ROOT}/platform/video/vga.sv \
 
 export SRCS_IP = \
 
 export SRCS_SIM = \
-  ${HDL_ROOT}/test/test_arty_a7_35t_simple_ili9341_parallel_8bit.sv \
+  ${HDL_ROOT}/test/test_vga.sv \
 
 SRCS_VERILATOR = \
-  ${HDL_ROOT}/test/test_arty_a7_35t_simple_ili9341_parallel_8bit.cpp \
+  ${HDL_ROOT}/test/test_vga.cpp \
 
 VERILATOR_BUILD_FLAGS = \
   --cc --exe --build -j 0 \
@@ -37,7 +36,7 @@ VERILATOR_BUILD_FLAGS = \
 	-LDFLAGS "-lfmt `sdl2-config --libs`"
 # -Wno-fatal
 
-TOP_NAME = arty_a7_35t_simple_ili9341_parallel_8bit
+TOP_NAME = top_vga
 ENABLE_CHECKPOINT = 1
 ENABLE_REPORT = 0
 
@@ -100,3 +99,4 @@ clean:
 	rm -f ${PROJ_DIR}/work.*.wdb
 	# rm -f ${PROJ_DIR}/*.wcfg  # sim wave confing
 	rm -f ${PROJ_DIR}/clockInfo.txt
+

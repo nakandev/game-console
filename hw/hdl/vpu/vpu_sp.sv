@@ -9,18 +9,18 @@ typedef enum {
 
 function logic [7:0] get_tw(input [1:0] tilesize);
    case(tilesize)
-     2'b00 : get_tw = 16'd8;
-     2'b01 : get_tw = 16'd16;
-     2'b10 : get_tw = 16'd32;
-     2'b11 : get_tw = 16'd64;
+     2'b00 : get_tw = 8'd8;
+     2'b01 : get_tw = 8'd16;
+     2'b10 : get_tw = 8'd32;
+     2'b11 : get_tw = 8'd64;
    endcase
 endfunction
 function logic [7:0] get_th(input [1:0] tilesize);
    case(tilesize)
-     2'b00 : get_th = 16'd8;
-     2'b01 : get_th = 16'd16;
-     2'b10 : get_th = 16'd32;
-     2'b11 : get_th = 16'd64;
+     2'b00 : get_th = 8'd8;
+     2'b01 : get_th = 8'd16;
+     2'b10 : get_th = 8'd32;
+     2'b11 : get_th = 8'd64;
    endcase
 endfunction
 
@@ -76,11 +76,18 @@ vpu_sp_state_t state;
 
 assign x = line_cycle / 4;
 
+wire parameter_enable;
+wire pipeline_enable;
 assign parameter_enable = (state == STATE_SPPARAM);
 assign pipeline_enable = (state == STATE_SPPIPELINE);
 assign line_init = (state <= STATE_PARAM);
 // always_comb begin
 always_ff @(posedge clk) begin
+  if (y >= SCREEN_H) begin
+    state <= STATE_WAITSYNC;
+    sp_cycle <= 0;
+    sp_idx <= 0;
+  end else
   if (line_cycle < LINE_CYCLE_PARAM) begin
     state <= STATE_PARAM;
     sp_cycle <= 0;
@@ -240,20 +247,28 @@ always_comb begin
   end
 end
 
+wire [ 0: 0]/*[31:31]*/ sp_enable;
+wire [ 0: 0]/*[30:30]*/ sp_afen;
+wire [ 1: 0]/*[25:24]*/ sp_tilesize;
+wire [ 7: 0]/*[ 7: 0]*/ sp_y;
+wire [ 8: 0]/*[ 7: 0]*/ sp_y1;
+wire [ 7: 0] th;
+wire [ 0: 0] area_in;
+assign sp_enable   = sp_data0_cache[31:31];
+assign sp_afen     = sp_data0_cache[30:30];
+assign sp_tilesize = sp_data0_cache[25:24];
+assign sp_y        = sp_data0_cache[ 7: 0];
+assign th = get_th(sp_tilesize);
+assign sp_y1       = sp_y + th;
+assign area_in = sp_enable && 
+                (sp_afen ?
+                  (((sp_y - (th>>1)) <= y) && (y < (sp_y1 + (th>>1)))) :
+                  ((sp_y <= y) && (y < sp_y1)));
+
 assign done = (~rst_n) ? 0 :
   (~area_in && offset == 1) ? 1 :
   (area_in && offset == PARAM_SIZE-1) ? 1 : 0;
   // (area_in) ? 0 : done;
-
-wire [ 0: 0]/*[31:31]*/ sp_enable;
-wire [ 1: 0]/*[25:24]*/ sp_tilesize;
-wire [ 7: 0]/*[ 7: 0]*/ sp_y;
-wire [ 8: 0]/*[ 7: 0]*/ sp_y1;
-assign sp_enable   = sp_data0_cache[31:31];
-assign sp_tilesize = sp_data0_cache[25:24];
-assign sp_y        = sp_data0_cache[ 7: 0];
-assign sp_y1       = sp_y + get_th(sp_tilesize);
-assign area_in = (sp_enable && sp_y <= y && y < sp_y1);
 
 assign param_addr = (sp_idx * PARAM_SIZE) + offset;
 assign param_en = parameter_enable;
@@ -352,13 +367,15 @@ always_ff @(posedge clk) begin
   else begin
     if (pipeline_enable) begin
       // if (x < tw-1) begin
-      if (x < (sp_afen ? (sp_x + tw-1) : (sp_x + tw + (tw>>2)-1))) begin
+      // if (x < (sp_afen ? (sp_x + tw-1) : (sp_x + tw + (tw>>2)-1))) begin
+      if (x < (sp_afen ? (sp_x + tw + (tw>>1)-1) : (sp_x + tw-1))) begin
         x <= x + 1;
       end else begin
       end
     end
     else begin
-      x <= sp_afen ? sp_x : sp_x - (tw>>2);
+      // x <= sp_afen ? sp_x : sp_x - (tw>>2);
+      x <= sp_afen ? sp_x - (tw>>1) : sp_x;
     end
   end
 end
@@ -371,6 +388,7 @@ vpu_sp_pipeline0_affine_transform sp_pipe0(
   sp_tilesize,
   sp_x,
   sp_y,
+  sp_enable,
   sp_afen,
   sp_affine,
   objx,
@@ -538,6 +556,7 @@ module vpu_sp_pipeline0_affine_transform
   input  wire [ 1:0] sp_tilesize,
   input  wire [ 8:0] sp_x,
   input  wire [ 7:0] sp_y,
+  input  wire        sp_enable,
   input  wire        sp_afen,
   input  wire [95:0] sp_affine,
   output reg  [ 8:0] objx,
@@ -584,7 +603,7 @@ always_comb begin
   xend = xin + tw;
   // [TODO] affine transform
   if (sp_afen) begin
-    area_in1 = (-tw0 <= objx0 && objx0 < tw0+(tw0>>2)) && (-th0 <= objy0 && objy0 < th0+(th0>>2));
+    area_in1 = sp_enable && (-tw0 <= objx0 && objx0 < tw0+(tw0>>2)) && (-th0 <= objy0 && objy0 < th0+(th0>>2));
     // x0 = {7'h0, objx0} - Bx;
     // y0 = {8'h0, objy0} - By;
     x0 = objx0 - Bx;
@@ -595,15 +614,15 @@ always_comb begin
     Bdy0 = Bd * y0;
     x1 = (Bax0 >> 8) + (Bby0 >> 8) + Bx;
     y1 = (Bcx0 >> 8) + (Bdy0 >> 8) + By;
-    area_inA1 = (0 <= x1 && x1 < tw0) && (0 <= y1 && y1 < th0);
+    area_inA1 = sp_enable && (0 <= x1 && x1 < tw0) && (0 <= y1 && y1 < th0);
     xbegin = xbegin - (tw>>2);
     xend   = xend   + (tw>>2);
   end
   else begin
-    area_in1 = (0 <= objx0 && objx0 < tw0) && (0 <= objy0 && objy0 < th0);
+    area_in1 = sp_enable && (0 <= objx0 && objx0 < tw0) && (0 <= objy0 && objy0 < th0);
     x1 = objx0;
     y1 = objy0;
-    area_inA1 = (0 <= x1 && x1 < tw0) && (0 <= y1 && y1 < th0);
+    area_inA1 = sp_enable && (0 <= x1 && x1 < tw0) && (0 <= y1 && y1 < th0);
   end
 end
 
@@ -674,7 +693,7 @@ module vpu_sp_pipeline3_palette_load
   output reg  [31:0] color_n
 );
 
-assign pal_addr = (pal_mode == 0) ? {pal_bank, pal_idx} : {pal_bank, pal_idx & 8'h0F + pal_no * 16};
+assign pal_addr = (pal_mode == 0) ? {pal_bank, pal_idx} : {pal_bank, pal_no, pal_idx[3:0]};
 assign color_n = pal_data;
 assign pal_en = 1;
 
@@ -709,7 +728,7 @@ function logic [31:0] color_merge(logic [31:0] col_buf, logic [31:0] col_n);
   dst = col_buf;
   // for (int i=0; i<4; i++) begin
     src = col_n;
-    src_a = src >> 24;
+    src_a = src[31:24];
     if (src_a == 0) begin
       dst = dst;
     end
@@ -726,7 +745,7 @@ function logic [31:0] color_merge(logic [31:0] col_buf, logic [31:0] col_n);
   return dst;
 endfunction
 
-assign line_bankb = y & 1'b1;
+assign line_bankb = y[0]; // y & 1'b1;
 assign line_web = sp_enable & area_inA;
 assign line_addrb = x;
 assign line_dinb = color_merge(line_doutb, color_n);

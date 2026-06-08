@@ -4,6 +4,9 @@ module vram
   input  wire        clk,
   input  wire        rst_n,
 
+  input  wire        hdraw,
+  input  wire        vdraw,
+
   input  wire        mem_en,
   input  wire        mem_we,
   input  wire [31:0] mem_addr,
@@ -46,56 +49,58 @@ module vram
   output reg  [PAL_DATA_W-1:0]  sp_pal_ram_doutb
 );
 
-wire                   param_ram_ena    ;
+wire [0:0]             param_ram_ena    ;
 wire [SP_ADDR_W-1:0]   param_ram_addra  ;
 wire [SP_DATA_W-1:0]   param_ram_dina   ;
 reg  [SP_DATA_W-1:0]   param_ram_douta  ;
-wire                   param_ram_enb    ;
+wire [0:0]             param_ram_enb    ;
 wire [SP_ADDR_W-1:0]   param_ram_addrb  ;
 wire [SP_DATA_W-1:0]   param_ram_dinb   ;
 reg  [SP_DATA_W-1:0]   param_ram_doutb  ;
 
-wire                   map_ram_ena   ;
+wire [0:0]             map_ram_ena   ;
 wire [MAP_ADDR_W-1:0]  map_ram_addra ;
 wire [MAP_DATA_W-1:0]  map_ram_dina  ;
 reg  [MAP_DATA_W-1:0]  map_ram_douta ;
-wire                   map_ram_ena_Bank  [2**MAP_BANK_W];
-wire                   map_ram_wea_Bank  [2**MAP_BANK_W];
+wire [0:0]             map_ram_ena_Bank  [2**MAP_BANK_W];
+wire [0:0]             map_ram_wea_Bank  [2**MAP_BANK_W];
 wire [MAP_INDX_W-1:0]  map_ram_addra_Bank[2**MAP_BANK_W];
 wire [MAP_DATA_W-1:0]  map_ram_dina_Bank [2**MAP_BANK_W];
 wire [MAP_DATA_W-1:0]  map_ram_douta_Bank[2**MAP_BANK_W];
-wire                   map_ram_enb_Bank  [2**MAP_BANK_W];
-wire                   map_ram_web_Bank  [2**MAP_BANK_W];
+wire [0:0]             map_ram_enb_Bank  [2**MAP_BANK_W];
+wire [0:0]             map_ram_web_Bank  [2**MAP_BANK_W];
 wire [MAP_INDX_W-1:0]  map_ram_addrb_Bank[2**MAP_BANK_W];
 wire [MAP_DATA_W-1:0]  map_ram_dinb_Bank [2**MAP_BANK_W];
 wire [MAP_DATA_W-1:0]  map_ram_doutb_Bank[2**MAP_BANK_W];
 
-wire                   tile_ram_ena  ; 
+wire [0:0]             tile_ram_ena  ; 
 wire [TILE_ADDR_W-1:0] tile_ram_addra; 
 wire [TILE_DATA_W-1:0] tile_ram_dina ; 
 reg  [TILE_DATA_W-1:0] tile_ram_douta; 
-wire                   tile_ram_ena_Bank  [2**TILE_BANK_W];
-wire                   tile_ram_wea_Bank  [2**TILE_BANK_W];
+wire [0:0]             tile_ram_ena_Bank  [2**TILE_BANK_W];
+// wire [1]               tile_ram_ena_Bank  [2**TILE_BANK_W];
+wire [0:0]             tile_ram_wea_Bank  [2**TILE_BANK_W];
+// wire [1]               tile_ram_wea_Bank  [2**TILE_BANK_W];
 wire [TILE_INDX_W-1:0] tile_ram_addra_Bank[2**TILE_BANK_W];
 wire [TILE_DATA_W-1:0] tile_ram_dina_Bank [2**TILE_BANK_W];
 wire [TILE_DATA_W-1:0] tile_ram_douta_Bank[2**TILE_BANK_W];
-wire                   tile_ram_enb_Bank  [2**TILE_BANK_W];
-wire                   tile_ram_web_Bank  [2**TILE_BANK_W];
+wire [0:0]             tile_ram_enb_Bank  [2**TILE_BANK_W];
+wire [0:0]             tile_ram_web_Bank  [2**TILE_BANK_W];
 wire [TILE_INDX_W-1:0] tile_ram_addrb_Bank[2**TILE_BANK_W];
 wire [TILE_DATA_W-1:0] tile_ram_dinb_Bank [2**TILE_BANK_W];
 wire [TILE_DATA_W-1:0] tile_ram_doutb_Bank[2**TILE_BANK_W];
 
-wire                   pal_ram_ena   ;
+wire [0:0]             pal_ram_ena   ;
 wire [PAL_ADDR_W-1:0]  pal_ram_addra ;
 wire [PAL_DATA_W-1:0]  pal_ram_dina  ;
 reg  [PAL_DATA_W-1:0]  pal_ram_douta ;
-wire                   pal_ram_ena_Bank  [2**PAL_BANK_W];
-wire                   pal_ram_wea_Bank  [2**PAL_BANK_W];
+wire [0:0]             pal_ram_ena_Bank  [2**PAL_BANK_W];
+wire [0:0]             pal_ram_wea_Bank  [2**PAL_BANK_W];
 wire [PAL_INDX_W-1:0]  pal_ram_addra_Bank[2**PAL_BANK_W];
 wire [PAL_DATA_W-1:0]  pal_ram_dina_Bank [2**PAL_BANK_W];
 wire [PAL_DATA_W-1:0]  pal_ram_douta_Bank[2**PAL_BANK_W];
-wire                   pal_ram_enb_Bank  [2**PAL_BANK_W];
-wire                   pal_ram_web_Bank  [2**PAL_BANK_W];
+wire [0:0]             pal_ram_enb_Bank  [2**PAL_BANK_W];
+wire [0:0]             pal_ram_web_Bank  [2**PAL_BANK_W];
 wire [PAL_INDX_W-1:0]  pal_ram_addrb_Bank[2**PAL_BANK_W];
 wire [PAL_DATA_W-1:0]  pal_ram_dinb_Bank [2**PAL_BANK_W];
 wire [PAL_DATA_W-1:0]  pal_ram_doutb_Bank[2**PAL_BANK_W];
@@ -107,25 +112,10 @@ reg sp_tile_ram_web;
 reg bg_pal_ram_web;
 reg sp_pal_ram_web;
 
-assign param_ram_ena     = mem_en && mem_addr[31:16] == 16'h0600;
-assign param_ram_wea     = mem_we;
-assign param_ram_addra   = mem_addr[SP_ADDR_W-1:0];
-assign param_ram_dina    = mem_din [SP_DATA_W-1:0];
-
-assign map_ram_ena    = mem_en && mem_addr[31:16] == 16'h0610;
-assign map_ram_wea    = mem_we;
-assign map_ram_addra  = mem_addr[MAP_ADDR_W-1:0];
-assign map_ram_dina   = mem_din [MAP_DATA_W-1:0];
-
-assign tile_ram_ena   = mem_en && mem_addr[31:20] == 12'h062;
-assign tile_ram_wea   = mem_we;
-assign tile_ram_addra = mem_addr[TILE_ADDR_W-1:0];
-assign tile_ram_dina  = mem_din [TILE_DATA_W-1:0];
-
-assign pal_ram_ena    = mem_en && mem_addr[31:16] == 16'h0630;
-assign pal_ram_wea    = mem_we;
-assign pal_ram_addra  = mem_addr[PAL_ADDR_W-1:0];
-assign pal_ram_dina   = mem_din [PAL_DATA_W-1:0];
+wire param_ram_wea;
+wire map_ram_wea;
+wire tile_ram_wea;
+wire pal_ram_wea;
 
 assign mem_dout = 
  (mem_addr[31:16] == 16'h0600) ? param_ram_douta   :
@@ -143,15 +133,24 @@ assign sp_pal_ram_web  = 1'b0;
 
 genvar i;
 
-// [TODO] fix select {gb, sp};
-assign param_ram_enb   = bg_param_ram_enb | sp_param_ram_enb;
-assign param_ram_addrb = bg_param_ram_enb ? bg_param_ram_addrb[BG_ADDR_W-1:0] :
-                         sp_param_ram_enb ? sp_param_ram_addrb[SP_ADDR_W-1:0] : 0;
-assign param_ram_dinb  = bg_param_ram_enb ? bg_param_ram_dinb :
-                         sp_param_ram_enb ? sp_param_ram_dinb : 0;
+
+assign param_ram_ena   = !(hdraw && vdraw) ? mem_en && mem_addr[31:16] == 16'h0600 :
+                                             sp_param_ram_enb;
+assign param_ram_wea   = !(hdraw && vdraw) ? mem_we :
+                                             1'b0;
+assign param_ram_addra = !(hdraw && vdraw) ? (   param_ram_ena ? mem_addr[SP_ADDR_W-1:0] : 0) :
+                                             (sp_param_ram_enb ? sp_param_ram_addrb[SP_ADDR_W-1:0] : 0);
+assign param_ram_dina  = !(hdraw && vdraw) ? (   param_ram_ena ? mem_din [SP_DATA_W-1:0] : 0) :
+                                             (sp_param_ram_enb ? sp_param_ram_dinb : 0);
+assign param_ram_enb   = bg_param_ram_enb;
+assign param_ram_addrb = bg_param_ram_enb ? bg_param_ram_addrb[BG_ADDR_W-1:0] : 0;
+assign param_ram_dinb  = bg_param_ram_enb ? bg_param_ram_dinb : 0;
+always_comb begin
+  sp_param_ram_doutb = param_ram_douta;
+end
 always_comb begin
   bg_param_ram_doutb = param_ram_doutb;
-  sp_param_ram_doutb = param_ram_doutb;
+  // sp_param_ram_doutb = param_ram_doutb;
 end
 
 bram_tdp_rf_rf #(
@@ -171,6 +170,12 @@ bram_tdp_rf_rf #(
   .dinb (param_ram_dinb ),
   .doutb(param_ram_doutb)
 );
+
+
+assign map_ram_ena    = mem_en && mem_addr[31:16] == 16'h0610;
+assign map_ram_wea    = mem_we;
+assign map_ram_addra  = mem_addr[MAP_ADDR_W-1:0];
+assign map_ram_dina   = mem_din [MAP_DATA_W-1:0];
 
 wire [MAP_BANK_W-1:0]    map_ram_addra_sel;
 wire [MAP_BANK_W-1:0] bg_map_ram_addrb_sel;
@@ -211,9 +216,15 @@ generate
   end
 endgenerate
 
+
 wire [TILE_BANK_W-1:0]    tile_ram_addra_sel;
 wire [TILE_BANK_W-1:0] bg_tile_ram_addrb_sel;
 wire [TILE_BANK_W-1:0] sp_tile_ram_addrb_sel;
+
+assign tile_ram_ena   = mem_en && mem_addr[31:20] == 12'h062;
+assign tile_ram_wea   = mem_we;
+assign tile_ram_addra = mem_addr[TILE_ADDR_W-1:0];
+assign tile_ram_dina  = mem_din [TILE_DATA_W-1:0];
 
 assign    tile_ram_addra_sel =    tile_ram_addra[TILE_ADDR_W-1:TILE_INDX_W];
 assign bg_tile_ram_addrb_sel = bg_tile_ram_addrb[TILE_ADDR_W-1:TILE_INDX_W];
@@ -221,23 +232,23 @@ assign sp_tile_ram_addrb_sel = sp_tile_ram_addrb[TILE_ADDR_W-1:TILE_INDX_W];
 always_comb begin
      tile_ram_douta = tile_ram_douta_Bank[   tile_ram_addra_sel];
   bg_tile_ram_doutb = tile_ram_doutb_Bank[bg_tile_ram_addrb_sel];
-  sp_tile_ram_doutb = tile_ram_doutb_Bank[sp_tile_ram_addrb_sel];
+  sp_tile_ram_doutb = tile_ram_douta_Bank[sp_tile_ram_addrb_sel];
 end
 
 generate
   for (i=0; i < 2**TILE_BANK_W; i++) begin
-    assign tile_ram_ena_Bank[i]   = (   tile_ram_addra_sel == i) ?    tile_ram_ena : 0;
-    assign tile_ram_wea_Bank[i]   = (   tile_ram_addra_sel == i) ?    tile_ram_wea : 0;
-    assign tile_ram_addra_Bank[i] = (   tile_ram_addra_sel == i) ?    tile_ram_addra[TILE_INDX_W-1:0] : 0;
-    assign tile_ram_dina_Bank[i]  = (   tile_ram_addra_sel == i) ?    tile_ram_dina : 0;
-    assign tile_ram_enb_Bank[i]   = (bg_tile_ram_addrb_sel == i) ? bg_tile_ram_enb :
-                                    (sp_tile_ram_addrb_sel == i) ? sp_tile_ram_enb : 0;
-    assign tile_ram_web_Bank[i]   = (bg_tile_ram_addrb_sel == i) ? bg_tile_ram_web :
-                                    (sp_tile_ram_addrb_sel == i) ? sp_tile_ram_web : 0;
-    assign tile_ram_addrb_Bank[i] = (bg_tile_ram_addrb_sel == i) ? bg_tile_ram_addrb[TILE_INDX_W-1:0] :
-                                    (sp_tile_ram_addrb_sel == i) ? sp_tile_ram_addrb[TILE_INDX_W-1:0] : 0;
-    assign tile_ram_dinb_Bank[i]  = (bg_tile_ram_addrb_sel == i) ? bg_tile_ram_dinb :
-                                    (sp_tile_ram_addrb_sel == i) ? sp_tile_ram_dinb : 0;
+    assign tile_ram_ena_Bank[i]   = (   tile_ram_addra_sel == i) ? (!(hdraw && vdraw) ?    tile_ram_ena : 0) :
+                                    (sp_tile_ram_addrb_sel == i) ? ( (hdraw && vdraw) ? sp_tile_ram_enb : 0) : 0;
+    assign tile_ram_wea_Bank[i]   = (   tile_ram_addra_sel == i) ? (!(hdraw && vdraw) ?    tile_ram_wea : 0) :
+                                    (sp_tile_ram_addrb_sel == i) ? ( (hdraw && vdraw) ? sp_tile_ram_web : 0) : 0;
+    assign tile_ram_addra_Bank[i] = (   tile_ram_addra_sel == i) ? (!(hdraw && vdraw) ?    tile_ram_addra[TILE_INDX_W-1:0] : 0) :
+                                    (sp_tile_ram_addrb_sel == i) ? ( (hdraw && vdraw) ? sp_tile_ram_addrb[TILE_INDX_W-1:0] : 0) : 0;
+    assign tile_ram_dina_Bank[i]  = (   tile_ram_addra_sel == i) ? (!(hdraw && vdraw) ?    tile_ram_dina : 0) :
+                                    (sp_tile_ram_addrb_sel == i) ? ( (hdraw && vdraw) ? sp_tile_ram_dinb : 0) : 0;
+    assign tile_ram_enb_Bank[i]   = (bg_tile_ram_addrb_sel == i) ? bg_tile_ram_enb : 0;
+    assign tile_ram_web_Bank[i]   = (bg_tile_ram_addrb_sel == i) ? bg_tile_ram_web : 0;
+    assign tile_ram_addrb_Bank[i] = (bg_tile_ram_addrb_sel == i) ? bg_tile_ram_addrb[TILE_INDX_W-1:0] : 0;
+    assign tile_ram_dinb_Bank[i]  = (bg_tile_ram_addrb_sel == i) ? bg_tile_ram_dinb : 0;
     bram_tdp_rf_rf #(
       .ADDR_W(TILE_INDX_W),
       .DATA_W(TILE_DATA_W)
@@ -258,32 +269,39 @@ generate
   end
 endgenerate
 
+
 wire [PAL_BANK_W-1:0]     pal_ram_addra_sel;
 wire [PAL_BANK_W-1:0]  bg_pal_ram_addrb_sel;
 wire [PAL_BANK_W-1:0]  sp_pal_ram_addrb_sel;
+
+assign pal_ram_ena    = mem_en && mem_addr[31:16] == 16'h0630;
+assign pal_ram_wea    = mem_we;
+assign pal_ram_addra  = mem_addr[PAL_ADDR_W-1:0];
+assign pal_ram_dina   = mem_din [PAL_DATA_W-1:0];
+
 assign    pal_ram_addra_sel =    pal_ram_addra[PAL_ADDR_W-1:PAL_INDX_W];
 assign bg_pal_ram_addrb_sel = bg_pal_ram_addrb[PAL_ADDR_W-1:PAL_INDX_W];
 assign sp_pal_ram_addrb_sel = sp_pal_ram_addrb[PAL_ADDR_W-1:PAL_INDX_W];
 always_comb begin
      pal_ram_douta = pal_ram_douta_Bank[   pal_ram_addra_sel];
   bg_pal_ram_doutb = pal_ram_doutb_Bank[bg_pal_ram_addrb_sel];
-  sp_pal_ram_doutb = pal_ram_doutb_Bank[sp_pal_ram_addrb_sel];
+  sp_pal_ram_doutb = pal_ram_douta_Bank[sp_pal_ram_addrb_sel];
 end
 
 generate
   for (i=0; i < 2**PAL_BANK_W; i++) begin
-    assign pal_ram_ena_Bank[i]   = (   pal_ram_addra_sel == i) ?    pal_ram_ena : 0;
-    assign pal_ram_wea_Bank[i]   = (   pal_ram_addra_sel == i) ?    pal_ram_wea : 0;
-    assign pal_ram_addra_Bank[i] = (   pal_ram_addra_sel == i) ?    pal_ram_addra[PAL_INDX_W-1:0] : 0;
-    assign pal_ram_dina_Bank[i]  = (   pal_ram_addra_sel == i) ?    pal_ram_dina : 0;
-    assign pal_ram_enb_Bank[i]   = (bg_pal_ram_addrb_sel == i) ? bg_pal_ram_enb :
-                                   (sp_pal_ram_addrb_sel == i) ? sp_pal_ram_enb : 0;
-    assign pal_ram_web_Bank[i]   = (bg_pal_ram_addrb_sel == i) ? bg_pal_ram_web :
-                                   (sp_pal_ram_addrb_sel == i) ? sp_pal_ram_web : 0;
-    assign pal_ram_addrb_Bank[i] = (bg_pal_ram_addrb_sel == i) ? bg_pal_ram_addrb[PAL_INDX_W-1:0] :
-                                   (sp_pal_ram_addrb_sel == i) ? sp_pal_ram_addrb[PAL_INDX_W-1:0] : 0;
-    assign pal_ram_dinb_Bank[i]  = (bg_pal_ram_addrb_sel == i) ? bg_pal_ram_dinb :
-                                   (sp_pal_ram_addrb_sel == i) ? sp_pal_ram_dinb : 0;
+    assign pal_ram_ena_Bank[i]   = (   pal_ram_addra_sel == i) ? (!(hdraw && vdraw) ?    pal_ram_ena : 0) :
+                                   (sp_pal_ram_addrb_sel == i) ? ( (hdraw && vdraw) ? sp_pal_ram_enb : 0) : 0;
+    assign pal_ram_wea_Bank[i]   = (   pal_ram_addra_sel == i) ? (!(hdraw && vdraw) ?    pal_ram_wea : 0) :
+                                   (sp_pal_ram_addrb_sel == i) ? ( (hdraw && vdraw) ? sp_pal_ram_web : 0) : 0;
+    assign pal_ram_addra_Bank[i] = (   pal_ram_addra_sel == i) ? (!(hdraw && vdraw) ?    pal_ram_addra[PAL_INDX_W-1:0] : 0) :
+                                   (sp_pal_ram_addrb_sel == i) ? ( (hdraw && vdraw) ? sp_pal_ram_addrb[PAL_INDX_W-1:0] : 0) : 0;
+    assign pal_ram_dina_Bank[i]  = (   pal_ram_addra_sel == i) ? (!(hdraw && vdraw) ?    pal_ram_dina : 0) :
+                                   (sp_pal_ram_addrb_sel == i) ? ( (hdraw && vdraw) ? sp_pal_ram_dinb : 0) : 0;
+    assign pal_ram_enb_Bank[i]   = (bg_pal_ram_addrb_sel == i) ? bg_pal_ram_enb : 0;
+    assign pal_ram_web_Bank[i]   = (bg_pal_ram_addrb_sel == i) ? bg_pal_ram_web : 0;
+    assign pal_ram_addrb_Bank[i] = (bg_pal_ram_addrb_sel == i) ? bg_pal_ram_addrb[PAL_INDX_W-1:0] : 0;
+    assign pal_ram_dinb_Bank[i]  = (bg_pal_ram_addrb_sel == i) ? bg_pal_ram_dinb : 0;
     bram_tdp_rf_rf #(
       .ADDR_W(PAL_INDX_W),
       .DATA_W(PAL_DATA_W)

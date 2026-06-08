@@ -6,20 +6,27 @@ set PROJ_NAME   $::env(PROJ_NAME)
 set PROJ_DIR    $::env(PROJ_DIR)
 set SRCS_DC     $::env(SRCS_DC)
 set SRCS_V      $::env(SRCS_V)
+set BD_TCL      $::env(BD_TCL)
+set BD_FILE     $::env(BD_FILE)
+set BD_WRAPPER_V  $::env(BD_WRAPPER_V)
+set BD_SYNTH_V  $::env(BD_SYNTH_V)
 set SRCS_IP     $::env(SRCS_IP)
 set SRCS_SIM    $::env(SRCS_SIM)
 set TOP_NAME    $::env(TOP_NAME)
 set ENABLE_CHECKPOINT 1
 set ENABLE_REPORT 0
-set USE_PROJECT 0
+set USE_PROJECT 1
 
 # --------------------------------
 # synth_1/top.tcl
 cd ${PROJ_DIR}
 if (${USE_PROJECT}) {
   open_project [file join ${PROJ_DIR} ${PROJ_NAME}];
+  open_checkpoint ${PROJ_DIR}/${PROJ_NAME}_synth.dcp
 } else {
-  open_checkpoint -part ${BOARD_PART1} ${PROJ_DIR}/${PROJ_NAME}_synth.dcp
+  set bd_files [get_files ${BD_FILE}]
+
+  # open_checkpoint -part ${BOARD_PART1} ${PROJ_DIR}/${PROJ_NAME}_synth.dcp
   set_param chipscope.maxJobs ${MAXJOBS}
   # set_param project.singleFileAddWarning.threshold 0
   # set_param project.compositeFile.enableAutoGeneration 0
@@ -46,6 +53,7 @@ if (${USE_PROJECT}) {
   # set_property ip_cache_permissions {read write} [current_project]
   # add_files -quiet ${PROJ_DIR}/${PROJ_NAME}_synth.dcp
   # read_ip -quiet ${PROJ_DIR}/${PROJ_NAME}.blk_mem_gen_0.xci
+  # read_xdc [glob -nocomplain /home/nyalry/nakan/dev/hobby/game-console/hw/hdl/./*.xdc]
   foreach src_dc ${SRCS_DC} {
     read_xdc ${src_dc}
   }

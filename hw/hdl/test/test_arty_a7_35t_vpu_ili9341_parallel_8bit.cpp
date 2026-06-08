@@ -4,6 +4,7 @@
 #include <verilated.h>
 #include <verilated_vcd_c.h>
 #include <SDL2/SDL.h>
+#include <memorymap.h>
 #include "Varty_a7_35t_vpu_ili9341_parallel_8bit.h"
 
 
@@ -61,29 +62,29 @@ int main(int argc, char **argv) {
     SDL_INIT_VIDEO
     // | SDL_INIT_AUDIO
   );
-  int HW_SCREEN_W = 320;
-  int HW_SCREEN_H = 240;
+  int LCD_SCREEN_W = 320;
+  int LCD_SCREEN_H = 240;
   SDL_Window *window;
   window = SDL_CreateWindow( 
     "test verilator",
     SDL_WINDOWPOS_UNDEFINED,
     SDL_WINDOWPOS_UNDEFINED,
-    HW_SCREEN_W,
-    HW_SCREEN_H,
+    LCD_SCREEN_W,
+    LCD_SCREEN_H,
     SDL_WINDOW_SHOWN /*| SDL_WINDOW_OPENGL*/ | SDL_WINDOW_RESIZABLE
   );
   if(window==NULL){
     return 1;
   }
   int screenScale = 3;
-  SDL_SetWindowSize(window, HW_SCREEN_W * screenScale, HW_SCREEN_H * screenScale);
+  SDL_SetWindowSize(window, LCD_SCREEN_W * screenScale, LCD_SCREEN_H * screenScale);
   SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
   SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
   SDL_Texture* texture = SDL_CreateTexture(renderer, 
-        SDL_PIXELFORMAT_RGB24, SDL_TEXTUREACCESS_STREAMING, HW_SCREEN_W, HW_SCREEN_H);
-        // SDL_PIXELFORMAT_RGB565, SDL_TEXTUREACCESS_STREAMING, HW_SCREEN_W, HW_SCREEN_H);
+        SDL_PIXELFORMAT_RGB24, SDL_TEXTUREACCESS_STREAMING, LCD_SCREEN_W, LCD_SCREEN_H);
+        // SDL_PIXELFORMAT_RGB565, SDL_TEXTUREACCESS_STREAMING, LCD_SCREEN_W, LCD_SCREEN_H);
 
-  std::vector<uint8_t> pixels(HW_SCREEN_W * HW_SCREEN_H * 3);
+  std::vector<uint8_t> pixels(LCD_SCREEN_W * LCD_SCREEN_H * 3);
 
   uint64_t time_counter = 0;
 
@@ -129,7 +130,7 @@ int main(int argc, char **argv) {
     // if (time_counter == 1120) dut->btn = 0;  // btn[1] = 0;
 
     dut->eval();
-    // tfp->dump(contextp->time());
+    tfp->dump(contextp->time());
     contextp->timeInc(1);
     time_counter++;
 
@@ -142,7 +143,7 @@ int main(int argc, char **argv) {
                   | (dut->ck_io9 << 1)
                   | (dut->ck_io8 << 0);
 
-    if (dut->ck_a2 && data8 == 0x2c) {
+    if (!dut->ck_a2 && data8 == 0x2c) {
       draw_start = true;
     }
     // fmt::print("ck_a2=0x{:x} data8=0x{:02x}\n", dut->ck_a2, data8);
@@ -156,22 +157,28 @@ int main(int argc, char **argv) {
       // fmt::print("data8=0x{:02x}\n", data8);
       if (is_lo) {
         data_lo = data8;
-        tfp->dump(contextp->time());  // DEBUG
-      } else {
-        data_hi = data8;
-        tfp->dump(contextp->time());  // DEBUG
-        int x = px_ptr % 320;
-        int y = px_ptr / 320;
+        // tfp->dump(contextp->time());  // DEBUG
+        int x = px_ptr % HW_SCREEN_W;
+        int y = px_ptr / HW_SCREEN_W;
         int xoff = 0, yoff = 0;
-        if ((xoff <= x && x < 320+xoff) && (yoff <= y && y < 240+yoff)) {
-          pixels[((x-xoff) + (y-yoff)*320) * 3 + 2] = (data_lo & 0x1f) << 3;
-          pixels[((x-xoff) + (y-yoff)*320) * 3 + 1] = (((data_hi & 0x7) << 3) | ((data_lo >> 5) & 0x7)) << 2;
-          pixels[((x-xoff) + (y-yoff)*320) * 3 + 0] = (data_hi >> 3) << 3;
+        if ((xoff <= x && x < HW_SCREEN_W+xoff) && (yoff <= y && y < HW_SCREEN_H+yoff)) {
+          uint8_t true_data_lo = data_hi;
+          uint8_t true_data_hi = data_lo;
+          // R8, G8, B8 <= Hi{R[4:0]G[5:3]}, Lo{G[2:0]B[4:0]}
+          // R <= Hi[7:3], 0b000
+          // G <= Hi[2:0], Lo[7:5], 0b00
+          // B <= Lo[4:0], 0b000
+          pixels[((x-xoff) + (y-yoff)*LCD_SCREEN_W) * 3 + 0] = (true_data_hi >> 3) << 3;
+          pixels[((x-xoff) + (y-yoff)*LCD_SCREEN_W) * 3 + 1] = (((true_data_hi & 0x7) << 3) | ((true_data_lo >> 5) & 0x7)) << 2;
+          pixels[((x-xoff) + (y-yoff)*LCD_SCREEN_W) * 3 + 2] = (true_data_lo & 0x1f) << 3;
         }
         SDL_UpdateTexture(texture, NULL, pixels.data(), HW_SCREEN_W * 3);
         SDL_RenderClear(renderer);
         SDL_RenderCopy(renderer, texture, NULL, NULL); // ウィンドウいっぱいに引き伸ばして表示
         SDL_RenderPresent(renderer);
+      } else {
+        data_hi = data8;
+        // tfp->dump(contextp->time());  // DEBUG
       }
       is_lo = !is_lo;
     }
@@ -180,14 +187,14 @@ int main(int argc, char **argv) {
       int hsync = (dut->led>>2) & 1;
       if (vsync && hsync) {
         px_ptr += 1;
-        if (px_ptr == 320*240) px_ptr = 0;
+        if (px_ptr == HW_SCREEN_W * HW_SCREEN_H) px_ptr = 0;
       }
 
       x += 1;
-      if (x == 320 + 80) {
+      if (x == HW_SCREEN_W + HW_SCREEN_HBLANK) {
         x = 0;
         y += 1;
-        if (y == 240 + 80) {
+        if (y == HW_SCREEN_H + HW_SCREEN_VBLANK) {
           y = 0;
           frame += 1;
         }
