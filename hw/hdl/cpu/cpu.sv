@@ -4,6 +4,7 @@ module cpu
   input  wire        clk,
   input  wire        rst_n,
 
+  input  wire        hdraw,  // [DEBUG]
   input  wire        vdraw,  // [DEBUG]
 
   output wire        mem_en,
@@ -36,9 +37,9 @@ longint frame;
 
 logic [31:0] palcolor[7] = {
   32'hFF000000/*Black*/,
-  32'hFF0000FF/*Red*/,
-  32'hFF00FF00/*Green*/,
-  32'hFFFF0000/*Blue*/,
+  32'hf80000FF/*Red*/,
+  32'hf800FF00/*Green*/,
+  32'hf8FF0000/*Blue*/,
   32'hFF00FFFF/*Yellow*/,
   32'hFFFF00FF/*Purple*/,
   32'hFFFFFFFF/*While*/
@@ -60,7 +61,7 @@ always_ff @(posedge clk) begin
     frame <= 0;
   end
   else begin
-    if ((init_state == INIT_BEGIN    && init_count == 100-1)
+    if ((init_state == INIT_BEGIN    && init_count == 1000-1)
       ||(init_state == INIT_PARAM_SP && init_count == 128*5-1)
       ||(init_state == INIT_PARAM_BG && init_count == 4*5-1)
       ||(init_state == INIT_MAP      && init_count == 2048-1)
@@ -72,7 +73,7 @@ always_ff @(posedge clk) begin
       init_count <= 0;
       init_state <= init_state + 1;
     end else if (init_state < INIT_FIN) begin
-      if (!vdraw) begin
+      if (!hdraw && !vdraw) begin
         init_count <= init_count + 1;
       end else begin
         init_count <= init_count;
@@ -167,7 +168,17 @@ always_ff @(posedge clk) begin
       init_we <= 1;
       init_addr <= 32'h0600_0000 + 128*5 + init_count;
       if (init_count inside {0, 5, 10, 15}) begin
-        init_data <= (1'b1 << 31);  // bg_enable=1
+        init_data <= 0
+          | (1'b1 << 31)  // bg_enable=1
+          | ((init_count/5*2) << 8)      // x=4
+          ;
+      end
+      else if (init_count inside {1, 6, 11, 16}) begin
+        init_data <= 0
+          // | (1'h1 << 6)  // palMode=1 (16pal)
+          | (2'h0 << 4)  // pal_bank=0
+          | (1'h0 << 0)  // palId=0
+          ;
       end
       else begin
         init_data <= 0;
@@ -184,14 +195,14 @@ always_ff @(posedge clk) begin
       // tile
       init_en <= 1;
       init_we <= 1;
-      init_addr <= 32'h0620_0000 + init_count;
-      init_data <= init_count / 64;
+      init_addr <= 32'h0620_4000 + init_count;
+      init_data <= init_count;
     end
     else if (init_state == INIT_TILE_BG) begin
       // tile
       init_en <= 1;
       init_we <= 1;
-      init_addr <= 32'h0620_4000 + init_count;
+      init_addr <= 32'h0620_0000 + init_count;
       init_data <= init_count / 64;
     end
     else if (init_state == INIT_PAL_SP) begin

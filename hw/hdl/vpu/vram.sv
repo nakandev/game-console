@@ -14,9 +14,9 @@ module vram
   output wire [31:0] mem_dout,
 
   input  wire                   bg_param_ram_enb    ,
-  input  wire [SP_ADDR_W-1:0]   bg_param_ram_addrb  ,
-  input  wire [SP_DATA_W-1:0]   bg_param_ram_dinb   ,
-  output reg  [SP_DATA_W-1:0]   bg_param_ram_doutb  ,
+  input  wire [PRM_ADDR_W-1:0]   bg_param_ram_addrb  ,
+  input  wire [PRM_DATA_W-1:0]   bg_param_ram_dinb   ,
+  output reg  [PRM_DATA_W-1:0]   bg_param_ram_doutb  ,
 
   input  wire                   bg_map_ram_enb   ,
   input  wire [MAP_ADDR_W-1:0]  bg_map_ram_addrb ,
@@ -34,9 +34,9 @@ module vram
   output reg  [PAL_DATA_W-1:0]  bg_pal_ram_doutb ,
 
   input  wire                   sp_param_ram_enb    ,
-  input  wire [SP_ADDR_W-1:0]   sp_param_ram_addrb  ,
-  input  wire [SP_DATA_W-1:0]   sp_param_ram_dinb   ,
-  output reg  [SP_DATA_W-1:0]   sp_param_ram_doutb  ,
+  input  wire [PRM_ADDR_W-1:0]   sp_param_ram_addrb  ,
+  input  wire [PRM_DATA_W-1:0]   sp_param_ram_dinb   ,
+  output reg  [PRM_DATA_W-1:0]   sp_param_ram_doutb  ,
 
   input  wire                   sp_tile_ram_enb  ,
   input  wire [TILE_ADDR_W-1:0] sp_tile_ram_addrb,
@@ -50,13 +50,13 @@ module vram
 );
 
 wire [0:0]             param_ram_ena    ;
-wire [SP_ADDR_W-1:0]   param_ram_addra  ;
-wire [SP_DATA_W-1:0]   param_ram_dina   ;
-reg  [SP_DATA_W-1:0]   param_ram_douta  ;
+wire [PRM_ADDR_W-1:0]   param_ram_addra  ;
+wire [PRM_DATA_W-1:0]   param_ram_dina   ;
+reg  [PRM_DATA_W-1:0]   param_ram_douta  ;
 wire [0:0]             param_ram_enb    ;
-wire [SP_ADDR_W-1:0]   param_ram_addrb  ;
-wire [SP_DATA_W-1:0]   param_ram_dinb   ;
-reg  [SP_DATA_W-1:0]   param_ram_doutb  ;
+wire [PRM_ADDR_W-1:0]   param_ram_addrb  ;
+wire [PRM_DATA_W-1:0]   param_ram_dinb   ;
+reg  [PRM_DATA_W-1:0]   param_ram_doutb  ;
 
 wire [0:0]             map_ram_ena   ;
 wire [MAP_ADDR_W-1:0]  map_ram_addra ;
@@ -138,12 +138,12 @@ assign param_ram_ena   = !(hdraw && vdraw) ? mem_en && mem_addr[31:16] == 16'h06
                                              sp_param_ram_enb;
 assign param_ram_wea   = !(hdraw && vdraw) ? mem_we :
                                              1'b0;
-assign param_ram_addra = !(hdraw && vdraw) ? (   param_ram_ena ? mem_addr[SP_ADDR_W-1:0] : 0) :
-                                             (sp_param_ram_enb ? sp_param_ram_addrb[SP_ADDR_W-1:0] : 0);
-assign param_ram_dina  = !(hdraw && vdraw) ? (   param_ram_ena ? mem_din [SP_DATA_W-1:0] : 0) :
+assign param_ram_addra = !(hdraw && vdraw) ? (   param_ram_ena ? mem_addr[PRM_ADDR_W-1:0] : 0) :
+                                             (sp_param_ram_enb ? sp_param_ram_addrb[PRM_ADDR_W-1:0] : 0);
+assign param_ram_dina  = !(hdraw && vdraw) ? (   param_ram_ena ? mem_din [PRM_DATA_W-1:0] : 0) :
                                              (sp_param_ram_enb ? sp_param_ram_dinb : 0);
 assign param_ram_enb   = bg_param_ram_enb;
-assign param_ram_addrb = bg_param_ram_enb ? bg_param_ram_addrb[BG_ADDR_W-1:0] : 0;
+assign param_ram_addrb = bg_param_ram_enb ? bg_param_ram_addrb[PRM_ADDR_W-1:0] : 0;
 assign param_ram_dinb  = bg_param_ram_enb ? bg_param_ram_dinb : 0;
 always_comb begin
   sp_param_ram_doutb = param_ram_douta;
@@ -154,8 +154,8 @@ always_comb begin
 end
 
 bram_tdp_rf_rf #(
-  .ADDR_W(SP_ADDR_W),
-  .DATA_W(SP_DATA_W)
+  .ADDR_W(PRM_ADDR_W),
+  .DATA_W(PRM_DATA_W)
 ) param_ram (
   .clka (clk),
   .ena  (param_ram_ena  ),

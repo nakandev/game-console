@@ -29,7 +29,7 @@ module ili9341_parallel_8bit
     localparam LCD_SCREEN_W = 320;
     localparam LCD_SCREEN_H = 240;
 
-    localparam INIT_LEN = 49;
+    localparam INIT_LEN = 48;
     reg [8:0] INIT_DAT [0:INIT_LEN-1];
     reg [5:0] init_cnt = 0;
 
@@ -41,6 +41,8 @@ module ili9341_parallel_8bit
     reg [8:0] data_count_y = 0;
 
     initial begin
+        // // Exit sleep
+        // INIT_DAT[0] =  {1'b0, 8'h11};
         // Display OFF
         INIT_DAT[0]   = {1'b0, 8'h28};
         // Power control A
@@ -88,7 +90,8 @@ module ili9341_parallel_8bit
          INIT_DAT[33] = {1'b1, 8'h86};
         // Memory Access Control: ExchangeXY, RGB bit order
         INIT_DAT[34]  = {1'b0, 8'h36};
-         INIT_DAT[35] = {1'b1, 8'h20};
+         INIT_DAT[35] = {1'b1, 8'h20};  // 20:ExchangeXY,RGB
+         // INIT_DAT[35] = {1'b1, 8'h28}; // 28:ExchangeXY,BGR
         // Pixel format: RGB565 (16 bits / pixel)
         INIT_DAT[36]  = {1'b0, 8'h3A};
          INIT_DAT[37] = {1'b1, 8'h55};
@@ -103,12 +106,10 @@ module ili9341_parallel_8bit
          INIT_DAT[43] = {1'b1, 8'h82};
          INIT_DAT[44] = {1'b1, 8'h27};
          INIT_DAT[45] = {1'b1, 8'h00};
-        // Exit sleep
-        INIT_DAT[46] =  {1'b0, 8'h11};
         // Display ON
-        INIT_DAT[47]  = {1'b0, 8'h29};
+        INIT_DAT[46]  = {1'b0, 8'h29};
         // Start memory write (all following data is pixel data)
-        INIT_DAT[48]  = {1'b0, 8'h2C};
+        INIT_DAT[47]  = {1'b0, 8'h2C};
         // Clear screen...
 
 
@@ -122,8 +123,10 @@ module ili9341_parallel_8bit
         INIT2_DAT[5]  = {1'b0, 8'h2B};
          INIT2_DAT[6] = {1'b1, 8'h00};
          INIT2_DAT[7] = {1'b1, 8'h00};
-         INIT2_DAT[8] = {1'b1, 8'h00};//((SCREEN_H-1) >> 8)};
-         INIT2_DAT[9] = {1'b1, 8'hef};//((SCREEN_H-1) & 8'hFF)};
+         // INIT2_DAT[8] = {1'b1, 8'h00};//((SCREEN_H-1) >> 8)};
+         // INIT2_DAT[9] = {1'b1, 8'hef};//((SCREEN_H-1) & 8'hFF)};
+         INIT2_DAT[8] = {1'b1, 8'h00}; //
+         INIT2_DAT[9] = {1'b1, 8'hC7}; // 200
         // Start memory write (all following data is pixel data)
         INIT2_DAT[10]  = {1'b0, 8'h2C};
         // Write screen...
@@ -136,7 +139,13 @@ module ili9341_parallel_8bit
                RESET_CLEAR = 4,
                RESET_INIT2 = 5,
                RESET_DONE  = 6;
-    localparam RESET_CLKS = 24'd500000; // ~30ms
+    // localparam WAIT_STABLE_POWER_SUPPLY = 24'd15000000; // ~5000ms (in 30MHz)
+    localparam WAIT_STABLE_POWER_SUPPLY = 24'd15000000; // ~5000ms (in 30MHz)
+    localparam WAIT_STABLE_AFTER_RESET = 24'd3600000; // ~120ms (in 30MHz)
+    localparam WAIT_20MS = 24'd600000; // ~20ms (in 30MHz)
+    // localparam WAIT_STABLE_POWER_SUPPLY = 24'd15000; // ~5000ms (in 30MHz)
+    // localparam WAIT_STABLE_AFTER_RESET  =  24'd3600; // ~120ms (in 30MHz)
+    // localparam WAIT_20MS                =   24'd600; // ~20ms (in 30MHz)
     reg [2:0] reset_stage = 0;
     reg [23:0] reset_clks = 0;
 
@@ -162,14 +171,16 @@ module ili9341_parallel_8bit
 
     /* Convert RGB888 to RGB565 */
     function [7:0] col_hi(input [7:0] r, input [7:0] g, input [7:0] b); // RRRRRGGG bits
-        // col_hi = {r[7:3], g[7:5]};
-        col_hi = {g[4:2], b[7:3]};
-        // col_hi = {g[4:2], r[7:3]};
+        // col_hi = {r[7:3], g[7:5]};  // True Correct. but not work well...
+        // col_hi = {g[4:2], b[7:3]};
+        // col_hi = {b[4:2], r[7:3]};
+        col_hi = {g[4:2], r[7:3]};  // OK, but incorrect BG x
     endfunction
     function [7:0] col_lo(input [7:0] r, input [7:0] g, input [7:0] b); // GGGBBBBB bits
-        // col_lo = {g[4:2], b[7:3]};
-        col_lo = {r[7:3], g[7:5]};
-        // col_lo = {b[7:3], g[7:5]};
+        // col_lo = {g[4:2], b[7:3]};  // True Correct. but not work well...
+        // col_lo = {r[7:3], g[7:5]};
+        // col_lo = {g[7:3], b[7:5]};
+        col_lo = {b[7:3], g[7:5]};  // OK, but incorrect BG x
     endfunction
 
     always @ (posedge clk) begin
@@ -180,20 +191,34 @@ module ili9341_parallel_8bit
             write_data <= 0;
             send_pix_lo <= 0;
             reset_stage <= RESET_START;
-            reset_clks <= RESET_CLKS;
+            // reset_clks <= WAIT_STABLE_POWER_SUPPLY;
+            reset_clks <= 0;
+            // reset_sleep <= 0;
             clear_cnt <= SCREEN_W * SCREEN_H * 2;
             data_count_x <= 0; //SCREEN_W - 1;
             data_count_y <= 0; //SCREEN_H - 1;
-        end else if (|reset_clks) begin
-            reset_clks <= reset_clks - 1;
-        end else if (reset_stage == RESET_START ||
-                     reset_stage == RESET_LO ||
-                     reset_stage == RESET_WAIT ||
-                    (reset_stage == RESET_INIT && init_cnt == INIT_LEN) ||
-                    (reset_stage == RESET_CLEAR && clear_cnt == 0) ||
-                    (reset_stage == RESET_INIT2 && init2_cnt == INIT2_LEN)) begin
+        end else if ((reset_stage == RESET_START && reset_clks == WAIT_STABLE_POWER_SUPPLY) ||
+                     (reset_stage == RESET_LO && reset_clks == WAIT_20MS) ||
+                     (reset_stage == RESET_WAIT && reset_clks == WAIT_STABLE_AFTER_RESET) ||
+                     (reset_stage == RESET_INIT && init_cnt == INIT_LEN) ||
+                     (reset_stage == RESET_CLEAR && clear_cnt == 0) ||
+                     (reset_stage == RESET_INIT2 && init2_cnt == INIT2_LEN)) begin
             reset_stage <= reset_stage + 1;
+            reset_clks <= 0;
             write_busy <= 0;
+        end else if (reset_stage == RESET_START && reset_clks < WAIT_STABLE_POWER_SUPPLY) begin
+            reset_clks <= reset_clks + 1;
+        end else if (reset_stage == RESET_LO && reset_clks < WAIT_20MS) begin
+            reset_clks <= reset_clks + 1;
+        end else if (reset_stage == RESET_WAIT && reset_clks < WAIT_STABLE_AFTER_RESET) begin
+            if (reset_clks == WAIT_20MS) begin
+              write_data <= {1'b0, 8'h11};  // Exit sleep
+              write_busy <= 1;
+            end else begin
+              write_data <= 0;
+              write_busy <= 0;
+            end
+            reset_clks <= reset_clks + 1;
         end else if (write_busy) begin
             write_busy <= 0;
         end else if (init_cnt < INIT_LEN) begin

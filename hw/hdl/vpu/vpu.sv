@@ -4,11 +4,29 @@ module vpu
   input  wire        clk,
   input  wire        rst_n,
 
-  input  wire        mem_en,
-  input  wire        mem_we,
-  input  wire [31:0] mem_addr,
-  input  wire [31:0] mem_din,
-  output wire [31:0] mem_dout,
+  input  wire         cpu_param_ram_en  ,
+  input  wire [ 3:0]  cpu_param_ram_we  ,
+  input  wire [ 9:0]  cpu_param_ram_addr,
+  input  wire [31:0]  cpu_param_ram_din ,
+  output reg  [31:0]  cpu_param_ram_dout,
+
+  input  wire         cpu_map_ram_en    ,
+  input  wire [ 3:0]  cpu_map_ram_we    ,
+  input  wire [10:0]  cpu_map_ram_addr  ,
+  input  wire [31:0]  cpu_map_ram_din   ,
+  output reg  [31:0]  cpu_map_ram_dout  ,
+
+  input  wire         cpu_tile_ram_en   ,
+  input  wire [ 3:0]  cpu_tile_ram_we   ,
+  input  wire [14:0]  cpu_tile_ram_addr ,
+  input  wire [31:0]  cpu_tile_ram_din  ,
+  output reg  [31:0]  cpu_tile_ram_dout ,
+
+  input  wire         cpu_pal_ram_en    ,
+  input  wire [ 3:0]  cpu_pal_ram_we    ,
+  input  wire [ 8:0]  cpu_pal_ram_addr  ,
+  input  wire [31:0]  cpu_pal_ram_din   ,
+  output reg  [31:0]  cpu_pal_ram_dout  ,
 
   output wire        dot_clk,
   output reg  [31:0] color,
@@ -16,72 +34,77 @@ module vpu
   output reg         vdraw
 );
 
-wire                   bg_param_ram_ena  , bg_param_ram_enb  , sp_param_ram_enb  ;
-wire [SP_ADDR_W-1:0]   bg_param_ram_addra, bg_param_ram_addrb, sp_param_ram_addrb;
-wire [SP_DATA_W-1:0]   bg_param_ram_dina , bg_param_ram_dinb , sp_param_ram_dinb ;
-wire [SP_DATA_W-1:0]   bg_param_ram_douta, bg_param_ram_doutb, sp_param_ram_doutb;
+wire                   bg_param_ram_en  , sp_param_ram_en  ;
+wire [           3:0]  bg_param_ram_we  , sp_param_ram_we  ;
+wire [PRM_ADDR_W-1:0]  bg_param_ram_addr, sp_param_ram_addr;
+wire [PRM_DATA_W-1:0]  bg_param_ram_din , sp_param_ram_din ;
+reg  [PRM_DATA_W-1:0]  bg_param_ram_dout, sp_param_ram_dout;
 
-wire                   bg_map_ram_ena    , bg_map_ram_enb    ;
-wire [MAP_ADDR_W-1:0]  bg_map_ram_addra  , bg_map_ram_addrb  ;
-wire [MAP_DATA_W-1:0]  bg_map_ram_dina   , bg_map_ram_dinb   ;
-wire [MAP_DATA_W-1:0]  bg_map_ram_douta  , bg_map_ram_doutb  ;
+wire                   bg_map_ram_en    ;
+wire [           3:0]  bg_map_ram_we    ;
+wire [MAP_ADDR_W-1:0]  bg_map_ram_addr  ;
+wire [MAP_DATA_W-1:0]  bg_map_ram_din   ;
+reg  [MAP_DATA_W-1:0]  bg_map_ram_dout  ;
 
-wire                   bg_tile_ram_ena   , bg_tile_ram_enb   , sp_tile_ram_enb   ;
-wire [TILE_ADDR_W-1:0] bg_tile_ram_addra , bg_tile_ram_addrb , sp_tile_ram_addrb ;
-wire [TILE_DATA_W-1:0] bg_tile_ram_dina  , bg_tile_ram_dinb  , sp_tile_ram_dinb  ;
-wire [TILE_DATA_W-1:0] bg_tile_ram_douta , bg_tile_ram_doutb , sp_tile_ram_doutb ;
+wire                   bg_tile_ram_en   , sp_tile_ram_en   ;
+wire [            3:0] bg_tile_ram_we   , sp_tile_ram_we   ;
+wire [TILE_ADDR_W-1:0] bg_tile_ram_addr , sp_tile_ram_addr ;
+wire [TILE_DATA_W-1:0] bg_tile_ram_din  , sp_tile_ram_din  ;
+reg  [TILE_DATA_W-1:0] bg_tile_ram_dout , sp_tile_ram_dout ;
 
-wire                   bg_pal_ram_ena    , bg_pal_ram_enb    , sp_pal_ram_enb    ;
-wire [PAL_ADDR_W-1:0]  bg_pal_ram_addra  , bg_pal_ram_addrb  , sp_pal_ram_addrb  ;
-wire [PAL_DATA_W-1:0]  bg_pal_ram_dina   , bg_pal_ram_dinb   , sp_pal_ram_dinb   ;
-wire [PAL_DATA_W-1:0]  bg_pal_ram_douta  , bg_pal_ram_doutb  , sp_pal_ram_doutb  ;
+wire                   bg_pal_ram_en    , sp_pal_ram_en    ;
+wire [            3:0] bg_pal_ram_we    , sp_pal_ram_we    ;
+wire [PAL_ADDR_W-1:0]  bg_pal_ram_addr  , sp_pal_ram_addr  ;
+wire [PAL_DATA_W-1:0]  bg_pal_ram_din   , sp_pal_ram_din   ;
+reg  [PAL_DATA_W-1:0]  bg_pal_ram_dout  , sp_pal_ram_dout  ;
 
 wire [31:0] sp_linebuffer[320];
 
-// reg        dot_clk;
-// reg [31:0] color;
-// reg        hdraw, vdraw;
+assign bg_param_ram_din = 0;
+assign bg_map_ram_din   = 0;
+assign bg_tile_ram_din  = 0;
+assign bg_pal_ram_din   = 0;
+assign sp_param_ram_din = 0;
+assign sp_tile_ram_din  = 0;
+assign sp_pal_ram_din   = 0;
 
-assign bg_param_ram_dinb = 0;
-assign bg_map_ram_dinb   = 0;
-assign bg_tile_ram_dinb  = 0;
-assign bg_pal_ram_dinb   = 0;
-assign sp_param_ram_dinb = 0;
-assign sp_tile_ram_dinb  = 0;
-assign sp_pal_ram_dinb   = 0;
+assign bg_param_ram_we = 4'h0;
+assign bg_map_ram_we   = 4'h0;
+assign bg_tile_ram_we  = 4'h0;
+assign bg_pal_ram_we   = 4'h0;
 
 vpu_core vpu_core
 (
   .clk            (clk),
   .rst_n          (rst_n),
 
-  .bg_param_en    (bg_param_ram_enb  ),
-  .bg_param_addr  (bg_param_ram_addrb),
-  .bg_param_dout  (bg_param_ram_doutb),
+  .bg_param_en    (bg_param_ram_en  ),
+  .bg_param_addr  (bg_param_ram_addr),
+  .bg_param_dout  (bg_param_ram_dout),
 
-  .bg_map_en      (bg_map_ram_enb    ),
-  .bg_map_addr    (bg_map_ram_addrb  ),
-  .bg_map_dout    (bg_map_ram_doutb  ),
+  .bg_map_en      (bg_map_ram_en    ),
+  .bg_map_addr    (bg_map_ram_addr  ),
+  .bg_map_dout    (bg_map_ram_dout  ),
 
-  .bg_tile_en     (bg_tile_ram_enb   ),
-  .bg_tile_addr   (bg_tile_ram_addrb ),
-  .bg_tile_dout   (bg_tile_ram_doutb ),
+  .bg_tile_en     (bg_tile_ram_en   ),
+  .bg_tile_addr   (bg_tile_ram_addr ),
+  .bg_tile_dout   (bg_tile_ram_dout ),
 
-  .bg_pal_en      (bg_pal_ram_enb    ),
-  .bg_pal_addr    (bg_pal_ram_addrb  ),
-  .bg_pal_dout    (bg_pal_ram_doutb  ),
+  .bg_pal_en      (bg_pal_ram_en    ),
+  .bg_pal_addr    (bg_pal_ram_addr  ),
+  .bg_pal_dout    (bg_pal_ram_dout  ),
 
-  .sp_param_en    (sp_param_ram_enb  ),
-  .sp_param_addr  (sp_param_ram_addrb),
-  .sp_param_dout  (sp_param_ram_doutb),
+  .sp_param_en    (sp_param_ram_en  ),
+  .sp_param_addr  (sp_param_ram_addr),
+  .sp_param_dout  (sp_param_ram_dout),
 
-  .sp_tile_en     (sp_tile_ram_enb   ),
-  .sp_tile_addr   (sp_tile_ram_addrb ),
-  .sp_tile_dout   (sp_tile_ram_doutb ),
+  .sp_tile_en     (sp_tile_ram_en   ),
+  .sp_tile_addr   (sp_tile_ram_addr ),
+  .sp_tile_dout   (sp_tile_ram_dout ),
 
-  .sp_pal_en      (sp_pal_ram_enb    ),
-  .sp_pal_addr    (sp_pal_ram_addrb  ),
-  .sp_pal_dout    (sp_pal_ram_doutb  ),
+  .sp_pal_en      (sp_pal_ram_en    ),
+  .sp_pal_addr    (sp_pal_ram_addr  ),
+  .sp_pal_dout    (sp_pal_ram_dout  ),
 
   .dot_clk        (dot_clk),
   .color          (color),
@@ -89,53 +112,128 @@ vpu_core vpu_core
   .vdraw          (vdraw)
 );
 
-vram vram
+
+wire        cpu_sp_param_ram_en  ;
+wire [ 3:0] cpu_sp_param_ram_we  ;
+wire [ 9:0] cpu_sp_param_ram_addr;
+wire [31:0] cpu_sp_param_ram_din ;
+wire [31:0] cpu_sp_param_ram_dout;
+
+wire        cpu_sp_map_ram_en    ;
+wire [ 3:0] cpu_sp_map_ram_we    ;
+wire [10:0] cpu_sp_map_ram_addr  ;
+wire [31:0] cpu_sp_map_ram_din   ;
+wire [31:0] cpu_sp_map_ram_dout  ;
+
+wire        cpu_sp_tile_ram_en   ;
+wire [ 3:0] cpu_sp_tile_ram_we   ;
+wire [14:0] cpu_sp_tile_ram_addr ;
+wire [31:0] cpu_sp_tile_ram_din  ;
+wire [31:0] cpu_sp_tile_ram_dout ;
+
+wire        cpu_sp_pal_ram_en    ;
+wire [ 3:0] cpu_sp_pal_ram_we    ;
+wire [ 8:0] cpu_sp_pal_ram_addr  ;
+wire [31:0] cpu_sp_pal_ram_din   ;
+wire [31:0] cpu_sp_pal_ram_dout  ;
+
+assign cpu_sp_param_ram_en   = !(hdraw && vdraw) ? cpu_param_ram_en   : sp_param_ram_en  ;
+assign cpu_sp_param_ram_we   = !(hdraw && vdraw) ? cpu_param_ram_we   : sp_param_ram_we  ;
+assign cpu_sp_param_ram_addr = !(hdraw && vdraw) ? cpu_param_ram_addr : sp_param_ram_addr;
+assign cpu_sp_param_ram_din  = !(hdraw && vdraw) ? cpu_param_ram_din  : sp_param_ram_din ;
+always_comb begin
+  cpu_param_ram_dout = cpu_sp_param_ram_dout;
+   sp_param_ram_dout = cpu_sp_param_ram_dout;
+end
+
+assign cpu_sp_map_ram_en     = !(hdraw && vdraw) ? cpu_map_ram_en   :  1'b0;
+assign cpu_sp_map_ram_we     = !(hdraw && vdraw) ? cpu_map_ram_we   :  4'b0;
+assign cpu_sp_map_ram_addr   = !(hdraw && vdraw) ? cpu_map_ram_addr : 10'b0;
+assign cpu_sp_map_ram_din    = !(hdraw && vdraw) ? cpu_map_ram_din  : 32'b0;
+always_comb begin
+  cpu_map_ram_dout = cpu_sp_map_ram_dout;
+end
+
+assign cpu_sp_tile_ram_en    = !(hdraw && vdraw) ? cpu_tile_ram_en   : sp_tile_ram_en;
+assign cpu_sp_tile_ram_we    = !(hdraw && vdraw) ? cpu_tile_ram_we   : sp_tile_ram_addr[1:0];
+assign cpu_sp_tile_ram_addr  = !(hdraw && vdraw) ? cpu_tile_ram_addr : sp_tile_ram_addr[TILE_ADDR_W-1:2];
+assign cpu_sp_tile_ram_din   = !(hdraw && vdraw) ? cpu_tile_ram_din  : sp_tile_ram_din;
+always_comb begin
+  cpu_tile_ram_dout = cpu_sp_tile_ram_dout;
+  case (sp_tile_ram_addr[1:0])
+    2'b00: sp_tile_ram_dout = cpu_sp_tile_ram_dout[ 7: 0];
+    2'b01: sp_tile_ram_dout = cpu_sp_tile_ram_dout[15: 8];
+    2'b10: sp_tile_ram_dout = cpu_sp_tile_ram_dout[23:16];
+    2'b11: sp_tile_ram_dout = cpu_sp_tile_ram_dout[31:24];
+  endcase
+end
+
+assign cpu_sp_pal_ram_en     = !(hdraw && vdraw) ? cpu_pal_ram_en   : sp_pal_ram_en  ;
+assign cpu_sp_pal_ram_we     = !(hdraw && vdraw) ? cpu_pal_ram_we   : sp_pal_ram_we  ;
+assign cpu_sp_pal_ram_addr   = !(hdraw && vdraw) ? cpu_pal_ram_addr : sp_pal_ram_addr;
+assign cpu_sp_pal_ram_din    = !(hdraw && vdraw) ? cpu_pal_ram_din  : sp_pal_ram_din ;
+always_comb begin
+  cpu_pal_ram_dout = cpu_sp_pal_ram_dout;
+   sp_pal_ram_dout = cpu_sp_pal_ram_dout;
+end
+
+vpu_ram_wrapper vpu_ram_wrapper_0
 (
-  .clk                (clk),
-  .rst_n              (rst_n),
+  .BRAM_PORTA_0_addr (cpu_sp_param_ram_addr),
+  .BRAM_PORTA_0_clk  (clk ),
+  .BRAM_PORTA_0_din  (cpu_sp_param_ram_din ),
+  .BRAM_PORTA_0_dout (cpu_sp_param_ram_dout),
+  .BRAM_PORTA_0_en   (cpu_sp_param_ram_en  ),
+  .BRAM_PORTA_0_we   (cpu_sp_param_ram_we  ),
 
-  .hdraw              (hdraw),
-  .vdraw              (vdraw),
+  .BRAM_PORTA_1_addr (cpu_sp_map_ram_addr),
+  .BRAM_PORTA_1_clk  (clk ),
+  .BRAM_PORTA_1_din  (cpu_sp_map_ram_din ),
+  .BRAM_PORTA_1_dout (cpu_sp_map_ram_dout),
+  .BRAM_PORTA_1_en   (cpu_sp_map_ram_en  ),
+  .BRAM_PORTA_1_we   (cpu_sp_map_ram_we  ),
 
-  .mem_en             (mem_en),
-  .mem_we             (mem_we),
-  .mem_addr           (mem_addr),
-  .mem_din            (mem_din),
-  .mem_dout           (mem_dout),
+  .BRAM_PORTA_2_addr (cpu_sp_tile_ram_addr),
+  .BRAM_PORTA_2_clk  (clk ),
+  .BRAM_PORTA_2_din  (cpu_sp_tile_ram_din ),
+  .BRAM_PORTA_2_dout (cpu_sp_tile_ram_dout),
+  .BRAM_PORTA_2_en   (cpu_sp_tile_ram_en  ),
+  .BRAM_PORTA_2_we   (cpu_sp_tile_ram_we  ),
 
-  .bg_param_ram_enb   (bg_param_ram_enb  ),
-  .bg_param_ram_addrb (bg_param_ram_addrb),
-  .bg_param_ram_dinb  (bg_param_ram_dinb ),
-  .bg_param_ram_doutb (bg_param_ram_doutb),
+  .BRAM_PORTA_3_addr (cpu_sp_pal_ram_addr),
+  .BRAM_PORTA_3_clk  (clk ),
+  .BRAM_PORTA_3_din  (cpu_sp_pal_ram_din ),
+  .BRAM_PORTA_3_dout (cpu_sp_pal_ram_dout),
+  .BRAM_PORTA_3_en   (cpu_sp_pal_ram_en  ),
+  .BRAM_PORTA_3_we   (cpu_sp_pal_ram_we  ),
 
-  .bg_map_ram_enb     (bg_map_ram_enb    ),
-  .bg_map_ram_addrb   (bg_map_ram_addrb  ),
-  .bg_map_ram_dinb    (bg_map_ram_dinb   ),
-  .bg_map_ram_doutb   (bg_map_ram_doutb  ),
+  .BRAM_PORTB_0_addr (bg_param_ram_addr),
+  .BRAM_PORTB_0_clk  (clk),
+  .BRAM_PORTB_0_din  (bg_param_ram_din ),
+  .BRAM_PORTB_0_dout (bg_param_ram_dout),
+  .BRAM_PORTB_0_en   (bg_param_ram_en  ),
+  .BRAM_PORTB_0_we   (bg_param_ram_we  ),
 
-  .bg_tile_ram_enb    (bg_tile_ram_enb   ),
-  .bg_tile_ram_addrb  (bg_tile_ram_addrb ),
-  .bg_tile_ram_dinb   (bg_tile_ram_dinb  ),
-  .bg_tile_ram_doutb  (bg_tile_ram_doutb ),
+  .BRAM_PORTB_1_addr (bg_map_ram_addr),
+  .BRAM_PORTB_1_clk  (clk),
+  .BRAM_PORTB_1_din  (bg_map_ram_din ),
+  .BRAM_PORTB_1_dout (bg_map_ram_dout),
+  .BRAM_PORTB_1_en   (bg_map_ram_en  ),
+  .BRAM_PORTB_1_we   (bg_map_ram_we  ),
 
-  .bg_pal_ram_enb     (bg_pal_ram_enb    ),
-  .bg_pal_ram_addrb   (bg_pal_ram_addrb  ),
-  .bg_pal_ram_dinb    (bg_pal_ram_dinb   ),
-  .bg_pal_ram_doutb   (bg_pal_ram_doutb  ),
+  .BRAM_PORTB_2_addr (bg_tile_ram_addr),
+  .BRAM_PORTB_2_clk  (clk),
+  .BRAM_PORTB_2_din  (bg_tile_ram_din ),
+  .BRAM_PORTB_2_dout (bg_tile_ram_dout),
+  .BRAM_PORTB_2_en   (bg_tile_ram_en  ),
+  .BRAM_PORTB_2_we   (bg_tile_ram_we  ),
 
-  .sp_param_ram_enb   (sp_param_ram_enb  ),
-  .sp_param_ram_addrb (sp_param_ram_addrb),
-  .sp_param_ram_dinb  (sp_param_ram_dinb ),
-  .sp_param_ram_doutb (sp_param_ram_doutb),
-
-  .sp_tile_ram_enb    (sp_tile_ram_enb   ),
-  .sp_tile_ram_addrb  (sp_tile_ram_addrb ),
-  .sp_tile_ram_dinb   (sp_tile_ram_dinb  ),
-  .sp_tile_ram_doutb  (sp_tile_ram_doutb ),
-
-  .sp_pal_ram_enb     (sp_pal_ram_enb    ),
-  .sp_pal_ram_addrb   (sp_pal_ram_addrb  ),
-  .sp_pal_ram_dinb    (sp_pal_ram_dinb   ),
-  .sp_pal_ram_doutb   (sp_pal_ram_doutb  )
+  .BRAM_PORTB_3_addr (bg_pal_ram_addr),
+  .BRAM_PORTB_3_clk  (clk),
+  .BRAM_PORTB_3_din  (bg_pal_ram_din ),
+  .BRAM_PORTB_3_dout (bg_pal_ram_dout),
+  .BRAM_PORTB_3_en   (bg_pal_ram_en  ),
+  .BRAM_PORTB_3_we   (bg_pal_ram_we  )
 );
+
 endmodule

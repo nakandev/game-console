@@ -15,28 +15,18 @@ export SRCS_V = \
   ${HDL_ROOT}/platform/fpga/arty_a7_35t/srcs/arty_a7_35t_block_design.sv \
   ${HDL_ROOT}/platform/video/ili9341_parallel_8bit.sv \
   ${HDL_ROOT}/platform/video/vga.sv \
-  ${HDL_ROOT}/cpu/cpu.sv \
   ${HDL_ROOT}/vpu/vpu.sv \
   ${HDL_ROOT}/vpu/vpu_core.sv \
   ${HDL_ROOT}/vpu/vpu_bg.sv \
   ${HDL_ROOT}/vpu/vpu_sp.sv \
-  ${HDL_ROOT}/vpu/vram.sv \
   ${HDL_ROOT}/memory/bram_tdp_rf_rf.sv \
   # ${HDL_ROOT}/platform/fpga/arty_a7_35t/srcs/arty_a7_35t_vpu_ili9341_parallel_8bit.sv \
 
 # BD_FILE: .bd file ... Block Design file.
 # Block Design is created in Vivado GUI, and exported from Vivado.
-export BD_TCL = \
-  ${HDL_ROOT}/platform/fpga/arty_a7_35t/nirvana_microblazev_block_design.tcl
-
-export BD_FILE = \
-  ${HDL_ROOT}/build/nirvana_arty.srcs/sources_1/bd/design_1/design_1.bd
-
-export BD_WRAPPER_V = \
-  ${HDL_ROOT}/build/nirvana_arty.gen/sources_1/bd/design_1/hdl/design_1_wrapper.v
-
-export BD_SYNTH_V = \
-  ${HDL_ROOT}/build/nirvana_arty.gen/sources_1/bd/design_1/synth/design_1.v
+export BD_TCLS = \
+  ${HDL_ROOT}/platform/fpga/arty_a7_35t/srcs/bd/system.tcl \
+  ${HDL_ROOT}/platform/fpga/arty_a7_35t/srcs/bd/vpu_ram.tcl \
 
 export SRCS_IP = \
 

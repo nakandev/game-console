@@ -6,10 +6,10 @@ set PROJ_NAME   $::env(PROJ_NAME)
 set PROJ_DIR    $::env(PROJ_DIR)
 set SRCS_DC     $::env(SRCS_DC)
 set SRCS_V      $::env(SRCS_V)
-set BD_TCL      $::env(BD_TCL)
-set BD_FILE     $::env(BD_FILE)
-set BD_WRAPPER_V  $::env(BD_WRAPPER_V)
-set BD_SYNTH_V  $::env(BD_SYNTH_V)
+set BD_TCLS     $::env(BD_TCLS)
+# set BD_FILE     $::env(BD_FILE)
+# set BD_WRAPPER_V  $::env(BD_WRAPPER_V)
+# set BD_SYNTH_V  $::env(BD_SYNTH_V)
 set SRCS_IP     $::env(SRCS_IP)
 set SRCS_SIM    $::env(SRCS_SIM)
 set TOP_NAME    $::env(TOP_NAME)
@@ -44,33 +44,43 @@ if (${USE_PROJECT}) {
   }
   foreach src_ip ${SRCS_IP} {
     read_ip -quiet ${src_ip}
-    set_property used_in_implementation false [get_files ${src_ip}]
+    # set_property used_in_implementation false [get_files ${src_ip}]
   }
   foreach src_dc ${SRCS_DC} {
     read_xdc ${src_dc}
-    set_property used_in_implementation false [get_files ${src_dc}]
+    # set_property used_in_implementation false [get_files ${src_dc}]
   }
 }
 
-set bd_files [get_files ${BD_FILE}]
+foreach BD_TCL ${BD_TCLS} {
+  set BD_DESIGN_NAME [file rootname [file tail $BD_TCL]]
+  set BD_FILE ${PROJ_DIR}/${PROJ_NAME}.srcs/sources_1/bd/${BD_DESIGN_NAME}/${BD_DESIGN_NAME}.bd
 
-read_bd $bd_files
+  set bd_files [get_files ${BD_FILE}]
 
-set_property SYNTH_CHECKPOINT_MODE "Hierarchical" $bd_files
-generate_target all $bd_files
-export_ip_user_files -of_objects $bd_files -no_script -sync -force -quiet
-create_ip_run $bd_files
-reset_run [get_runs *_synth_1]
+  read_bd $bd_files
+
+  set_property SYNTH_CHECKPOINT_MODE "Hierarchical" $bd_files
+  generate_target all $bd_files
+  export_ip_user_files -of_objects $bd_files -no_script -sync -force -quiet
+  create_ip_run $bd_files
+}
+# reset_run [get_runs *_synth_1]
 launch_runs [get_runs *_synth_1]
 wait_on_runs [get_runs *_synth_1]
 update_compile_order -fileset sources_1
 
-read_verilog ${BD_SYNTH_V}
-read_verilog ${BD_WRAPPER_V}
+# foreach BD_TCL ${BD_TCLS} {
+#   set BD_DESIGN_NAME [file rootname [file tail $BD_TCL]]
+#   set BD_SYNTH_V ${PROJ_DIR}/${PROJ_NAME}.gen/sources_1/bd/${BD_DESIGN_NAME}/synth/${BD_DESIGN_NAME}.v
+#   set BD_WRAPPER_V ${PROJ_DIR}/${PROJ_NAME}.gen/sources_1/bd/${BD_DESIGN_NAME}/hdl/${BD_DESIGN_NAME}_wrapper.v
+#   read_verilog ${BD_SYNTH_V}
+#   read_verilog ${BD_WRAPPER_V}
+# }
 
 foreach src_dc ${SRCS_DC} {
   read_xdc ${src_dc}
-  set_property used_in_implementation false [get_files ${src_dc}]
+  # set_property used_in_implementation false [get_files ${src_dc}]
 }
 read_xdc [get_files -all -filter {FILE_TYPE == "XDC"}]
 

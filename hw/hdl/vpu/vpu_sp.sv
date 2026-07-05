@@ -27,30 +27,30 @@ endfunction
 module vpu_sp
   import gameconsole_pkg::*;
 (
-  input  wire                   clk,
-  input  wire                   rst_n,
+  input  logic                   clk,
+  input  logic                   rst_n,
 
-  input  wire [10:0]            line_cycle,
-  input  wire [8:0]             y,
+  input  logic [10:0]            line_cycle,
+  input  logic [8:0]             y,
 
-  output wire                   param_en,
-  output wire [SP_ADDR_W-1:0]   param_addr,
-  input  wire [SP_DATA_W-1:0]   param_dout,
+  output logic                   param_en,
+  output logic [PRM_ADDR_W-1:0]  param_addr,
+  input  logic [PRM_DATA_W-1:0]  param_dout,
 
-  output wire                   tile_en,
-  output wire [TILE_ADDR_W-1:0] tile_addr,
-  input  wire [TILE_DATA_W-1:0] tile_dout,
+  output logic                   tile_en,
+  output logic [TILE_ADDR_W-1:0] tile_addr,
+  input  logic [TILE_DATA_W-1:0] tile_dout,
 
-  output wire                   pal_en,
-  output wire [PAL_ADDR_W-1:0]  pal_addr,
-  input  wire [PAL_DATA_W-1:0]  pal_dout,
+  output logic                   pal_en,
+  output logic [PAL_ADDR_W-1:0]  pal_addr,
+  input  logic [PAL_DATA_W-1:0]  pal_dout,
 
-  output wire                       line_init,
-  output wire [LINEBUFF_BANK_W-1:0] line_web,
-  output wire [LINEBUFF_BANK_W-1:0] line_bankb,
-  output wire [LINEBUFF_ADDR_W-1:0] line_addrb,
-  output reg  [LINEBUFF_DATA_W-1:0] line_dinb,
-  input  wire [LINEBUFF_DATA_W-1:0] line_doutb
+  output logic                       line_init,
+  output logic [LINEBUFF_BANK_W-1:0] line_web,
+  output logic [LINEBUFF_BANK_W-1:0] line_bankb,
+  output logic [LINEBUFF_ADDR_W-1:0] line_addrb,
+  output logic  [LINEBUFF_DATA_W-1:0] line_dinb,
+  input  logic [LINEBUFF_DATA_W-1:0] line_doutb
 );
 
 localparam HMAX = SCREEN_W + SCREEN_HBLANK;
@@ -60,24 +60,24 @@ localparam LINE_CYCLE_SPPARAM = 5;
 localparam LINE_CYCLE_VISIBLE = LINE_CYCLE_PARAM + SCREEN_W * 4;
 localparam LINE_CYCLE_MAX = LINE_CYCLE_PARAM + HMAX * 4;
 
-reg [31:0] sp_data0_cache;
-reg [31:0] sp_data1_cache;
-reg [31:0] sp_affine0_cache;
-reg [31:0] sp_affine1_cache;
-reg [31:0] sp_affine2_cache;
+logic [31:0] sp_data0_cache;
+logic [31:0] sp_data1_cache;
+logic [31:0] sp_affine0_cache;
+logic [31:0] sp_affine1_cache;
+logic [31:0] sp_affine2_cache;
 
-wire [8:0] x = 0;
-reg [10:0] sp_cycle;
-reg [6:0]  sp_idx;
+logic [8:0] x;
+logic [10:0] sp_cycle;
+logic [6:0]  sp_idx;
 
-reg parameter_done;
-reg pipeline_done;
+logic parameter_done;
+logic pipeline_done;
 vpu_sp_state_t state;
 
 assign x = line_cycle / 4;
 
-wire parameter_enable;
-wire pipeline_enable;
+logic parameter_enable;
+logic pipeline_enable;
 assign parameter_enable = (state == STATE_SPPARAM);
 assign pipeline_enable = (state == STATE_SPPIPELINE);
 assign line_init = (state <= STATE_PARAM);
@@ -160,7 +160,7 @@ vpu_sp_parameter_load vpu_sp_parameter_load (
   parameter_done
 );
 
-reg [31:0] color_debug;
+logic [31:0] color_debug;
 vpu_sp_pipeline vpu_sp_pipeline (
   clk,
   rst_n,
@@ -193,27 +193,27 @@ endmodule
 module vpu_sp_parameter_load
   import gameconsole_pkg::*;
 (
-  input  wire        clk,
-  input  wire        rst_n,
-  input  wire        parameter_enable,
-  input  wire [ 6:0] sp_idx,
-  input  wire [ 7:0] y,
-  output wire        param_en,
-  output wire [ 9:0] param_addr,
-  input  wire [31:0] param_dout,
-  output reg  [31:0] sp_data0_cache,
-  output reg  [31:0] sp_data1_cache,
-  output reg  [31:0] sp_affine0_cache,
-  output reg  [31:0] sp_affine1_cache,
-  output reg  [31:0] sp_affine2_cache,
-  output reg         done
+  input  logic        clk,
+  input  logic        rst_n,
+  input  logic        parameter_enable,
+  input  logic [ 6:0] sp_idx,
+  input  logic [ 7:0] y,
+  output logic        param_en,
+  output logic [ 9:0] param_addr,
+  input  logic [31:0] param_dout,
+  output logic  [31:0] sp_data0_cache,
+  output logic  [31:0] sp_data1_cache,
+  output logic  [31:0] sp_affine0_cache,
+  output logic  [31:0] sp_affine1_cache,
+  output logic  [31:0] sp_affine2_cache,
+  output logic         done
 );
 
 localparam PARAM_SIZE = 5;
 
-reg parameter_enable_prev;
-reg [2:0] offset;
-reg [2:0] offset_prev;
+logic parameter_enable_prev;
+logic [2:0] offset;
+logic [2:0] offset_prev;
 
 always_ff @(posedge clk) begin
   if (~rst_n) begin
@@ -247,13 +247,13 @@ always_comb begin
   end
 end
 
-wire [ 0: 0]/*[31:31]*/ sp_enable;
-wire [ 0: 0]/*[30:30]*/ sp_afen;
-wire [ 1: 0]/*[25:24]*/ sp_tilesize;
-wire [ 7: 0]/*[ 7: 0]*/ sp_y;
-wire [ 8: 0]/*[ 7: 0]*/ sp_y1;
-wire [ 7: 0] th;
-wire [ 0: 0] area_in;
+logic [ 0: 0]/*[31:31]*/ sp_enable;
+logic [ 0: 0]/*[30:30]*/ sp_afen;
+logic [ 1: 0]/*[25:24]*/ sp_tilesize;
+logic [ 7: 0]/*[ 7: 0]*/ sp_y;
+logic [ 8: 0]/*[ 7: 0]*/ sp_y1;
+logic [ 7: 0] th;
+logic [ 0: 0] area_in;
 assign sp_enable   = sp_data0_cache[31:31];
 assign sp_afen     = sp_data0_cache[30:30];
 assign sp_tilesize = sp_data0_cache[25:24];
@@ -280,53 +280,53 @@ endmodule
 module vpu_sp_pipeline
   import gameconsole_pkg::*;
 (
-  input  wire        clk,
-  input  wire        rst_n,
-  input  wire        pipeline_enable,
-  input  wire [ 6:0] sp_idx,
-  input  wire [ 7:0] y,
-  input  reg  [31:0] sp_data0_cache,
-  input  reg  [31:0] sp_data1_cache,
-  input  reg  [31:0] sp_affine0_cache,
-  input  reg  [31:0] sp_affine1_cache,
-  input  reg  [31:0] sp_affine2_cache,
-  output wire                 tile_en,
-  output wire [TILE_ADDR_W-1:0] tile_addr,
-  input  wire [TILE_DATA_W-1:0] tile_data,
-  output wire                 pal_en,
-  output wire [PAL_ADDR_W-1:0]  pal_addr,
-  input  wire [PAL_DATA_W-1:0]  pal_data,
-  output wire [LINEBUFF_BANK_W-1:0] line_web,
-  output wire [LINEBUFF_BANK_W-1:0] line_bankb,
-  output wire [LINEBUFF_ADDR_W-1:0] line_addrb,
-  output reg  [LINEBUFF_DATA_W-1:0] line_dinb,
-  input  wire [LINEBUFF_DATA_W-1:0] line_doutb,
-  output wire [31:0] color,
-  output wire        pipeline_done
+  input  logic        clk,
+  input  logic        rst_n,
+  input  logic        pipeline_enable,
+  input  logic [ 6:0] sp_idx,
+  input  logic [ 7:0] y,
+  input  logic  [31:0] sp_data0_cache,
+  input  logic  [31:0] sp_data1_cache,
+  input  logic  [31:0] sp_affine0_cache,
+  input  logic  [31:0] sp_affine1_cache,
+  input  logic  [31:0] sp_affine2_cache,
+  output logic                 tile_en,
+  output logic [TILE_ADDR_W-1:0] tile_addr,
+  input  logic [TILE_DATA_W-1:0] tile_data,
+  output logic                 pal_en,
+  output logic [PAL_ADDR_W-1:0]  pal_addr,
+  input  logic [PAL_DATA_W-1:0]  pal_data,
+  output logic [LINEBUFF_BANK_W-1:0] line_web,
+  output logic [LINEBUFF_BANK_W-1:0] line_bankb,
+  output logic [LINEBUFF_ADDR_W-1:0] line_addrb,
+  output logic  [LINEBUFF_DATA_W-1:0] line_dinb,
+  input  logic [LINEBUFF_DATA_W-1:0] line_doutb,
+  output logic [31:0] color,
+  output logic        pipeline_done
 );
 
-reg [1:0] layer;
+logic [1:0] layer;
 
-wire [ 0: 0]/*[31:31]*/ sp_enable;
-wire [ 0: 0]/*[30:30]*/ sp_afen;
-wire [ 1: 0]/*[29:28]*/ sp_layer;
-wire [ 0: 0]/*[27:27]*/ sp_hflip;
-wire [ 0: 0]/*[26:26]*/ sp_vflip;
-wire [ 1: 0]/*[25:24]*/ sp_tilesize;
-// wire [ 0: 0]/*[23:17]*/ sp__reserved;
-wire [ 8: 0]/*[16: 8]*/ sp_x;
-wire [ 7: 0]/*[ 7: 0]*/ sp_y;
+logic [ 0: 0]/*[31:31]*/ sp_enable;
+logic [ 0: 0]/*[30:30]*/ sp_afen;
+logic [ 1: 0]/*[29:28]*/ sp_layer;
+logic [ 0: 0]/*[27:27]*/ sp_hflip;
+logic [ 0: 0]/*[26:26]*/ sp_vflip;
+logic [ 1: 0]/*[25:24]*/ sp_tilesize;
+// logic [ 0: 0]/*[23:17]*/ sp__reserved;
+logic [ 8: 0]/*[16: 8]*/ sp_x;
+logic [ 7: 0]/*[ 7: 0]*/ sp_y;
 
-wire [ 3: 0]/*[31:28]*/ sp_tile_bank;
-wire [11: 0]/*[27:16]*/ sp_tile_idx;
-//wire [ 3: 0]/*[15:12]*/ sp__palreserved0;
-wire [ 3: 0]/*[11: 8]*/ sp_pal_transparency;
-//wire [ 0: 0]/*[ 7: 7]*/ sp__palreserved1;
-wire [ 0: 0]/*[ 6: 6]*/ sp_pal_mode;
-wire [ 1: 0]/*[ 5: 4]*/ sp_pal_bank;
-wire [ 3: 0]/*[ 3: 0]*/ sp_pal_no;
+logic [ 3: 0]/*[31:28]*/ sp_tile_bank;
+logic [11: 0]/*[27:16]*/ sp_tile_idx;
+//logic [ 3: 0]/*[15:12]*/ sp__palreserved0;
+logic [ 3: 0]/*[11: 8]*/ sp_pal_transparency;
+//logic [ 0: 0]/*[ 7: 7]*/ sp__palreserved1;
+logic [ 0: 0]/*[ 6: 6]*/ sp_pal_mode;
+logic [ 1: 0]/*[ 5: 4]*/ sp_pal_bank;
+logic [ 3: 0]/*[ 3: 0]*/ sp_pal_no;
 
-wire [95: 0] sp_affine;
+logic [95: 0] sp_affine;
 
 assign sp_enable   = sp_data0_cache[31:31];
 assign sp_afen     = sp_data0_cache[30:30];
@@ -349,15 +349,15 @@ assign sp_pal_no           = sp_data1_cache[ 3: 0];
 
 assign sp_affine = {sp_affine0_cache, sp_affine1_cache, sp_affine2_cache};
 
-reg [8:0] x;
-reg [8:0] objx;
-reg [7:0] objy;
-reg [8:0] xbegin;
-reg [8:0] xend;
-reg [7:0] tw;
-reg [7:0] th;
-reg       area_in;
-reg       area_inA;
+logic [8:0] x;
+logic [8:0] objx;
+logic [7:0] objy;
+logic [8:0] xbegin;
+logic [8:0] xend;
+logic [7:0] tw;
+logic [7:0] th;
+logic       area_in;
+logic       area_inA;
 
 always_ff @(posedge clk) begin
   if (~rst_n) begin
@@ -401,21 +401,21 @@ vpu_sp_pipeline0_affine_transform sp_pipe0(
   area_inA
 );
 
-reg       sp_enable_p02;
-reg       area_in_p02;
-reg       area_inA_p02;
-reg [1:0] layer_p02;
-reg [8:0] x_p02;
-reg [7:0] y_p02;
-reg [8:0] objx_p02;
-reg [7:0] objy_p02;
-reg [7:0] tw_p02;
-reg [7:0] th_p02;
-reg [3:0]  tile_bank_p02;
-reg [15:0] tile_idx_p02;
-reg [0:0] pal_mode_p02;
-reg [1:0] pal_bank_p02;
-reg [3:0] pal_no_p02;
+logic       sp_enable_p02;
+logic       area_in_p02;
+logic       area_inA_p02;
+logic [1:0] layer_p02;
+logic [8:0] x_p02;
+logic [7:0] y_p02;
+logic [8:0] objx_p02;
+logic [7:0] objy_p02;
+logic [7:0] tw_p02;
+logic [7:0] th_p02;
+logic [3:0]  tile_bank_p02;
+logic [15:0] tile_idx_p02;
+logic [0:0] pal_mode_p02;
+logic [1:0] pal_bank_p02;
+logic [3:0] pal_no_p02;
 assign area_in_p02 = area_in;
 assign area_inA_p02 = area_inA;
 // assign x_p02 = x;
@@ -442,7 +442,7 @@ always_ff @(posedge clk) begin
   pal_no_p02 <= sp_pal_no;
 end
 
-reg [7:0] pal_idx;
+logic [7:0] pal_idx;
 vpu_sp_pipeline2_tile_load sp_pipe2 (
   clk,
   rst_n,
@@ -457,17 +457,17 @@ vpu_sp_pipeline2_tile_load sp_pipe2 (
   pal_idx
 );
 
-reg       sp_enable_p23;
-reg       area_in_p23;
-reg       area_inA_p23;
-reg [1:0] layer_p23;
-reg [8:0] x_p23;
-reg [8:0] objx_p23;
-reg [7:0] tw_p23;
-reg [7:0] pal_idx_p23;
-reg [0:0] pal_mode_p23;
-reg [1:0] pal_bank_p23;
-reg [3:0] pal_no_p23;
+logic       sp_enable_p23;
+logic       area_in_p23;
+logic       area_inA_p23;
+logic [1:0] layer_p23;
+logic [8:0] x_p23;
+logic [8:0] objx_p23;
+logic [7:0] tw_p23;
+logic [7:0] pal_idx_p23;
+logic [0:0] pal_mode_p23;
+logic [1:0] pal_bank_p23;
+logic [3:0] pal_no_p23;
 assign pal_idx_p23 = pal_idx;
 always_ff @(posedge clk) begin
   sp_enable_p23 <= sp_enable_p02;
@@ -483,7 +483,7 @@ always_ff @(posedge clk) begin
   // pal_idx_p23 <= pal_idx;
 end
 
-wire [31:0] color_n;
+logic [31:0] color_n;
 vpu_sp_pipeline3_palette_load  sp_pipe3 (
   clk,
   rst_n,
@@ -498,14 +498,14 @@ vpu_sp_pipeline3_palette_load  sp_pipe3 (
   color_n
 );
 
-reg       sp_enable_p34;
-reg       area_in_p34;
-reg       area_inA_p34;
-reg [1:0] layer_p34;
-reg [8:0] x_p34;
-reg [8:0] objx_p34;
-reg [7:0] tw_p34;
-reg [31:0] color_n_p34;
+logic       sp_enable_p34;
+logic       area_in_p34;
+logic       area_inA_p34;
+logic [1:0] layer_p34;
+logic [8:0] x_p34;
+logic [8:0] objx_p34;
+logic [7:0] tw_p34;
+logic [31:0] color_n_p34;
 assign color_n_p34 = color_n;
 always_ff @(posedge clk) begin
   sp_enable_p34 <= sp_enable_p23;
@@ -518,8 +518,8 @@ always_ff @(posedge clk) begin
   // color_n_p34 <= color_n;
 end
 
-reg [31:0] color_out;
-reg done;
+logic [31:0] color_out;
+logic done;
 vpu_sp_pipeline4_color_merge sp_pipe4 (
   clk,
   rst_n,
@@ -549,24 +549,24 @@ endmodule
 module vpu_sp_pipeline0_affine_transform
   import gameconsole_pkg::*;
 (
-  input  wire        clk,
-  input  wire        rst_n,
-  input  wire [ 8:0] xin,
-  input  wire [ 7:0] yin,
-  input  wire [ 1:0] sp_tilesize,
-  input  wire [ 8:0] sp_x,
-  input  wire [ 7:0] sp_y,
-  input  wire        sp_enable,
-  input  wire        sp_afen,
-  input  wire [95:0] sp_affine,
-  output reg  [ 8:0] objx,
-  output reg  [ 7:0] objy,
-  output reg  [ 8:0] xbegin,
-  output reg  [ 8:0] xend,
-  output reg  [ 7:0] tw,
-  output reg  [ 7:0] th,
-  output reg         area_in,
-  output reg         area_inA
+  input  logic        clk,
+  input  logic        rst_n,
+  input  logic [ 8:0] xin,
+  input  logic [ 7:0] yin,
+  input  logic [ 1:0] sp_tilesize,
+  input  logic [ 8:0] sp_x,
+  input  logic [ 7:0] sp_y,
+  input  logic        sp_enable,
+  input  logic        sp_afen,
+  input  logic [95:0] sp_affine,
+  output logic  [ 8:0] objx,
+  output logic  [ 7:0] objy,
+  output logic  [ 8:0] xbegin,
+  output logic  [ 8:0] xend,
+  output logic  [ 7:0] tw,
+  output logic  [ 7:0] th,
+  output logic         area_in,
+  output logic         area_inA
 );
 
 shortint objx0;
@@ -575,8 +575,8 @@ shortint x0, y0, Ba, Bb, Bc, Bd, Bx, By;
 int Bax0, Bby0, Bcx0, Bdy0;
 shortint x1, y1;
 byte tw0, th0;
-reg area_in1;
-reg area_inA1;
+logic area_in1;
+logic area_inA1;
 
 assign Ba = sp_affine[16*6-1:16*5];
 assign Bb = sp_affine[16*5-1:16*4];
@@ -632,17 +632,17 @@ endmodule
 module vpu_sp_pipeline2_tile_load
   import gameconsole_pkg::*;
 (
-  input  wire        clk,
-  input  wire        rst_n,
-  input  wire [ 8:0] objx,
-  input  wire [ 7:0] objy,
-  input  wire [ 7:0] tw,
-  input  wire [TILE_BANK_W-1:0] sp_tile_bank,
-  input  wire [TILE_INDX_W-1:0] sp_tile_idx,
-  output wire        tile_en,
-  output reg  [TILE_ADDR_W-1:0] tile_addr,
-  input  reg  [TILE_DATA_W-1:0] tile_data,
-  output reg  [PAL_INDX_W-1:0] pal_idx
+  input  logic        clk,
+  input  logic        rst_n,
+  input  logic [ 8:0] objx,
+  input  logic [ 7:0] objy,
+  input  logic [ 7:0] tw,
+  input  logic [TILE_BANK_W-1:0] sp_tile_bank,
+  input  logic [TILE_INDX_W-1:0] sp_tile_idx,
+  output logic        tile_en,
+  output logic  [TILE_ADDR_W-1:0] tile_addr,
+  input  logic  [TILE_DATA_W-1:0] tile_data,
+  output logic  [PAL_INDX_W-1:0] pal_idx
 );
 
 localparam HW_TILE_W = 8;
@@ -654,10 +654,10 @@ localparam HW_TILEMAP_H = 512;
 shortint offset;
 shortint tilex;
 shortint tiley;
-reg  [ 8:0] tx0;
-reg  [ 8:0] ty0;
-reg  [TILE_INDX_W-1:0] tile_idx;
-reg  [TILE_INDX_W-1:0] tile_addr_lo;
+logic  [ 8:0] tx0;
+logic  [ 8:0] ty0;
+logic  [TILE_INDX_W-1:0] tile_idx;
+logic  [TILE_INDX_W-1:0] tile_addr_lo;
 
 always_comb begin
   tx0 = objx & (HW_TILEMAP_W-1);
@@ -680,17 +680,17 @@ endmodule
 module vpu_sp_pipeline3_palette_load
   import gameconsole_pkg::*;
 (
-  input  wire        clk,
-  input  wire        rst_n,
-  input  wire [ 1:0] layer,
-  input  wire        pal_mode,
-  input  wire [PAL_BANK_W-1:0] pal_bank,
-  input  wire [ 3:0] pal_no,
-  input  wire [PAL_INDX_W-1:0] pal_idx,
-  output wire        pal_en,
-  output reg  [PAL_ADDR_W-1:0] pal_addr,
-  input  reg  [PAL_DATA_W-1:0] pal_data,
-  output reg  [31:0] color_n
+  input  logic        clk,
+  input  logic        rst_n,
+  input  logic [ 1:0] layer,
+  input  logic        pal_mode,
+  input  logic [PAL_BANK_W-1:0] pal_bank,
+  input  logic [ 3:0] pal_no,
+  input  logic [PAL_INDX_W-1:0] pal_idx,
+  output logic        pal_en,
+  output logic  [PAL_ADDR_W-1:0] pal_addr,
+  input  logic  [PAL_DATA_W-1:0] pal_data,
+  output logic  [31:0] color_n
 );
 
 assign pal_addr = (pal_mode == 0) ? {pal_bank, pal_idx} : {pal_bank, pal_no, pal_idx[3:0]};
@@ -703,22 +703,22 @@ endmodule
 module vpu_sp_pipeline4_color_merge
   import gameconsole_pkg::*;
 (
-  input  wire        clk,
-  input  wire        rst_n,
-  input  wire        sp_enable,
-  input  wire        area_inA,
-  input  wire [ 1:0] layer,
-  input  wire [ 8:0] x,
-  input  wire [ 7:0] y,
-  input  wire [ 8:0] objx,
-  input  wire [ 7:0] tw,
-  input  wire [31:0] color_n,
-  output reg                        line_web,
-  output wire [LINEBUFF_BANK_W-1:0] line_bankb,
-  output reg  [LINEBUFF_ADDR_W-1:0] line_addrb,
-  output reg  [LINEBUFF_DATA_W-1:0] line_dinb,
-  input  wire [LINEBUFF_DATA_W-1:0] line_doutb,
-  output reg         done
+  input  logic        clk,
+  input  logic        rst_n,
+  input  logic        sp_enable,
+  input  logic        area_inA,
+  input  logic [ 1:0] layer,
+  input  logic [ 8:0] x,
+  input  logic [ 7:0] y,
+  input  logic [ 8:0] objx,
+  input  logic [ 7:0] tw,
+  input  logic [31:0] color_n,
+  output logic                        line_web,
+  output logic [LINEBUFF_BANK_W-1:0] line_bankb,
+  output logic  [LINEBUFF_ADDR_W-1:0] line_addrb,
+  output logic  [LINEBUFF_DATA_W-1:0] line_dinb,
+  input  logic [LINEBUFF_DATA_W-1:0] line_doutb,
+  output logic         done
 );
 
 function logic [31:0] color_merge(logic [31:0] col_buf, logic [31:0] col_n);

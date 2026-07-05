@@ -6,10 +6,8 @@ set PROJ_NAME   $::env(PROJ_NAME)
 set PROJ_DIR    $::env(PROJ_DIR)
 set SRCS_DC     $::env(SRCS_DC)
 set SRCS_V      $::env(SRCS_V)
-set BD_TCL      $::env(BD_TCL)
-set BD_FILE     $::env(BD_FILE)
-set BD_WRAPPER_V  $::env(BD_WRAPPER_V)
-set BD_SYNTH_V  $::env(BD_SYNTH_V)
+set BD_TCLS     $::env(BD_TCLS)
+# set BD_SYNTH_V  $::env(BD_SYNTH_V)
 set SRCS_IP     $::env(SRCS_IP)
 set SRCS_SIM    $::env(SRCS_SIM)
 set TOP_NAME    $::env(TOP_NAME)
@@ -36,16 +34,22 @@ foreach src_v ${SRCS_V} {
 }
 foreach src_ip ${SRCS_IP} {
   read_ip -quiet ${src_ip}
-  set_property used_in_implementation false [get_files ${src_ip}]
+  # set_property used_in_implementation false [get_files ${src_ip}]
 }
 foreach src_dc ${SRCS_DC} {
   read_xdc ${src_dc}
-  set_property used_in_implementation false [get_files ${src_dc}]
+  # set_property used_in_implementation false [get_files ${src_dc}]
 }
 
-source ${BD_TCL}
-set bd_files [get_files ${BD_FILE}]
-read_bd $bd_files
-make_wrapper -files $bd_files -top
-add_files -norecurse ${BD_WRAPPER_V}
+foreach BD_TCL ${BD_TCLS} {
+  source ${BD_TCL}
+  set BD_DESIGN_NAME [file rootname [file tail $BD_TCL]]
+  set BD_FILE ${PROJ_DIR}/${PROJ_NAME}.srcs/sources_1/bd/${BD_DESIGN_NAME}/${BD_DESIGN_NAME}.bd
+  set BD_SYNTH_V ${PROJ_DIR}/${PROJ_NAME}.gen/sources_1/bd/${BD_DESIGN_NAME}/synth/${BD_DESIGN_NAME}.v
+  set BD_WRAPPER_V ${PROJ_DIR}/${PROJ_NAME}.gen/sources_1/bd/${BD_DESIGN_NAME}/hdl/${BD_DESIGN_NAME}_wrapper.v
+  set bd_files [get_files ${BD_FILE}]
+  read_bd $bd_files
+  make_wrapper -files $bd_files -top
+  add_files -norecurse ${BD_WRAPPER_V}
+}
 update_compile_order -fileset sources_1

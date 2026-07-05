@@ -5,8 +5,8 @@ module vpu_core
   input  wire                   rst_n,
 
   output wire                   bg_param_en,
-  output wire [SP_ADDR_W-1:0]   bg_param_addr,
-  input  wire [SP_DATA_W-1:0]   bg_param_dout,
+  output wire [PRM_ADDR_W-1:0]  bg_param_addr,
+  input  wire [PRM_DATA_W-1:0]  bg_param_dout,
 
   output wire                   bg_map_en,
   output wire [MAP_ADDR_W-1:0]  bg_map_addr,
@@ -21,8 +21,8 @@ module vpu_core
   input  wire [PAL_DATA_W-1:0]  bg_pal_dout,
 
   output wire                   sp_param_en,
-  output wire [SP_ADDR_W-1:0]   sp_param_addr,
-  input  wire [SP_DATA_W-1:0]   sp_param_dout,
+  output wire [PRM_ADDR_W-1:0]  sp_param_addr,
+  input  wire [PRM_DATA_W-1:0]  sp_param_dout,
 
   output wire                   sp_tile_en,
   output wire [TILE_ADDR_W-1:0] sp_tile_addr,
@@ -54,8 +54,8 @@ localparam HMAX = SCREEN_W + SCREEN_HBLANK;
 localparam LMAX = HMAX * 4;
 localparam VMAX = SCREEN_H + SCREEN_VBLANK;
 
-reg [8:0]  y = 0;
-reg [10:0] line_cycle = 0;
+reg [8:0]  y;
+reg [10:0] line_cycle;
 
 always_ff @(posedge clk) begin
   if (~rst_n) begin
@@ -206,17 +206,44 @@ module vpu_linebuffer
 );
 
 wire [0:0] banka;
-reg [LINEBUFF_DATA_W-1:0] douta0;
-reg [LINEBUFF_DATA_W-1:0] douta1;
-reg [LINEBUFF_DATA_W-1:0] doutb0;
-reg [LINEBUFF_DATA_W-1:0] doutb1;
-// reg [LINEBUFF_DATA_W-1:0] linebuffer0[SCREEN_W];
-// reg [LINEBUFF_DATA_W-1:0] linebuffer1[SCREEN_W];
-reg lstate = 0;
+wire [LINEBUFF_DATA_W-1:0] douta0;
+wire [LINEBUFF_DATA_W-1:0] douta1;
+wire [LINEBUFF_DATA_W-1:0] doutb0;
+wire [LINEBUFF_DATA_W-1:0] doutb1;
 
 assign banka = ~bankb;
 assign douta = (banka==0) ? douta0 : douta1;
 assign doutb = (bankb==0) ? doutb0 : doutb1;
+
+// linebuffer_wrapper linebuffer_ram0 (
+//   .BRAM_PORTA_0_addr(addra),
+//   .BRAM_PORTA_0_clk (clk),
+//   .BRAM_PORTA_0_din (dina),
+//   .BRAM_PORTA_0_dout(douta0),
+//   .BRAM_PORTA_0_en  (banka==0),
+//   .BRAM_PORTA_0_we  (wea),
+//   .BRAM_PORTA_1_addr(addrb),
+//   .BRAM_PORTA_1_clk (clk),
+//   .BRAM_PORTA_1_din (dinb),
+//   .BRAM_PORTA_1_dout(doutb0),
+//   .BRAM_PORTA_1_en  (bankb==0),
+//   .BRAM_PORTA_1_we  (web)
+// );
+// 
+// linebuffer_wrapper linebuffer_ram1 (
+//   .BRAM_PORTA_0_addr(addra),
+//   .BRAM_PORTA_0_clk (clk),
+//   .BRAM_PORTA_0_din (dina),
+//   .BRAM_PORTA_0_dout(douta1),
+//   .BRAM_PORTA_0_en  (banka==1),
+//   .BRAM_PORTA_0_we  (wea),
+//   .BRAM_PORTA_1_addr(addrb),
+//   .BRAM_PORTA_1_clk (clk),
+//   .BRAM_PORTA_1_din (dinb),
+//   .BRAM_PORTA_1_dout(doutb1),
+//   .BRAM_PORTA_1_en  (bankb==1),
+//   .BRAM_PORTA_1_we  (web)
+// );
 
 bram_tdp_rf_rf #(
   .ADDR_W(LINEBUFF_ADDR_W),
@@ -253,58 +280,5 @@ bram_tdp_rf_rf #(
   .dinb (dinb ),
   .doutb(doutb1)
 );
-
-// always @(posedge clk) begin
-//   if (~rst_n) begin
-//     lstate <= 0;
-//     douta <= 0;
-//     doutb <= 0;
-//     for (int i=0; i<SCREEN_W; i++) begin
-//       linebuffer0[i] = 0;
-//       linebuffer1[i] = 0;
-//     end
-//   end else begin
-//     if (lstate == 0) begin
-//       if (init) begin
-//         for (int i=0; i<SCREEN_W; i++) begin
-//           if (bankb) begin
-//             linebuffer1[i] = 0;
-//           end else begin
-//             linebuffer0[i] = 0;
-//           end
-//         end
-//         lstate <= 1;
-//       end
-//     end
-//     else begin
-//       if (addrb < SCREEN_W) begin
-//         if (bankb) begin
-//           doutb <= linebuffer1[addrb];
-//           if (web) begin
-//             linebuffer1[addrb] <= dinb;
-//           end
-//         end else begin
-//           doutb <= linebuffer0[addrb];
-//           if (web) begin
-//             linebuffer0[addrb] <= dinb;
-//           end
-//         end
-//       end
-//       if (addra < SCREEN_W) begin
-//         if (banka) begin
-//           douta <= linebuffer1[addra];
-//           // if (wea) begin
-//           //   linebuffer1[addra] <= dina;
-//           // end
-//         end else begin
-//           douta <= linebuffer0[addra];
-//           // if (wea) begin
-//           //   linebuffer0[addra] <= dina;
-//           // end
-//         end
-//       end
-//     end
-//   end
-// end
 
 endmodule

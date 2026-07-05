@@ -7,7 +7,6 @@
 #include <memorymap.h>
 #include "Varty_a7_35t_vpu_ili9341_parallel_8bit.h"
 
-
 bool handleInput()
 {
   // handle events
@@ -164,13 +163,14 @@ int main(int argc, char **argv) {
         if ((xoff <= x && x < HW_SCREEN_W+xoff) && (yoff <= y && y < HW_SCREEN_H+yoff)) {
           uint8_t true_data_lo = data_hi;
           uint8_t true_data_hi = data_lo;
-          // R8, G8, B8 <= Hi{R[4:0]G[5:3]}, Lo{G[2:0]B[4:0]}
+          // Color_in  : ABGR8888
+          // Color_out : RGB555 <= Hi{R[4:0]G[5:3]}, Lo{G[2:0]B[4:0]}
           // R <= Hi[7:3], 0b000
           // G <= Hi[2:0], Lo[7:5], 0b00
           // B <= Lo[4:0], 0b000
-          pixels[((x-xoff) + (y-yoff)*LCD_SCREEN_W) * 3 + 0] = (true_data_hi >> 3) << 3;
+          pixels[((x-xoff) + (y-yoff)*LCD_SCREEN_W) * 3 + 2] = (true_data_hi >> 3) << 3;
           pixels[((x-xoff) + (y-yoff)*LCD_SCREEN_W) * 3 + 1] = (((true_data_hi & 0x7) << 3) | ((true_data_lo >> 5) & 0x7)) << 2;
-          pixels[((x-xoff) + (y-yoff)*LCD_SCREEN_W) * 3 + 2] = (true_data_lo & 0x1f) << 3;
+          pixels[((x-xoff) + (y-yoff)*LCD_SCREEN_W) * 3 + 0] = (true_data_lo & 0x1f) << 3;
         }
         SDL_UpdateTexture(texture, NULL, pixels.data(), HW_SCREEN_W * 3);
         SDL_RenderClear(renderer);

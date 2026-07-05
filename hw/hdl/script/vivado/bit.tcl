@@ -6,10 +6,10 @@ set PROJ_NAME   $::env(PROJ_NAME)
 set PROJ_DIR    $::env(PROJ_DIR)
 set SRCS_DC     $::env(SRCS_DC)
 set SRCS_V      $::env(SRCS_V)
-set BD_TCL      $::env(BD_TCL)
-set BD_FILE     $::env(BD_FILE)
-set BD_WRAPPER_V  $::env(BD_WRAPPER_V)
-set BD_SYNTH_V  $::env(BD_SYNTH_V)
+set BD_TCLS     $::env(BD_TCLS)
+# set BD_FILE     $::env(BD_FILE)
+# set BD_WRAPPER_V  $::env(BD_WRAPPER_V)
+# set BD_SYNTH_V  $::env(BD_SYNTH_V)
 set SRCS_IP     $::env(SRCS_IP)
 set SRCS_SIM    $::env(SRCS_SIM)
 set TOP_NAME    $::env(TOP_NAME)
@@ -36,3 +36,6 @@ set_property ip_cache_permissions {read write} [current_project]
 # --------------------------------
 # impl_1/top.tcl
 write_bitstream -force ${PROJ_DIR}/${PROJ_NAME}.bit
+write_mem_info -force ${PROJ_DIR}/${PROJ_NAME}.mmi
+
+write_hw_platform -fixed -force -include_bit ${PROJ_DIR}/${PROJ_NAME}.xsa
