@@ -6,6 +6,7 @@ set PROJ_NAME   $::env(PROJ_NAME)
 set PROJ_DIR    $::env(PROJ_DIR)
 set SRCS_DC     $::env(SRCS_DC)
 set SRCS_V      $::env(SRCS_V)
+set IP_REPOS    $::env(IP_REPOS)
 set BD_TCLS     $::env(BD_TCLS)
 # set BD_FILE     $::env(BD_FILE)
 # set BD_WRAPPER_V  $::env(BD_WRAPPER_V)
@@ -38,7 +39,9 @@ if (${USE_PROJECT}) {
   set_property ip_cache_permissions {read write} [current_project]
 
   # create_fileset -simset sim_1
-  add_files -fileset sim_1 ${SRCS_SIM}
+  foreach src_sim ${SRCS_SIM} {
+    add_files -fileset sim_1 ${src_sim}
+  }
   foreach src_v ${SRCS_V} {
     read_verilog -library xil_defaultlib -sv ${src_v}
   }

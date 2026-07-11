@@ -52,3 +52,4 @@ sw/emulator/lib/
 **/imgui.ini
 hw/**/build/
 hw/hdl/cpu/3rd/
+hw/hdl/lib/

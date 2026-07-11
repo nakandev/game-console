@@ -6,6 +6,7 @@ set PROJ_NAME   $::env(PROJ_NAME)
 set PROJ_DIR    $::env(PROJ_DIR)
 set SRCS_DC     $::env(SRCS_DC)
 set SRCS_V      $::env(SRCS_V)
+set IP_REPOS    $::env(IP_REPOS)
 set BD_TCLS     $::env(BD_TCLS)
 # set BD_FILE     $::env(BD_FILE)
 # set BD_WRAPPER_V  $::env(BD_WRAPPER_V)
@@ -23,41 +24,6 @@ cd ${PROJ_DIR}
 if (${USE_PROJECT}) {
   open_project [file join ${PROJ_DIR} ${PROJ_NAME}];
   open_checkpoint ${PROJ_DIR}/${PROJ_NAME}_synth.dcp
-} else {
-  set bd_files [get_files ${BD_FILE}]
-
-  # open_checkpoint -part ${BOARD_PART1} ${PROJ_DIR}/${PROJ_NAME}_synth.dcp
-  set_param chipscope.maxJobs ${MAXJOBS}
-  # set_param project.singleFileAddWarning.threshold 0
-  # set_param project.compositeFile.enableAutoGeneration 0
-  # set_param synth.vivado.isSynthRun true
-  # set_property webtalk.parent_dir ${PROJ_DIR}/${PROJ_NAME}.cache/wt [current_project]
-  set_property parent.project_path ${PROJ_DIR}/${PROJ_NAME}.xpr [current_project]
-  # set_property default_lib xil_defaultlib [current_project]
-  # set_property target_language Verilog [current_project]
-  set_property board_part ${BOARD_PART2} [current_project]
-  set_property ip_output_repo ${PROJ_DIR}/${PROJ_NAME}.cache/ip [current_project]
-  set_property ip_cache_permissions {read write} [current_project]
-
-  # --------------------------------
-  # impl_1/top.tcl
-  # set_param chipscope.maxJobs ${MAXJOBS}
-  # set_param runs.launchOptions { -jobs ${MAXJOBS}  }
-  # create_project -in_memory -part ${BOARD_PART1}
-  # set_property board_part ${BOARD_PART2} [current_project]
-  set_property design_mode GateLvl [current_fileset]
-  # set_param project.singleFileAddWarning.threshold 0
-  # # set_property webtalk.parent_dir ${PROJ_DIR}/${PROJ_NAME}.cache/wt [current_project]
-  # set_property parent.project_path ${PROJ_DIR}/${PROJ_NAME}.xpr [current_project]
-  # set_property ip_output_repo ${PROJ_DIR}/${PROJ_NAME}.cache/ip [current_project]
-  # set_property ip_cache_permissions {read write} [current_project]
-  # add_files -quiet ${PROJ_DIR}/${PROJ_NAME}_synth.dcp
-  # read_ip -quiet ${PROJ_DIR}/${PROJ_NAME}.blk_mem_gen_0.xci
-  # read_xdc [glob -nocomplain /home/nyalry/nakan/dev/hobby/game-console/hw/hdl/./*.xdc]
-  foreach src_dc ${SRCS_DC} {
-    read_xdc ${src_dc}
-  }
-  # read_checkpoint -auto_incremental -incremental ${PROJ_DIR}/${PROJ_NAME}_synth.dcp
 }
 
 # link_design -top ${TOP_NAME} -part ${BOARD_PART1}

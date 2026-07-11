@@ -3,6 +3,9 @@ export SCRIPT_DIR = ${HDL_ROOT}/script
 export MAXJOBS = 4
 export BOARD_PART1 = xc7a35ticsg324-1L
 export BOARD_PART2 = digilentinc.com:arty-a7-35:part0:1.1
+export JTAG_CABLE_NAME = *Arty A7-35T*
+# export JTAG_CABLE_NAME = Digilent Arty A7-35T 210319AB531FA
+# export JTAG_DEFICE_CTX = jsn-Arty A7-35T-210319AB531FA-0362d093-0
 export PROJ_NAME = nirvana_arty
 export PROJ_DIR = ${PWD}
 export TOP_NAME = arty_a7_35t_top
@@ -21,6 +24,9 @@ export SRCS_V = \
   ${HDL_ROOT}/vpu/vpu_sp.sv \
   ${HDL_ROOT}/memory/bram_tdp_rf_rf.sv \
   # ${HDL_ROOT}/platform/fpga/arty_a7_35t/srcs/arty_a7_35t_vpu_ili9341_parallel_8bit.sv \
+
+export IP_REPOS = \
+  ${HDL_ROOT}/lib/vivado-library \
 
 # BD_FILE: .bd file ... Block Design file.
 # Block Design is created in Vivado GUI, and exported from Vivado.
@@ -69,6 +75,10 @@ ${PROJ_DIR}/${PROJ_NAME}.bit: ${PROJ_DIR}/${PROJ_NAME}_routed.dcp
 	cd ${PROJ_DIR}
 	vivado  -m64 -mode batch -source ${SCRIPT_DIR}/vivado/bit.tcl
 
+${PROJ_DIR}/${PROJ_NAME}.mcs: ${PROJ_DIR}/${PROJ_NAME}_routed.dcp
+	cd ${PROJ_DIR}
+	vivado  -m64 -mode batch -source ${SCRIPT_DIR}/vivado/flash_bin_elf.tcl
+
 project: ${PROJ_DIR}/${PROJ_NAME}.xdc
 
 synth: ${PROJ_DIR}/${PROJ_NAME}_synth.dcp
@@ -77,7 +87,13 @@ impl: ${PROJ_DIR}/${PROJ_NAME}_routed.dcp
 
 bit: ${PROJ_DIR}/${PROJ_NAME}.bit
 
+flash: ${PROJ_DIR}/${PROJ_NAME}.mcs
+
 write-bit: ${PROJ_DIR}/${PROJ_NAME}.bit
+	cd ${PROJ_DIR}
+	vivado  -m64 -mode batch -source ${SCRIPT_DIR}/vivado/write_bitstream.tcl
+
+write-flash: ${PROJ_DIR}/${PROJ_NAME}.mcs
 	cd ${PROJ_DIR}
 	vivado  -m64 -mode batch -source ${SCRIPT_DIR}/vivado/write_bitstream.tcl
 

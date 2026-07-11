@@ -6,6 +6,7 @@ set PROJ_NAME   $::env(PROJ_NAME)
 set PROJ_DIR    $::env(PROJ_DIR)
 set SRCS_DC     $::env(SRCS_DC)
 set SRCS_V      $::env(SRCS_V)
+set IP_REPOS    $::env(IP_REPOS)
 set BD_TCLS     $::env(BD_TCLS)
 # set BD_FILE     $::env(BD_FILE)
 # set BD_WRAPPER_V  $::env(BD_WRAPPER_V)
@@ -35,6 +36,7 @@ set_property ip_cache_permissions {read write} [current_project]
 
 # --------------------------------
 # impl_1/top.tcl
+# write_bitstream -force -bin_file ${PROJ_DIR}/${PROJ_NAME}.bit
 write_bitstream -force ${PROJ_DIR}/${PROJ_NAME}.bit
 write_mem_info -force ${PROJ_DIR}/${PROJ_NAME}.mmi
 

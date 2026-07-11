@@ -6,6 +6,7 @@ set PROJ_NAME   $::env(PROJ_NAME)
 set PROJ_DIR    $::env(PROJ_DIR)
 set SRCS_DC     $::env(SRCS_DC)
 set SRCS_V      $::env(SRCS_V)
+set IP_REPOS    $::env(IP_REPOS)
 set BD_TCLS     $::env(BD_TCLS)
 # set BD_SYNTH_V  $::env(BD_SYNTH_V)
 set SRCS_IP     $::env(SRCS_IP)
@@ -26,8 +27,17 @@ set_property board_part ${BOARD_PART2} [current_project]
 set_property ip_output_repo ${PROJ_DIR}/${PROJ_NAME}.cache/ip [current_project]
 set_property ip_cache_permissions {read write} [current_project]
 
+set current_repos [get_property ip_repo_paths [current_project]]
+foreach ip_repo ${IP_REPOS} {
+  lappend current_repos [file normalize ${ip_repo}]
+  set_property ip_repo_paths $current_repos [current_project]
+  update_ip_catalog
+}
+
 # create_fileset -simset sim_1
-add_files -fileset sim_1 ${SRCS_SIM}
+foreach src_sim ${SRCS_SIM} {
+  add_files -fileset sim_1 ${src_sim}
+}
 
 foreach src_v ${SRCS_V} {
   read_verilog -library xil_defaultlib -sv ${src_v}

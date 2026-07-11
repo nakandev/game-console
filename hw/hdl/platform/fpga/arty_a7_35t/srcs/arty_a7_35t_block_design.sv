@@ -34,6 +34,15 @@ module arty_a7_35t_top
   // output wire [3:0] vga_g,     // 4-bit Green
   // output wire [3:0] vga_b,     // 4-bit Blue
 
+  inout wire Pmod_sd_out_0_pin1_io,
+  inout wire Pmod_sd_out_0_pin2_io,
+  inout wire Pmod_sd_out_0_pin3_io,
+  inout wire Pmod_sd_out_0_pin4_io,
+  inout wire Pmod_sd_out_0_pin7_io,
+  inout wire Pmod_sd_out_0_pin8_io,
+  inout wire Pmod_sd_out_0_pin9_io,
+  inout wire Pmod_sd_out_0_pin10_io,
+
   output wire ck_a5,  // none
   output wire ck_a4,  // LCD_RST
   output wire ck_a3,  // LCD_CS
@@ -116,6 +125,14 @@ system_wrapper system_wrapper_0
     BRAM_PORTA_3_we,
 
     CLK100MHZ,
+    Pmod_sd_out_0_pin10_io,
+    Pmod_sd_out_0_pin1_io,
+    Pmod_sd_out_0_pin2_io,
+    Pmod_sd_out_0_pin3_io,
+    Pmod_sd_out_0_pin4_io,
+    Pmod_sd_out_0_pin7_io,
+    Pmod_sd_out_0_pin8_io,
+    Pmod_sd_out_0_pin9_io,
     btn_tri_i,
     ck_rst,
     clk_cpu,

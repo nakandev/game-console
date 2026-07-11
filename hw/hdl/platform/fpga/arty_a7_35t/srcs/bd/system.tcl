@@ -139,6 +139,7 @@ xilinx.com:ip:proc_sys_reset:5.0\
 xilinx.com:ip:mdm_riscv:1.0\
 xilinx.com:ip:microblaze_riscv:1.0\
 xilinx.com:ip:axi_bram_ctrl:4.1\
+digilentinc.com:IP:PmodSD:1.0\
 xilinx.com:ip:lmb_v10:3.0\
 xilinx.com:ip:lmb_bram_if_cntlr:4.0\
 xilinx.com:ip:blk_mem_gen:8.4\
@@ -171,7 +172,7 @@ if { $bCheckIPsPassed != 1 } {
 # MIG PRJ FILE TCL PROCs
 ##################################################################
 
-proc write_mig_file_system_mig_7series_0_1 { str_mig_prj_filepath } {
+proc write_mig_file_system_mig_7series_0_0 { str_mig_prj_filepath } {
 
    file mkdir [ file dirname "$str_mig_prj_filepath" ]
    set mig_prj_file [open $str_mig_prj_filepath  w+]
@@ -314,7 +315,7 @@ proc write_mig_file_system_mig_7series_0_1 { str_mig_prj_filepath } {
 
    close $mig_prj_file
 }
-# End of write_mig_file_system_mig_7series_0_1()
+# End of write_mig_file_system_mig_7series_0_0()
 
 
 
@@ -475,6 +476,8 @@ proc create_root_design { parentCell } {
    CONFIG.READ_WRITE_MODE {READ_WRITE} \
    ] $BRAM_PORTA_3
 
+  set Pmod_sd_out_0 [ create_bd_intf_port -mode Master -vlnv digilentinc.com:interface:pmod_rtl:1.0 Pmod_sd_out_0 ]
+
 
   # Create ports
   set CLK100MHZ [ create_bd_port -dir I -type clk -freq_hz 100000000 CLK100MHZ ]
@@ -489,7 +492,7 @@ proc create_root_design { parentCell } {
   set str_mig_folder [get_property IP_DIR [ get_ips [ get_property CONFIG.Component_Name $mig_7series_0 ] ] ]
   set str_mig_file_name mig_a.prj
   set str_mig_file_path ${str_mig_folder}/${str_mig_file_name}
-  write_mig_file_system_mig_7series_0_1 $str_mig_file_path
+  write_mig_file_system_mig_7series_0_0 $str_mig_file_path
 
   set_property -dict [list \
     CONFIG.BOARD_MIG_PARAM {ddr3_sdram} \
@@ -556,7 +559,7 @@ proc create_root_design { parentCell } {
 
   # Create instance: perif_interconnect, and set properties
   set perif_interconnect [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect:2.1 perif_interconnect ]
-  set_property CONFIG.NUM_MI {7} $perif_interconnect
+  set_property CONFIG.NUM_MI {9} $perif_interconnect
 
 
   # Create instance: ram_interconnect, and set properties
@@ -622,7 +625,11 @@ proc create_root_design { parentCell } {
   set_property CONFIG.SINGLE_PORT_BRAM {1} $axi_bram_ctrl_3
 
 
+  # Create instance: PmodSD_0, and set properties
+  set PmodSD_0 [ create_bd_cell -type ip -vlnv digilentinc.com:IP:PmodSD:1.0 PmodSD_0 ]
+
   # Create interface connections
+  connect_bd_intf_net -intf_net PmodSD_0_Pmod_out [get_bd_intf_ports Pmod_sd_out_0] [get_bd_intf_pins PmodSD_0/Pmod_out]
   connect_bd_intf_net -intf_net axi_bram_ctrl_0_BRAM_PORTA [get_bd_intf_ports BRAM_PORTA_0] [get_bd_intf_pins axi_bram_ctrl_0/BRAM_PORTA]
   connect_bd_intf_net -intf_net axi_bram_ctrl_1_BRAM_PORTA [get_bd_intf_ports BRAM_PORTA_1] [get_bd_intf_pins axi_bram_ctrl_1/BRAM_PORTA]
   connect_bd_intf_net -intf_net axi_bram_ctrl_2_BRAM_PORTA [get_bd_intf_ports BRAM_PORTA_2] [get_bd_intf_pins axi_bram_ctrl_2/BRAM_PORTA]
@@ -645,6 +652,8 @@ proc create_root_design { parentCell } {
   connect_bd_intf_net -intf_net perif_interconnect_M04_AXI [get_bd_intf_pins perif_interconnect/M04_AXI] [get_bd_intf_pins axi_bram_ctrl_1/S_AXI]
   connect_bd_intf_net -intf_net perif_interconnect_M05_AXI [get_bd_intf_pins perif_interconnect/M05_AXI] [get_bd_intf_pins axi_bram_ctrl_2/S_AXI]
   connect_bd_intf_net -intf_net perif_interconnect_M06_AXI [get_bd_intf_pins perif_interconnect/M06_AXI] [get_bd_intf_pins axi_bram_ctrl_3/S_AXI]
+  connect_bd_intf_net -intf_net perif_interconnect_M07_AXI [get_bd_intf_pins perif_interconnect/M07_AXI] [get_bd_intf_pins PmodSD_0/AXI_LITE_SDCS]
+  connect_bd_intf_net -intf_net perif_interconnect_M08_AXI [get_bd_intf_pins perif_interconnect/M08_AXI] [get_bd_intf_pins PmodSD_0/AXI_LITE_SPI]
   connect_bd_intf_net -intf_net ram_interconnect_M00_AXI [get_bd_intf_pins mig_7series_0/S_AXI] [get_bd_intf_pins ram_interconnect/M00_AXI]
 
   # Create port connections
@@ -654,17 +663,19 @@ proc create_root_design { parentCell } {
   connect_bd_net -net clk_wiz_0_clk_vga [get_bd_pins clk_wiz_0/clk_vga] [get_bd_ports clk_vga]
   connect_bd_net -net clk_wiz_0_locked [get_bd_pins clk_wiz_0/locked] [get_bd_pins rst_clk_wiz_0_200M/dcm_locked]
   connect_bd_net -net mdm_riscv_0_debug_sys_rst [get_bd_pins mdm_riscv_0/Debug_SYS_Rst] [get_bd_pins rst_clk_wiz_0_200M/mb_debug_sys_rst]
-  connect_bd_net -net microblaze_riscv_1_Clk [get_bd_pins clk_wiz_0/clk_cpu] [get_bd_pins axi_gpio_0/s_axi_aclk] [get_bd_pins perif_interconnect/ACLK] [get_bd_pins perif_interconnect/S00_ACLK] [get_bd_pins perif_interconnect/M00_ACLK] [get_bd_pins perif_interconnect/M01_ACLK] [get_bd_pins ram_interconnect/ACLK] [get_bd_pins ram_interconnect/S00_ACLK] [get_bd_pins ram_interconnect/S01_ACLK] [get_bd_pins axi_uartlite_0/s_axi_aclk] [get_bd_pins rst_clk_wiz_0_200M/slowest_sync_clk] [get_bd_pins axi_gpio_1/s_axi_aclk] [get_bd_pins perif_interconnect/M02_ACLK] [get_bd_pins microblaze_riscv_1/Clk] [get_bd_pins microblaze_riscv_1_local_memory/LMB_Clk] [get_bd_pins axi_bram_ctrl_0/s_axi_aclk] [get_bd_pins perif_interconnect/M03_ACLK] [get_bd_ports clk_cpu] [get_bd_pins axi_bram_ctrl_1/s_axi_aclk] [get_bd_pins axi_bram_ctrl_2/s_axi_aclk] [get_bd_pins axi_bram_ctrl_3/s_axi_aclk] [get_bd_pins perif_interconnect/M04_ACLK] [get_bd_pins perif_interconnect/M05_ACLK] [get_bd_pins perif_interconnect/M06_ACLK]
+  connect_bd_net -net microblaze_riscv_1_Clk [get_bd_pins clk_wiz_0/clk_cpu] [get_bd_pins axi_gpio_0/s_axi_aclk] [get_bd_pins perif_interconnect/ACLK] [get_bd_pins perif_interconnect/S00_ACLK] [get_bd_pins perif_interconnect/M00_ACLK] [get_bd_pins perif_interconnect/M01_ACLK] [get_bd_pins ram_interconnect/ACLK] [get_bd_pins ram_interconnect/S00_ACLK] [get_bd_pins ram_interconnect/S01_ACLK] [get_bd_pins axi_uartlite_0/s_axi_aclk] [get_bd_pins rst_clk_wiz_0_200M/slowest_sync_clk] [get_bd_pins axi_gpio_1/s_axi_aclk] [get_bd_pins perif_interconnect/M02_ACLK] [get_bd_pins microblaze_riscv_1/Clk] [get_bd_pins microblaze_riscv_1_local_memory/LMB_Clk] [get_bd_pins axi_bram_ctrl_0/s_axi_aclk] [get_bd_pins perif_interconnect/M03_ACLK] [get_bd_ports clk_cpu] [get_bd_pins axi_bram_ctrl_1/s_axi_aclk] [get_bd_pins axi_bram_ctrl_2/s_axi_aclk] [get_bd_pins axi_bram_ctrl_3/s_axi_aclk] [get_bd_pins perif_interconnect/M04_ACLK] [get_bd_pins perif_interconnect/M05_ACLK] [get_bd_pins perif_interconnect/M06_ACLK] [get_bd_pins PmodSD_0/s_axi_aclk] [get_bd_pins perif_interconnect/M07_ACLK] [get_bd_pins perif_interconnect/M08_ACLK]
   connect_bd_net -net mig_7series_0_mmcm_locked [get_bd_pins mig_7series_0/mmcm_locked] [get_bd_pins rst_mig_7series_0_81M/dcm_locked]
   connect_bd_net -net mig_7series_0_ui_clk [get_bd_pins mig_7series_0/ui_clk] [get_bd_pins ram_interconnect/M00_ACLK] [get_bd_pins rst_mig_7series_0_81M/slowest_sync_clk]
   connect_bd_net -net mig_7series_0_ui_clk_sync_rst [get_bd_pins mig_7series_0/ui_clk_sync_rst] [get_bd_pins rst_mig_7series_0_81M/ext_reset_in]
   connect_bd_net -net rst_clk_wiz_0_200M_bus_struct_reset [get_bd_pins rst_clk_wiz_0_200M/bus_struct_reset] [get_bd_pins microblaze_riscv_1_local_memory/SYS_Rst]
   connect_bd_net -net rst_clk_wiz_0_200M_mb_reset [get_bd_pins rst_clk_wiz_0_200M/mb_reset] [get_bd_pins microblaze_riscv_1/Reset]
-  connect_bd_net -net rst_clk_wiz_0_200M_peripheral_aresetn [get_bd_pins rst_clk_wiz_0_200M/peripheral_aresetn] [get_bd_pins axi_gpio_0/s_axi_aresetn] [get_bd_pins perif_interconnect/ARESETN] [get_bd_pins perif_interconnect/S00_ARESETN] [get_bd_pins perif_interconnect/M00_ARESETN] [get_bd_pins perif_interconnect/M01_ARESETN] [get_bd_pins ram_interconnect/ARESETN] [get_bd_pins ram_interconnect/S00_ARESETN] [get_bd_pins ram_interconnect/S01_ARESETN] [get_bd_pins axi_uartlite_0/s_axi_aresetn] [get_bd_pins axi_gpio_1/s_axi_aresetn] [get_bd_pins perif_interconnect/M02_ARESETN] [get_bd_pins axi_bram_ctrl_0/s_axi_aresetn] [get_bd_pins perif_interconnect/M03_ARESETN] [get_bd_pins axi_bram_ctrl_1/s_axi_aresetn] [get_bd_pins axi_bram_ctrl_2/s_axi_aresetn] [get_bd_pins axi_bram_ctrl_3/s_axi_aresetn] [get_bd_pins perif_interconnect/M04_ARESETN] [get_bd_pins perif_interconnect/M05_ARESETN] [get_bd_pins perif_interconnect/M06_ARESETN]
+  connect_bd_net -net rst_clk_wiz_0_200M_peripheral_aresetn [get_bd_pins rst_clk_wiz_0_200M/peripheral_aresetn] [get_bd_pins axi_gpio_0/s_axi_aresetn] [get_bd_pins perif_interconnect/ARESETN] [get_bd_pins perif_interconnect/S00_ARESETN] [get_bd_pins perif_interconnect/M00_ARESETN] [get_bd_pins perif_interconnect/M01_ARESETN] [get_bd_pins ram_interconnect/ARESETN] [get_bd_pins ram_interconnect/S00_ARESETN] [get_bd_pins ram_interconnect/S01_ARESETN] [get_bd_pins axi_uartlite_0/s_axi_aresetn] [get_bd_pins axi_gpio_1/s_axi_aresetn] [get_bd_pins perif_interconnect/M02_ARESETN] [get_bd_pins axi_bram_ctrl_0/s_axi_aresetn] [get_bd_pins perif_interconnect/M03_ARESETN] [get_bd_pins axi_bram_ctrl_1/s_axi_aresetn] [get_bd_pins axi_bram_ctrl_2/s_axi_aresetn] [get_bd_pins axi_bram_ctrl_3/s_axi_aresetn] [get_bd_pins perif_interconnect/M04_ARESETN] [get_bd_pins perif_interconnect/M05_ARESETN] [get_bd_pins perif_interconnect/M06_ARESETN] [get_bd_pins PmodSD_0/s_axi_aresetn] [get_bd_pins perif_interconnect/M07_ARESETN] [get_bd_pins perif_interconnect/M08_ARESETN]
   connect_bd_net -net rst_mig_7series_0_81M_peripheral_aresetn [get_bd_pins rst_mig_7series_0_81M/peripheral_aresetn] [get_bd_pins mig_7series_0/aresetn] [get_bd_pins ram_interconnect/M00_ARESETN]
   connect_bd_net -net util_ds_buf_0_BUFG_O [get_bd_pins util_ds_buf_0/BUFG_O] [get_bd_pins mig_7series_0/sys_clk_i] [get_bd_pins clk_wiz_0/clk_in1]
 
   # Create address segments
+  assign_bd_address -offset 0x44A00000 -range 0x00010000 -target_address_space [get_bd_addr_spaces microblaze_riscv_1/Data] [get_bd_addr_segs PmodSD_0/AXI_LITE_SDCS/Reg0] -force
+  assign_bd_address -offset 0x44A10000 -range 0x00010000 -with_name SEG_PmodSD_0_Reg0_1 -target_address_space [get_bd_addr_spaces microblaze_riscv_1/Data] [get_bd_addr_segs PmodSD_0/AXI_LITE_SPI/Reg0] -force
   assign_bd_address -offset 0x06000000 -range 0x00001000 -target_address_space [get_bd_addr_spaces microblaze_riscv_1/Data] [get_bd_addr_segs axi_bram_ctrl_0/S_AXI/Mem0] -force
   assign_bd_address -offset 0x06100000 -range 0x00002000 -target_address_space [get_bd_addr_spaces microblaze_riscv_1/Data] [get_bd_addr_segs axi_bram_ctrl_1/S_AXI/Mem0] -force
   assign_bd_address -offset 0x06200000 -range 0x00020000 -target_address_space [get_bd_addr_spaces microblaze_riscv_1/Data] [get_bd_addr_segs axi_bram_ctrl_2/S_AXI/Mem0] -force
