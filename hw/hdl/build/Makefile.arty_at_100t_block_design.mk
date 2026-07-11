@@ -1,0 +1,132 @@
+export HDL_ROOT = /home/nyalry/nakan/dev/hobby/game-console/hw/hdl
+export SCRIPT_DIR = ${HDL_ROOT}/script
+export MAXJOBS = 4
+export BOARD_PART1 = xc7a100tcsg324-1
+export BOARD_PART2 = digilentinc.com:arty-a7-100:part0:1.1
+export JTAG_CABLE_NAME = *Arty A7-100T*
+# export JTAG_CABLE_NAME = Digilent Arty A7-100T 210319AD2B08A
+# export JTAG_DEFICE_CTX = jsn-Arty A7-100T-210319B7CBDDA-13631093-0
+export PROJ_NAME = nirvana_arty
+export PROJ_DIR = ${PWD}
+export TOP_NAME = arty_a7_100t_top
+
+export SRCS_DC = \
+  ${HDL_ROOT}/platform/fpga/arty_a7_100t/constrs/arty_a7_100t.xdc \
+
+export SRCS_V = \
+  ${HDL_ROOT}/defines.sv \
+  ${HDL_ROOT}/platform/fpga/arty_a7_100t/srcs/arty_a7_100t_block_design.sv \
+  ${HDL_ROOT}/platform/video/ili9341_parallel_8bit.sv \
+  ${HDL_ROOT}/platform/video/vga.sv \
+  ${HDL_ROOT}/vpu/vpu.sv \
+  ${HDL_ROOT}/vpu/vpu_core.sv \
+  ${HDL_ROOT}/vpu/vpu_bg.sv \
+  ${HDL_ROOT}/vpu/vpu_sp.sv \
+  ${HDL_ROOT}/memory/bram_tdp_rf_rf.sv \
+
+export IP_REPOS = \
+  ${HDL_ROOT}/lib/vivado-library \
+
+# BD_FILE: .bd file ... Block Design file.
+# Block Design is created in Vivado GUI, and exported from Vivado.
+export BD_TCLS = \
+  ${HDL_ROOT}/platform/fpga/arty_a7_100t/srcs/bd/system.tcl \
+  ${HDL_ROOT}/platform/fpga/arty_a7_100t/srcs/bd/vpu_ram.tcl \
+
+export SRCS_IP = \
+
+export SRCS_SIM = \
+  # ${HDL_ROOT}/test/test_arty_a7_100t_vpu_ili9341_parallel_8bit.sv \
+
+SRCS_VERILATOR = \
+  ${HDL_ROOT}/test/test_arty_a7_100t_vpu_ili9341_parallel_8bit.cpp \
+
+VERILATOR_BUILD_FLAGS = \
+  --cc --exe --build -j 0 \
+	-Wno-fatal \
+	--timing \
+	--trace --trace-params --trace-structs --trace-underscore \
+	-CFLAGS "-I${HDL_ROOT}/../spec/ -DVL_DEBUG `sdl2-config --cflags`" \
+	-LDFLAGS "-lfmt `sdl2-config --libs`"
+# -Wno-fatal
+
+TOP_NAME = arty_a7_100t_top
+ENABLE_CHECKPOINT = 1
+ENABLE_REPORT = 0
+
+.PHONY = all synth impl bit
+
+all: sim bit
+
+${PROJ_DIR}/${PROJ_NAME}.xdc: ${SRCS_DC} ${SRCS_V} ${SRCS_IP} ${SRCS_SIM}
+	cd ${PROJ_DIR}
+	vivado  -m64 -mode batch -source ${SCRIPT_DIR}/vivado/project.tcl
+
+${PROJ_DIR}/${PROJ_NAME}_synth.dcp: ${BD_TCL} ${SRCS_V} ${SRCS_IP} ${SRCS_SIM}
+	cd ${PROJ_DIR}
+	vivado  -m64 -mode batch -source ${SCRIPT_DIR}/vivado/synth.tcl
+
+${PROJ_DIR}/${PROJ_NAME}_routed.dcp: ${PROJ_DIR}/${PROJ_NAME}_synth.dcp
+	cd ${PROJ_DIR}
+	vivado  -m64 -mode batch -source ${SCRIPT_DIR}/vivado/impl.tcl
+
+${PROJ_DIR}/${PROJ_NAME}.bit: ${PROJ_DIR}/${PROJ_NAME}_routed.dcp
+	cd ${PROJ_DIR}
+	vivado  -m64 -mode batch -source ${SCRIPT_DIR}/vivado/bit.tcl
+
+${PROJ_DIR}/${PROJ_NAME}.mcs: ${PROJ_DIR}/${PROJ_NAME}_routed.dcp
+	cd ${PROJ_DIR}
+	vivado  -m64 -mode batch -source ${SCRIPT_DIR}/vivado/flash_bin_elf.tcl
+
+project: ${PROJ_DIR}/${PROJ_NAME}.xdc
+
+synth: ${PROJ_DIR}/${PROJ_NAME}_synth.dcp
+
+impl: ${PROJ_DIR}/${PROJ_NAME}_routed.dcp
+
+bit: ${PROJ_DIR}/${PROJ_NAME}.bit
+
+flash: ${PROJ_DIR}/${PROJ_NAME}.mcs
+
+write-bit: ${PROJ_DIR}/${PROJ_NAME}.bit
+	cd ${PROJ_DIR}
+	vivado  -m64 -mode batch -source ${SCRIPT_DIR}/vivado/write_bitstream.tcl
+
+write-flash: ${PROJ_DIR}/${PROJ_NAME}.mcs
+	cd ${PROJ_DIR}
+	vivado  -m64 -mode batch -source ${SCRIPT_DIR}/vivado/write_bitstream.tcl
+
+sim:
+	cd ${PROJ_DIR}
+	xvlog -sv ${SRCS_SIM} ${SRCS_V}
+	xelab --debug all --notimingchecks ${TOP_NAME}
+	xsim --gui --runall ${TOP_NAME} &
+	# xsim --runall ${TOP_NAME} &
+
+# iverilog:
+# 	iverilog ${SRCS_SIM} ${SRCS_V} -s ${TOP_NAME}
+
+verilator-build: ${SRCS_VERILATOR} ${SRCS_V}
+	verilator --top $(TOP_NAME) -o test-verilator ${VERILATOR_BUILD_FLAGS} $^
+
+verilator-sim:
+	obj_dir/test-verilator
+
+clean:
+	rm -rf ${PROJ_DIR}/${PROJ_NAME}.*/
+	rm -rf ${PROJ_DIR}/.Xil/
+	rm -rf ${PROJ_DIR}/xsim.dir/
+	rm -f ${PROJ_DIR}/${PROJ_NAME}.xpr
+	rm -f ${PROJ_DIR}/${PROJ_NAME}*.dcp
+	rm -f ${PROJ_DIR}/${PROJ_NAME}.bit
+	rm -f ${PROJ_DIR}/vivado.* ${PROJ_DIR}/vivado_*
+	rm -f ${PROJ_DIR}/xvlog.*
+	rm -f ${PROJ_DIR}/xelab.*
+	rm -f ${PROJ_DIR}/xsim.*
+	rm -f ${PROJ_DIR}/xsim_*
+	rm -f ${PROJ_DIR}/work.*.wdb
+	rm -f ${PROJ_DIR}/clockInfo.txt
+	# rm -f ${PROJ_DIR}/*.wcfg  # sim wave confing
+	# clean-verilator
+	rm -rf obj_dir
+	rm -f test-verilator
