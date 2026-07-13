@@ -208,7 +208,7 @@ proc create_root_design { parentCell } {
 
   set BRAM_PORTA_2 [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:bram_rtl:1.0 BRAM_PORTA_2 ]
   set_property -dict [ list \
-   CONFIG.MEM_SIZE {131072} \
+   CONFIG.MEM_SIZE {65536} \
    CONFIG.READ_WRITE_MODE {READ_WRITE} \
    ] $BRAM_PORTA_2
 
@@ -233,7 +233,7 @@ proc create_root_design { parentCell } {
 
   set BRAM_PORTB_2 [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:bram_rtl:1.0 BRAM_PORTB_2 ]
   set_property -dict [ list \
-   CONFIG.MEM_SIZE {131072} \
+   CONFIG.MEM_SIZE {65536} \
    CONFIG.MEM_WIDTH {8} \
    CONFIG.READ_WRITE_MODE {READ_WRITE} \
    ] $BRAM_PORTB_2
@@ -294,7 +294,7 @@ proc create_root_design { parentCell } {
     CONFIG.Register_PortB_Output_of_Memory_Primitives {false} \
     CONFIG.Use_Byte_Write_Enable {true} \
     CONFIG.Use_RSTA_Pin {false} \
-    CONFIG.Write_Depth_A {32768} \
+    CONFIG.Write_Depth_A {16384} \
     CONFIG.Write_Width_A {32} \
     CONFIG.Write_Width_B {8} \
     CONFIG.use_bram_block {Stand_Alone} \

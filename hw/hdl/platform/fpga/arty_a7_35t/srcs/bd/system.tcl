@@ -589,11 +589,11 @@ proc create_root_design { parentCell } {
   # Create instance: microblaze_riscv_1, and set properties
   set microblaze_riscv_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:microblaze_riscv:1.0 microblaze_riscv_1 ]
   set_property -dict [list \
-    CONFIG.C_DCACHE_BYTE_SIZE {8192} \
+    CONFIG.C_DCACHE_BYTE_SIZE {16384} \
     CONFIG.C_DEBUG_ENABLED {1} \
     CONFIG.C_D_AXI {1} \
     CONFIG.C_D_LMB {1} \
-    CONFIG.C_ICACHE_BYTE_SIZE {8192} \
+    CONFIG.C_ICACHE_BYTE_SIZE {16384} \
     CONFIG.C_I_LMB {1} \
     CONFIG.C_USE_COMPRESSION {0} \
     CONFIG.C_USE_DCACHE {1} \
