@@ -247,17 +247,17 @@ always_comb begin
   end
 end
 
-logic [ 0: 0]/*[31:31]*/ sp_enable;
-logic [ 0: 0]/*[30:30]*/ sp_afen;
-logic [ 1: 0]/*[25:24]*/ sp_tilesize;
-logic [ 7: 0]/*[ 7: 0]*/ sp_y;
-logic [ 8: 0]/*[ 7: 0]*/ sp_y1;
+logic [ 0: 0]/*[ 0: 0]*/ sp_enable;
+logic [ 0: 0]/*[ 1: 1]*/ sp_afen;
+logic [ 1: 0]/*[ 7: 6]*/ sp_tilesize;
+logic [ 7: 0]/*[31:24]*/ sp_y;
+logic [ 8: 0]/*[1+31:24]*/ sp_y1;
 logic [ 7: 0] th;
 logic [ 0: 0] area_in;
-assign sp_enable   = sp_data0_cache[31:31];
-assign sp_afen     = sp_data0_cache[30:30];
-assign sp_tilesize = sp_data0_cache[25:24];
-assign sp_y        = sp_data0_cache[ 7: 0];
+assign sp_enable   = sp_data0_cache[ 0: 0];
+assign sp_afen     = sp_data0_cache[ 1: 1];
+assign sp_tilesize = sp_data0_cache[ 7: 6];
+assign sp_y        = sp_data0_cache[31:24];
 assign th = get_th(sp_tilesize);
 assign sp_y1       = sp_y + th;
 assign area_in = sp_enable && 
@@ -307,45 +307,45 @@ module vpu_sp_pipeline
 
 logic [1:0] layer;
 
-logic [ 0: 0]/*[31:31]*/ sp_enable;
-logic [ 0: 0]/*[30:30]*/ sp_afen;
-logic [ 1: 0]/*[29:28]*/ sp_layer;
-logic [ 0: 0]/*[27:27]*/ sp_hflip;
-logic [ 0: 0]/*[26:26]*/ sp_vflip;
-logic [ 1: 0]/*[25:24]*/ sp_tilesize;
-// logic [ 0: 0]/*[23:17]*/ sp__reserved;
-logic [ 8: 0]/*[16: 8]*/ sp_x;
-logic [ 7: 0]/*[ 7: 0]*/ sp_y;
+logic [ 0: 0]/*[ 0: 0]*/ sp_enable;
+logic [ 0: 0]/*[ 1: 1]*/ sp_afen;
+logic [ 1: 0]/*[ 3: 2]*/ sp_layer;
+logic [ 0: 0]/*[ 4: 4]*/ sp_hflip;
+logic [ 0: 0]/*[ 5: 5]*/ sp_vflip;
+logic [ 1: 0]/*[ 7: 6]*/ sp_tilesize;
+// logic [ 0: 0]/*[14: 8]*/ sp__reserved;
+logic [ 8: 0]/*[23:15]*/ sp_x;
+logic [ 7: 0]/*[31:24]*/ sp_y;
 
-logic [ 3: 0]/*[31:28]*/ sp_tile_bank;
-logic [11: 0]/*[27:16]*/ sp_tile_idx;
-//logic [ 3: 0]/*[15:12]*/ sp__palreserved0;
-logic [ 3: 0]/*[11: 8]*/ sp_pal_transparency;
-//logic [ 0: 0]/*[ 7: 7]*/ sp__palreserved1;
-logic [ 0: 0]/*[ 6: 6]*/ sp_pal_mode;
-logic [ 1: 0]/*[ 5: 4]*/ sp_pal_bank;
-logic [ 3: 0]/*[ 3: 0]*/ sp_pal_no;
+logic [ 3: 0]/*[ 3: 0]*/ sp_tile_bank;
+logic [11: 0]/*[15: 4]*/ sp_tile_idx;
+//logic [ 3: 0]/*[19:16]*/ sp__palreserved0;
+logic [ 3: 0]/*[23:20]*/ sp_pal_transparency;
+//logic [ 0: 0]/*[24:24]*/ sp__palreserved1;
+logic [ 0: 0]/*[25:25]*/ sp_pal_mode;
+logic [ 1: 0]/*[27:26]*/ sp_pal_bank;
+logic [ 3: 0]/*[31:28]*/ sp_pal_no;
 
 logic [95: 0] sp_affine;
 
-assign sp_enable   = sp_data0_cache[31:31];
-assign sp_afen     = sp_data0_cache[30:30];
-assign sp_layer    = sp_data0_cache[29:28];
-assign sp_hflip    = sp_data0_cache[27:27];
-assign sp_vflip    = sp_data0_cache[26:26];
-assign sp_tilesize = sp_data0_cache[25:24];
-// assign sp__reserved = sp_data0_cache[23:17];
-assign sp_x        = sp_data0_cache[16: 8];
-assign sp_y        = sp_data0_cache[ 7: 0];
+assign sp_enable   = sp_data0_cache[ 0: 0];
+assign sp_afen     = sp_data0_cache[ 1: 1];
+assign sp_layer    = sp_data0_cache[ 3: 2];
+assign sp_hflip    = sp_data0_cache[ 4: 4];
+assign sp_vflip    = sp_data0_cache[ 5: 5];
+assign sp_tilesize = sp_data0_cache[ 7: 6];
+// assign sp__reserved = sp_data0_cache[14: 8];
+assign sp_x        = sp_data0_cache[23:15];
+assign sp_y        = sp_data0_cache[31:24];
 
-assign sp_tile_bank        = sp_data1_cache[31:28];
-assign sp_tile_idx    = sp_data1_cache[27:16];
-//assign sp__palreserved0    = sp_data1_cache[15:12];
-assign sp_pal_transparency = sp_data1_cache[11: 8];
-//assign sp__palreserved1    = sp_data1_cache[ 7: 7];
-assign sp_pal_mode         = sp_data1_cache[ 6: 6];
-assign sp_pal_bank         = sp_data1_cache[ 5: 4];
-assign sp_pal_no           = sp_data1_cache[ 3: 0];
+assign sp_tile_bank        = sp_data1_cache[ 3: 0];
+assign sp_tile_idx         = sp_data1_cache[15: 4];
+//assign sp__palreserved0    = sp_data1_cache[19:16];
+assign sp_pal_transparency = sp_data1_cache[23:20];
+//assign sp__palreserved1    = sp_data1_cache[24:24];
+assign sp_pal_mode         = sp_data1_cache[25:25];
+assign sp_pal_bank         = sp_data1_cache[27:26];
+assign sp_pal_no           = sp_data1_cache[31:28];
 
 assign sp_affine = {sp_affine0_cache, sp_affine1_cache, sp_affine2_cache};
 
@@ -578,12 +578,12 @@ byte tw0, th0;
 logic area_in1;
 logic area_inA1;
 
-assign Ba = sp_affine[16*6-1:16*5];
-assign Bb = sp_affine[16*5-1:16*4];
-assign Bc = sp_affine[16*4-1:16*3];
-assign Bd = sp_affine[16*3-1:16*2];
-assign Bx = sp_affine[16*2-1:16*1];
-assign By = sp_affine[16*1-1:16*0];
+assign Bb = sp_affine[16*6-1:16*5];
+assign Ba = sp_affine[16*5-1:16*4];
+assign Bd = sp_affine[16*4-1:16*3];
+assign Bc = sp_affine[16*3-1:16*2];
+assign By = sp_affine[16*2-1:16*1];
+assign Bx = sp_affine[16*1-1:16*0];
 
 always_ff @(posedge clk) begin
   objx <= x1;

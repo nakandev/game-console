@@ -273,48 +273,48 @@ module vpu_bg_pipeline
 logic [1:0] layer;
 
 logic [8:0] x;
-logic [ 0: 0]/*[31:31]*/ bg_enable;
-logic [ 0: 0]/*[30:30]*/ bg_afen;
-logic [ 1: 0]/*[29:28]*/ bg_layer;
-logic [ 0: 0]/*[27:27]*/ bg_hflip;
-logic [ 0: 0]/*[26:26]*/ bg_vflip;
-logic [ 1: 0]/*[25:24]*/ bg_tilesize;
-logic [ 0: 0]/*[23:23]*/ bg_mode;
-// logic [ 5: 0]/*[22:17]*/ bg__reserved;
-logic [ 8: 0]/*[16: 8]*/ bg_x;
-logic [ 7: 0]/*[ 7: 0]*/ bg_y;
+logic [ 0: 0]/*[ 0: 0]*/ bg_enable;
+logic [ 0: 0]/*[ 1: 1]*/ bg_afen;
+logic [ 1: 0]/*[ 3: 2]*/ bg_layer;
+logic [ 0: 0]/*[ 4: 4]*/ bg_hflip;
+logic [ 0: 0]/*[ 5: 5]*/ bg_vflip;
+logic [ 1: 0]/*[ 7: 6]*/ bg_tilesize;
+logic [ 0: 0]/*[ 8: 8]*/ bg_mode;
+// logic [ 5: 0]/*[14: 9]*/ bg__reserved;
+logic [ 8: 0]/*[23:15]*/ bg_x;
+logic [ 7: 0]/*[31:24]*/ bg_y;
 
-logic [ 3: 0]/*[31:28]*/ bg_tile_bank;
-logic [ 3: 0]/*[27:24]*/ bg_map_bank;
-//logic [ 7: 0]/*[23:16]*/ bg__tilereserved;
-//logic [ 3: 0]/*[15:12]*/ bg__palreserved0;
-logic [ 3: 0]/*[11: 8]*/ bg_pal_transparency;
-//logic [ 0: 0]/*[ 7: 7]*/ bg__palreserved1;
-logic [ 0: 0]/*[ 6: 6]*/ bg_pal_mode;
-logic [ 1: 0]/*[ 5: 4]*/ bg_pal_bank;
-logic [ 3: 0]/*[ 3: 0]*/ bg_pal_no;
+logic [ 3: 0]/*[ 3: 0]*/ bg_tile_bank;
+logic [ 3: 0]/*[ 7: 4]*/ bg_map_bank;
+//logic [ 7: 0]/*[15: 8]*/ bg__tilereserved;
+//logic [ 3: 0]/*[19:16]*/ bg__palreserved0;
+logic [ 3: 0]/*[23:20]*/ bg_pal_transparency;
+//logic [ 0: 0]/*[24:24]*/ bg__palreserved1;
+logic [ 0: 0]/*[25:25]*/ bg_pal_mode;
+logic [ 1: 0]/*[27:26]*/ bg_pal_bank;
+logic [ 3: 0]/*[31:28]*/ bg_pal_no;
 
 logic [95: 0] bg_affine;
 
-assign bg_enable   = bg_data0_cache[layer][31:31];
-assign bg_afen     = bg_data0_cache[layer][30:30];
-assign bg_layer    = bg_data0_cache[layer][29:28];
-assign bg_hflip    = bg_data0_cache[layer][27:27];
-assign bg_vflip    = bg_data0_cache[layer][26:26];
-assign bg_tilesize = bg_data0_cache[layer][25:24];
-assign bg_mode     = bg_data0_cache[layer][23:23];
-assign bg_x        = bg_data0_cache[layer][16: 8];
-assign bg_y        = bg_data0_cache[layer][ 7: 0];
+assign bg_enable   = bg_data0_cache[layer][ 0: 0];
+assign bg_afen     = bg_data0_cache[layer][ 1: 1];
+assign bg_layer    = bg_data0_cache[layer][ 3: 2];
+assign bg_hflip    = bg_data0_cache[layer][ 4: 4];
+assign bg_vflip    = bg_data0_cache[layer][ 5: 5];
+assign bg_tilesize = bg_data0_cache[layer][ 7: 6];
+assign bg_mode     = bg_data0_cache[layer][ 8: 8];
+assign bg_x        = bg_data0_cache[layer][23:15];
+assign bg_y        = bg_data0_cache[layer][31:24];
 
-assign bg_tile_bank        = bg_data1_cache[layer][31:28];
-assign bg_map_bank         = bg_data1_cache[layer][27:24];
-//assign bg__tilereserved    = bg_data1_cache[layer][23:16];
-//assign bg__palreserved0    = bg_data1_cache[layer][15:12];
-assign bg_pal_transparency = bg_data1_cache[layer][11: 8];
-//assign bg__palreserved1    = bg_data1_cache[layer][ 7: 7];
-assign bg_pal_mode         = bg_data1_cache[layer][ 6: 6];
-assign bg_pal_bank         = bg_data1_cache[layer][ 5: 4];
-assign bg_pal_no           = bg_data1_cache[layer][ 3: 0];
+assign bg_tile_bank        = bg_data1_cache[layer][ 3: 0];
+assign bg_map_bank         = bg_data1_cache[layer][ 7: 4];
+//assign bg__tilereserved    = bg_data1_cache[layer][15: 8];
+//assign bg__palreserved0    = bg_data1_cache[layer][19:16];
+assign bg_pal_transparency = bg_data1_cache[layer][23:20];
+//assign bg__palreserved1    = bg_data1_cache[layer][24:24];
+assign bg_pal_mode         = bg_data1_cache[layer][25:25];
+assign bg_pal_bank         = bg_data1_cache[layer][27:26];
+assign bg_pal_no           = bg_data1_cache[layer][31:28];
 
 assign bg_affine = {bg_affine0_cache[layer], bg_affine1_cache[layer], bg_affine2_cache[layer]};
 
@@ -792,7 +792,7 @@ logic [31:0] colors[5];
 //-------- Trial A --------
 assign done = (layer == 3);
 assign line_wea = (layer == 3);  // read linebuffer pixel --> clear the pixel
-// assign line_wea = 0;  // read linebuffer pixel --> clear the pixel
+// assign line_wea = 0;  // diable clear linebuffer
 assign line_addra = x;
 assign line_dina = 0;
 
