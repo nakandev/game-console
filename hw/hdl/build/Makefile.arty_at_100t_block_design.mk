@@ -1,4 +1,7 @@
-export HDL_ROOT = /home/nyalry/nakan/dev/hobby/game-console/hw/hdl
+ifndef NIRVANA_ROOT
+  $(error NIRVANA_ROOT is not set as an environment variable)
+endif
+export HDL_ROOT = ${NIRVANA_ROOT}/hw/hdl
 export SCRIPT_DIR = ${HDL_ROOT}/script
 export MAXJOBS = 4
 export BOARD_PART1 = xc7a100tcsg324-1

@@ -1,4 +1,7 @@
-export HDL_ROOT = /home/nyalry/nakan/dev/hobby/game-console/hw/hdl
+ifndef NIRVANA_ROOT
+  $(error NIRVANA_ROOT is not set as an environment variable)
+endif
+export HDL_ROOT = ${NIRVANA_ROOT}/hw/hdl
 export SCRIPT_DIR = ${HDL_ROOT}/script
 export MAXJOBS = 4
 export BOARD_PART1 = xc7a35ticsg324-1L
@@ -96,6 +99,9 @@ write-bit: ${PROJ_DIR}/${PROJ_NAME}.bit
 write-flash: ${PROJ_DIR}/${PROJ_NAME}.mcs
 	cd ${PROJ_DIR}
 	vivado  -m64 -mode batch -source ${SCRIPT_DIR}/vivado/write_bitstream.tcl
+
+write-bit-elf:
+	xsct ${SCRIPT_DIR}/xsct/bit_elf.tcl ${ELF}
 
 sim:
 	cd ${PROJ_DIR}

@@ -52,13 +52,13 @@ foreach src_dc ${SRCS_DC} {
 }
 
 foreach BD_TCL ${BD_TCLS} {
-  source ${BD_TCL}
   set BD_DESIGN_NAME [file rootname [file tail $BD_TCL]]
   set BD_FILE ${PROJ_DIR}/${PROJ_NAME}.srcs/sources_1/bd/${BD_DESIGN_NAME}/${BD_DESIGN_NAME}.bd
   set BD_SYNTH_V ${PROJ_DIR}/${PROJ_NAME}.gen/sources_1/bd/${BD_DESIGN_NAME}/synth/${BD_DESIGN_NAME}.v
   set BD_WRAPPER_V ${PROJ_DIR}/${PROJ_NAME}.gen/sources_1/bd/${BD_DESIGN_NAME}/hdl/${BD_DESIGN_NAME}_wrapper.v
+  source ${BD_TCL}
+  read_bd ${BD_FILE}
   set bd_files [get_files ${BD_FILE}]
-  read_bd $bd_files
   make_wrapper -files $bd_files -top
   add_files -norecurse ${BD_WRAPPER_V}
 }
