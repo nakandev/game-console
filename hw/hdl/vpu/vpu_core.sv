@@ -39,16 +39,22 @@ module vpu_core
 );
 
 wire                       line_init;
-wire [LINEBUFF_BANK_W-1:0] line_banka;
-wire                       line_wea;
-wire [LINEBUFF_ADDR_W-1:0] line_addra;
-wire [LINEBUFF_DATA_W-1:0] line_dina;
-wire [LINEBUFF_DATA_W-1:0] line_douta;
-wire                       line_web;
-wire [LINEBUFF_BANK_W-1:0] line_bankb;
-wire [LINEBUFF_ADDR_W-1:0] line_addrb;
-wire [LINEBUFF_DATA_W-1:0] line_dinb;
-wire [LINEBUFF_DATA_W-1:0] line_doutb;
+wire [LINEBUFF_BANK_W-1:0] line_bank;
+wire                       sp_line_ena;
+wire                       sp_line_wea;
+wire [LINEBUFF_ADDR_W-1:0] sp_line_addra;
+wire [LINEBUFF_DATA_W-1:0] sp_line_dina;
+wire [LINEBUFF_DATA_W-1:0] sp_line_douta;
+wire                       sp_line_enb;
+wire                       sp_line_web;
+wire [LINEBUFF_ADDR_W-1:0] sp_line_addrb;
+wire [LINEBUFF_DATA_W-1:0] sp_line_dinb;
+wire [LINEBUFF_DATA_W-1:0] sp_line_doutb;
+wire                       bg_line_ena;
+wire                       bg_line_wea;
+wire [LINEBUFF_ADDR_W-1:0] bg_line_addra;
+wire [LINEBUFF_DATA_W-1:0] bg_line_dina;
+wire [LINEBUFF_DATA_W-1:0] bg_line_douta;
 
 localparam HMAX = SCREEN_W + SCREEN_HBLANK;
 localparam LMAX = HMAX * 4;
@@ -78,6 +84,8 @@ always_ff @(posedge clk) begin
   end
 end
 
+assign line_bank = y[0]; // y & 1'b1;
+
 wire hdraw0;
 wire vdraw0;
 
@@ -105,10 +113,11 @@ vpu_bg vpu_bg
   .pal_addr   (bg_pal_addr),
   .pal_dout   (bg_pal_dout),
 
-  .line_wea   (line_wea),
-  .line_addra (line_addra),
-  .line_dina  (line_dina ),
-  .line_douta (line_douta),
+  .line_ena   (bg_line_ena),
+  .line_wea   (bg_line_wea),
+  .line_addra (bg_line_addra),
+  .line_dina  (bg_line_dina ),
+  .line_douta (bg_line_douta),
 
   .dot_clk    (dot_clk),
   .color      (color),
@@ -137,11 +146,18 @@ vpu_sp vpu_sp
   .pal_dout   (sp_pal_dout),
 
   .line_init  (line_init),
-  .line_web   (line_web),
-  .line_bankb (line_bankb),
-  .line_addrb (line_addrb),
-  .line_dinb  (line_dinb ),
-  .line_doutb (line_doutb)
+
+  .line_ena   (sp_line_ena),
+  .line_wea   (sp_line_wea),
+  .line_addra (sp_line_addra),
+  .line_dina  (sp_line_dina ),
+  .line_douta (sp_line_douta),
+
+  .line_enb   (sp_line_enb),
+  .line_web   (sp_line_web),
+  .line_addrb (sp_line_addrb),
+  .line_dinb  (sp_line_dinb ),
+  .line_doutb (sp_line_doutb)
 );
 
 vpu_linebuffer vpu_linebuffer
@@ -150,16 +166,25 @@ vpu_linebuffer vpu_linebuffer
   .rst_n (rst_n),
 
   .init  (line_init ),
-  // .banka (line_banka),
-  .wea   (line_wea  ),
-  .addra (line_addra),
-  .dina  (line_dina ),
-  .douta (line_douta),
-  .web   (line_web  ),
-  .bankb (line_bankb),
-  .addrb (line_addrb),
-  .dinb  (line_dinb ),
-  .doutb (line_doutb)
+  .bank  (line_bank ),
+
+  .sp_ena   (sp_line_ena  ),
+  .sp_wea   (sp_line_wea  ),
+  .sp_addra (sp_line_addra),
+  .sp_dina  (sp_line_dina ),
+  .sp_douta (sp_line_douta),
+
+  .sp_enb   (sp_line_enb  ),
+  .sp_web   (sp_line_web  ),
+  .sp_addrb (sp_line_addrb),
+  .sp_dinb  (sp_line_dinb ),
+  .sp_doutb (sp_line_doutb),
+
+  .bg_ena   (bg_line_ena  ),
+  .bg_wea   (bg_line_wea  ),
+  .bg_addra (bg_line_addra),
+  .bg_dina  (bg_line_dina ),
+  .bg_douta (bg_line_douta)
 );
 
 // assign hdraw = (state == STATE_PIPELINE) && (line_cycle < LINE_CYCLE_VISIBLE);
@@ -193,56 +218,91 @@ module vpu_linebuffer
   input  wire        rst_n,
 
   input  wire                       init,
-  // input  wire [LINEBUFF_BANK_W-1:0] banka,
-  input  wire                       wea,
-  input  wire [LINEBUFF_ADDR_W-1:0] addra,
-  input  wire [LINEBUFF_DATA_W-1:0] dina,
-  output wire [LINEBUFF_DATA_W-1:0] douta,
-  input  wire                       web,
-  input  wire [LINEBUFF_BANK_W-1:0] bankb,
-  input  wire [LINEBUFF_ADDR_W-1:0] addrb,
-  input  wire [LINEBUFF_DATA_W-1:0] dinb,
-  output wire [LINEBUFF_DATA_W-1:0] doutb
+  input  wire [0:0]                 bank,
+  input  wire                       sp_ena,
+  input  wire                       sp_wea,
+  input  wire [LINEBUFF_ADDR_W-1:0] sp_addra,
+  input  wire [LINEBUFF_DATA_W-1:0] sp_dina,
+  output wire [LINEBUFF_DATA_W-1:0] sp_douta,
+  input  wire                       sp_enb,
+  input  wire                       sp_web,
+  input  wire [LINEBUFF_ADDR_W-1:0] sp_addrb,
+  input  wire [LINEBUFF_DATA_W-1:0] sp_dinb,
+  output wire [LINEBUFF_DATA_W-1:0] sp_doutb,
+  input  wire                       bg_ena,
+  input  wire                       bg_wea,
+  input  wire [LINEBUFF_ADDR_W-1:0] bg_addra,
+  input  wire [LINEBUFF_DATA_W-1:0] bg_dina,
+  output wire [LINEBUFF_DATA_W-1:0] bg_douta
 );
+//         : y=even  | y=odd
+// ram0 *a :  sp(r)  |  bg(r)
+//      *b :  sp(w)  | (bg(w))
+// ram1 *a :  bg(r)  |  sp(r)
+//      *b : (bg(w)) |  sp(w)
 
-wire [0:0] banka;
-wire [LINEBUFF_DATA_W-1:0] douta0;
-wire [LINEBUFF_DATA_W-1:0] douta1;
-wire [LINEBUFF_DATA_W-1:0] doutb0;
-wire [LINEBUFF_DATA_W-1:0] doutb1;
+wire                       ena0  , ena1  ;
+wire                       wea0  , wea1  ;
+wire [LINEBUFF_ADDR_W-1:0] addra0, addra1;
+wire [LINEBUFF_DATA_W-1:0] dina0 , dina1 ;
+wire [LINEBUFF_DATA_W-1:0] douta0, douta1;
+wire                       enb0  , enb1  ;
+wire                       web0  , web1  ;
+wire [LINEBUFF_ADDR_W-1:0] addrb0, addrb1;
+wire [LINEBUFF_DATA_W-1:0] dinb0 , dinb1 ;
+wire [LINEBUFF_DATA_W-1:0] doutb0, doutb1;
 
-assign banka = ~bankb;
-assign douta = (banka==0) ? douta0 : douta1;
-assign doutb = (bankb==0) ? doutb0 : doutb1;
+assign ena0      = (bank==0) ? sp_ena   : bg_ena  ;
+assign wea0      = (bank==0) ? sp_wea   : bg_wea  ;
+assign addra0    = (bank==0) ? sp_addra : bg_addra;
+assign dina0     = (bank==0) ? sp_dina  : bg_dina ;
+assign enb0      = (bank==0) ? sp_enb   : 0       ;
+assign web0      = (bank==0) ? sp_web   : 0       ;
+assign addrb0    = (bank==0) ? sp_addrb : 0       ;
+assign dinb0     = (bank==0) ? sp_dinb  : 0       ;
+
+assign ena1      = (bank==0) ? bg_ena   : sp_ena  ;
+assign wea1      = (bank==0) ? bg_wea   : sp_wea  ;
+assign addra1    = (bank==0) ? bg_addra : sp_addra;
+assign dina1     = (bank==0) ? bg_dina  : sp_dina ;
+assign enb1      = (bank==0) ? 0        : sp_enb  ;
+assign web1      = (bank==0) ? 0        : sp_web  ;
+assign addrb1    = (bank==0) ? 0        : sp_addrb;
+assign dinb1     = (bank==0) ? 0        : sp_dinb ;
+
+assign sp_douta = (bank==0) ? douta0   : douta1;
+assign bg_douta = (bank==0) ? douta1   : douta0;
+assign sp_doutb = (bank==0) ? douta0   : douta1;
+// assign bg_doutb = (bank==0) ? douta1 : douta0;
 
 // linebuffer_wrapper linebuffer_ram0 (
-//   .BRAM_PORTA_0_addr(addra),
+//   .BRAM_PORTA_0_addr(addra0),
 //   .BRAM_PORTA_0_clk (clk),
-//   .BRAM_PORTA_0_din (dina),
+//   .BRAM_PORTA_0_din (dina0),
 //   .BRAM_PORTA_0_dout(douta0),
-//   .BRAM_PORTA_0_en  (banka==0),
-//   .BRAM_PORTA_0_we  (wea),
-//   .BRAM_PORTA_1_addr(addrb),
-//   .BRAM_PORTA_1_clk (clk),
-//   .BRAM_PORTA_1_din (dinb),
-//   .BRAM_PORTA_1_dout(doutb0),
-//   .BRAM_PORTA_1_en  (bankb==0),
-//   .BRAM_PORTA_1_we  (web)
+//   .BRAM_PORTA_0_en  (ena0),
+//   .BRAM_PORTA_0_we  (wea0),
+//   .BRAM_PORTB_0_addr(addrb0),
+//   .BRAM_PORTB_0_clk (clk),
+//   .BRAM_PORTB_0_din (dinb0),
+//   .BRAM_PORTB_0_dout(doutb0),
+//   .BRAM_PORTB_0_en  (enb0),
+//   .BRAM_PORTB_0_we  (web0)
 // );
 // 
 // linebuffer_wrapper linebuffer_ram1 (
-//   .BRAM_PORTA_0_addr(addra),
+//   .BRAM_PORTA_0_addr(addra1),
 //   .BRAM_PORTA_0_clk (clk),
-//   .BRAM_PORTA_0_din (dina),
+//   .BRAM_PORTA_0_din (dina1),
 //   .BRAM_PORTA_0_dout(douta1),
-//   .BRAM_PORTA_0_en  (banka==1),
-//   .BRAM_PORTA_0_we  (wea),
-//   .BRAM_PORTA_1_addr(addrb),
-//   .BRAM_PORTA_1_clk (clk),
-//   .BRAM_PORTA_1_din (dinb),
-//   .BRAM_PORTA_1_dout(doutb1),
-//   .BRAM_PORTA_1_en  (bankb==1),
-//   .BRAM_PORTA_1_we  (web)
+//   .BRAM_PORTA_0_en  (ena1),
+//   .BRAM_PORTA_0_we  (wea1),
+//   .BRAM_PORTB_0_addr(addrb1),
+//   .BRAM_PORTB_0_clk (clk),
+//   .BRAM_PORTB_0_din (dinb1),
+//   .BRAM_PORTB_0_dout(doutb1),
+//   .BRAM_PORTB_0_en  (enb1),
+//   .BRAM_PORTB_0_we  (web1)
 // );
 
 bram_tdp_rf_rf #(
@@ -250,16 +310,16 @@ bram_tdp_rf_rf #(
   .DATA_W(LINEBUFF_DATA_W)
 ) linebuffer_ram0 (
   .clka (clk),
-  .ena  (banka==0),
-  .wea  (wea  ),
-  .addra(addra),
-  .dina (dina ),
+  .ena  (ena0  ),
+  .wea  (wea0  ),
+  .addra(addra0),
+  .dina (dina0 ),
   .douta(douta0),
   .clkb (clk),
-  .enb  (bankb==0),
-  .web  (web  ),
-  .addrb(addrb),
-  .dinb (dinb ),
+  .enb  (enb0  ),
+  .web  (web0  ),
+  .addrb(addrb0),
+  .dinb (dinb0 ),
   .doutb(doutb0)
 );
 
@@ -268,16 +328,16 @@ bram_tdp_rf_rf #(
   .DATA_W(LINEBUFF_DATA_W)
 ) linebuffer_ram1 (
   .clka (clk),
-  .ena  (banka==1),
-  .wea  (wea  ),
-  .addra(addra),
-  .dina (dina ),
+  .ena  (ena1  ),
+  .wea  (wea1  ),
+  .addra(addra1),
+  .dina (dina1 ),
   .douta(douta1),
   .clkb (clk),
-  .enb  (bankb==1),
-  .web  (web  ),
-  .addrb(addrb),
-  .dinb (dinb ),
+  .enb  (enb1  ),
+  .web  (web1  ),
+  .addrb(addrb1),
+  .dinb (dinb1 ),
   .doutb(doutb1)
 );
 

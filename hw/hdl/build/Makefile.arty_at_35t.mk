@@ -15,11 +15,12 @@ export SRCS_V = \
   ${HDL_ROOT}/platform/fpga/arty_a7_35t/srcs/arty_a7_35t_vpu_ili9341_parallel_8bit.sv \
   ${HDL_ROOT}/platform/video/ili9341_parallel_8bit.sv \
   ${HDL_ROOT}/cpu/cpu.sv \
+  ${HDL_ROOT}/cpu/dummy_bus.sv \
   ${HDL_ROOT}/vpu/vpu.sv \
   ${HDL_ROOT}/vpu/vpu_core.sv \
   ${HDL_ROOT}/vpu/vpu_bg.sv \
   ${HDL_ROOT}/vpu/vpu_sp.sv \
-  ${HDL_ROOT}/vpu/vram.sv \
+  ${HDL_ROOT}/vpu/model_vpu_vram.sv \
   ${HDL_ROOT}/memory/bram_tdp_rf_rf.sv \
   # ${HDL_ROOT}/platform/fpga/arty_a7_35t/srcs/arty_a7_35t_vpu_ili9341_parallel_8bit.sv \
 
@@ -33,6 +34,7 @@ SRCS_VERILATOR = \
 
 VERILATOR_BUILD_FLAGS = \
   --cc --exe --build -j 0 \
+	+define+DEBUG=1 \
 	-Wno-fatal \
 	--timing \
 	--trace --trace-params --trace-structs --trace-underscore \

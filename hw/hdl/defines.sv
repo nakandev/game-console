@@ -11,11 +11,13 @@ parameter HW_TILEMAP_W = 512;  // 64[tile-x]
 parameter HW_TILEMAP_H = 256;  // 32[tile-y]
 parameter PRM_ADDR_W    = 10;
 parameter PRM_DATA_W    =  32;
-parameter MAP_BANK_W    =   2;  // 8[bank] = 2^3
+// parameter MAP_BANK_W    =   3;  // 8[bank] = 2^3
+parameter MAP_BANK_W    =   1;  // 2[bank] = 2^1  [DEBUG]
 parameter MAP_INDX_W    =  11;  // 64[tile-x] * 32[tile-y] = 2048[tile] = 2^11
 parameter MAP_ADDR_W    = MAP_BANK_W + MAP_INDX_W;
 parameter MAP_DATA_W    =  16;
-parameter TILE_BANK_W   =   3;  // 4[bank] = 2^2
+// parameter TILE_BANK_W   =   3;  // 8[bank] = 2^3
+parameter TILE_BANK_W   =   2;  // 4[bank] = 2^2  [DEBUG]
 parameter TILE_INDX_W   =   8 + 6;  // 256[tile] * 64[pix] = 2^(8 + 6)
 parameter TILE_ADDR_W   = TILE_BANK_W + TILE_INDX_W;
 parameter TILE_DATA_W   =   8;

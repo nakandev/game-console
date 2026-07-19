@@ -26,7 +26,6 @@ export SRCS_V = \
   ${HDL_ROOT}/vpu/vpu_bg.sv \
   ${HDL_ROOT}/vpu/vpu_sp.sv \
   ${HDL_ROOT}/memory/bram_tdp_rf_rf.sv \
-  # ${HDL_ROOT}/platform/fpga/arty_a7_35t/srcs/arty_a7_35t_vpu_ili9341_parallel_8bit.sv \
 
 export IP_REPOS = \
   ${HDL_ROOT}/lib/vivado-library \
@@ -36,6 +35,7 @@ export IP_REPOS = \
 export BD_TCLS = \
   ${HDL_ROOT}/platform/fpga/arty_a7_35t/srcs/bd/system.tcl \
   ${HDL_ROOT}/platform/fpga/arty_a7_35t/srcs/bd/vpu_ram.tcl \
+  ${HDL_ROOT}/platform/fpga/arty_a7_35t/srcs/bd/linebuffer.tcl \
 
 export SRCS_IP = \
 

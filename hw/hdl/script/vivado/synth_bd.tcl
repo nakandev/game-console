@@ -86,7 +86,7 @@ read_xdc [get_files -all -filter {FILE_TYPE == "XDC"}]
 
 set_param ips.enableIPCacheLiteLoad 1
 # read_checkpoint -auto_incremental -incremental ${PROJ_DIR}/${PROJ_NAME}_synth.dcp
-# synth_design -name ${PROJ_NAME} -top ${TOP_NAME} -part xc7a35ticsg324-1L -include_dirs ${HDL_ROOT}
+# synth_design -name ${PROJ_NAME} -top ${TOP_NAME} -part ${BOARD_PART1} -include_dirs ${HDL_ROOT}
 if (${ENABLE_CHECKPOINT}) {
   # write_checkpoint -force -noxdef ${PROJ_NAME}_synth.dcp
   write_checkpoint -force ${PROJ_NAME}_synth_bd.dcp

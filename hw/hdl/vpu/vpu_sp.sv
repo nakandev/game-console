@@ -46,10 +46,15 @@ module vpu_sp
   input  logic [PAL_DATA_W-1:0]  pal_dout,
 
   output logic                       line_init,
-  output logic [LINEBUFF_BANK_W-1:0] line_web,
-  output logic [LINEBUFF_BANK_W-1:0] line_bankb,
+  output logic                       line_ena,
+  output logic                       line_wea,
+  output logic [LINEBUFF_ADDR_W-1:0] line_addra,
+  output logic [LINEBUFF_DATA_W-1:0] line_dina,
+  input  logic [LINEBUFF_DATA_W-1:0] line_douta,
+  output logic                       line_enb,
+  output logic                       line_web,
   output logic [LINEBUFF_ADDR_W-1:0] line_addrb,
-  output logic  [LINEBUFF_DATA_W-1:0] line_dinb,
+  output logic [LINEBUFF_DATA_W-1:0] line_dinb,
   input  logic [LINEBUFF_DATA_W-1:0] line_doutb
 );
 
@@ -178,8 +183,13 @@ vpu_sp_pipeline vpu_sp_pipeline (
   pal_en,
   pal_addr,
   pal_dout,
+  line_ena,
+  line_wea,
+  line_addra,
+  line_dina,
+  line_douta,
+  line_enb,
   line_web,
-  line_bankb,
   line_addrb,
   line_dinb,
   line_doutb,
@@ -285,21 +295,26 @@ module vpu_sp_pipeline
   input  logic        pipeline_enable,
   input  logic [ 6:0] sp_idx,
   input  logic [ 7:0] y,
-  input  logic  [31:0] sp_data0_cache,
-  input  logic  [31:0] sp_data1_cache,
-  input  logic  [31:0] sp_affine0_cache,
-  input  logic  [31:0] sp_affine1_cache,
-  input  logic  [31:0] sp_affine2_cache,
-  output logic                 tile_en,
+  input  logic [31:0] sp_data0_cache,
+  input  logic [31:0] sp_data1_cache,
+  input  logic [31:0] sp_affine0_cache,
+  input  logic [31:0] sp_affine1_cache,
+  input  logic [31:0] sp_affine2_cache,
+  output logic                   tile_en,
   output logic [TILE_ADDR_W-1:0] tile_addr,
   input  logic [TILE_DATA_W-1:0] tile_data,
-  output logic                 pal_en,
+  output logic                   pal_en,
   output logic [PAL_ADDR_W-1:0]  pal_addr,
   input  logic [PAL_DATA_W-1:0]  pal_data,
-  output logic [LINEBUFF_BANK_W-1:0] line_web,
-  output logic [LINEBUFF_BANK_W-1:0] line_bankb,
+  output logic                       line_ena,
+  output logic                       line_wea,
+  output logic [LINEBUFF_ADDR_W-1:0] line_addra,
+  output logic [LINEBUFF_DATA_W-1:0] line_dina,
+  input  logic [LINEBUFF_DATA_W-1:0] line_douta,
+  output logic                       line_enb,
+  output logic                       line_web,
   output logic [LINEBUFF_ADDR_W-1:0] line_addrb,
-  output logic  [LINEBUFF_DATA_W-1:0] line_dinb,
+  output logic [LINEBUFF_DATA_W-1:0] line_dinb,
   input  logic [LINEBUFF_DATA_W-1:0] line_doutb,
   output logic [31:0] color,
   output logic        pipeline_done
@@ -366,15 +381,12 @@ always_ff @(posedge clk) begin
   end
   else begin
     if (pipeline_enable) begin
-      // if (x < tw-1) begin
-      // if (x < (sp_afen ? (sp_x + tw-1) : (sp_x + tw + (tw>>2)-1))) begin
       if (x < (sp_afen ? (sp_x + tw + (tw>>1)-1) : (sp_x + tw-1))) begin
         x <= x + 1;
       end else begin
       end
     end
     else begin
-      // x <= sp_afen ? sp_x : sp_x - (tw>>2);
       x <= sp_afen ? sp_x - (tw>>1) : sp_x;
     end
   end
@@ -389,6 +401,8 @@ vpu_sp_pipeline0_affine_transform sp_pipe0(
   sp_x,
   sp_y,
   sp_enable,
+  sp_hflip,
+  sp_vflip,
   sp_afen,
   sp_affine,
   objx,
@@ -532,8 +546,13 @@ vpu_sp_pipeline4_color_merge sp_pipe4 (
   objx_p34,
   tw_p34,
   color_n_p34,
+  line_ena,
+  line_wea,
+  line_addra,
+  line_dina,
+  line_douta,
+  line_enb,
   line_web,
-  line_bankb,
   line_addrb,
   line_dinb,
   line_doutb,
@@ -557,6 +576,8 @@ module vpu_sp_pipeline0_affine_transform
   input  logic [ 8:0] sp_x,
   input  logic [ 7:0] sp_y,
   input  logic        sp_enable,
+  input  logic        sp_hflip,
+  input  logic        sp_vflip,
   input  logic        sp_afen,
   input  logic [95:0] sp_affine,
   output logic  [ 8:0] objx,
@@ -585,20 +606,11 @@ assign Bc = sp_affine[16*3-1:16*2];
 assign By = sp_affine[16*2-1:16*1];
 assign Bx = sp_affine[16*1-1:16*0];
 
-always_ff @(posedge clk) begin
-  objx <= x1;
-  objy <= y1;
-  tw <= get_tw(sp_tilesize);
-  th <= get_th(sp_tilesize);
-  area_in <= area_in1;
-  area_inA <= area_inA1;
-end
-
 always_comb begin
-  objx0 = shortint'(xin) - shortint'(sp_x);
-  objy0 = shortint'(yin) - shortint'(sp_y);
   tw0 = get_tw(sp_tilesize);
   th0 = get_th(sp_tilesize);
+  objx0 = sp_hflip ? tw0 - (shortint'(xin) - shortint'(sp_x)) : shortint'(xin) - shortint'(sp_x);
+  objy0 = sp_vflip ? th0 - (shortint'(yin) - shortint'(sp_y)) : shortint'(yin) - shortint'(sp_y);
   xbegin = xin;
   xend = xin + tw;
   // [TODO] affine transform
@@ -612,8 +624,8 @@ always_comb begin
     Bby0 = Bb * y0;
     Bcx0 = Bc * x0;
     Bdy0 = Bd * y0;
-    x1 = (Bax0 >> 8) + (Bby0 >> 8) + Bx;
-    y1 = (Bcx0 >> 8) + (Bdy0 >> 8) + By;
+    x1 = (Bax0 >>> 8) + (Bby0 >>> 8) + Bx;
+    y1 = (Bcx0 >>> 8) + (Bdy0 >>> 8) + By;
     area_inA1 = sp_enable && (0 <= x1 && x1 < tw0) && (0 <= y1 && y1 < th0);
     xbegin = xbegin - (tw>>2);
     xend   = xend   + (tw>>2);
@@ -626,6 +638,15 @@ always_comb begin
   end
 end
 
+always_ff @(posedge clk) begin
+  objx <= x1;
+  objy <= y1;
+  tw <= get_tw(sp_tilesize);
+  th <= get_th(sp_tilesize);
+  area_in <= area_in1;
+  area_inA <= area_inA1;
+end
+
 endmodule
 
 /* -------------------------------- */
@@ -634,8 +655,8 @@ module vpu_sp_pipeline2_tile_load
 (
   input  logic        clk,
   input  logic        rst_n,
-  input  logic [ 8:0] objx,
-  input  logic [ 7:0] objy,
+  input  logic [ 8:0] x_in_obj,
+  input  logic [ 7:0] y_in_obj,
   input  logic [ 7:0] tw,
   input  logic [TILE_BANK_W-1:0] sp_tile_bank,
   input  logic [TILE_INDX_W-1:0] sp_tile_idx,
@@ -651,24 +672,25 @@ localparam HW_TILEMAP_W = 512;
 localparam HW_TILEMAP_H = 512;
 
 
-shortint offset;
-shortint tilex;
-shortint tiley;
+shortint toffset;
+shortint x_in_tile;
+shortint y_in_tile;
 logic  [ 8:0] tx0;
 logic  [ 8:0] ty0;
 logic  [TILE_INDX_W-1:0] tile_idx;
 logic  [TILE_INDX_W-1:0] tile_addr_lo;
 
 always_comb begin
-  tx0 = objx & (HW_TILEMAP_W-1);
-  ty0 = objy & (HW_TILEMAP_H-1);
-  offset = (tx0 / HW_TILE_W) + (ty0 / HW_TILE_H) * (tw / HW_TILE_W);
-  tile_idx = sp_tile_idx + offset;
+  tx0 = x_in_obj & (HW_TILEMAP_W-1);
+  ty0 = y_in_obj & (HW_TILEMAP_H-1);
+  toffset = (tx0 / HW_TILE_W) + (ty0 / HW_TILE_H) * (tw / HW_TILE_W);
+  tile_idx = sp_tile_idx + toffset;
 
-  tilex = (objx & (HW_TILEMAP_W-1)) & (HW_TILE_W-1);
-  tiley = (objy & (HW_TILEMAP_H-1)) & (HW_TILE_H-1);
-  tile_addr_lo = ((tile_idx * HW_TILE_W * HW_TILE_H) + (tiley * HW_TILE_W) + tilex);
+  x_in_tile = (x_in_obj & (HW_TILEMAP_W-1)) & (HW_TILE_W-1);
+  y_in_tile = (y_in_obj & (HW_TILEMAP_H-1)) & (HW_TILE_H-1);
+  tile_addr_lo = ((tile_idx * HW_TILE_W * HW_TILE_H) + (y_in_tile * HW_TILE_W) + x_in_tile);
   tile_addr = {sp_tile_bank, tile_addr_lo};
+  // tile_addr = (sp_tile_bank << TILE_INDX_W) + tile_addr_lo;
 end
 
 assign tile_en = 1;
@@ -713,12 +735,17 @@ module vpu_sp_pipeline4_color_merge
   input  logic [ 8:0] objx,
   input  logic [ 7:0] tw,
   input  logic [31:0] color_n,
-  output logic                        line_web,
-  output logic [LINEBUFF_BANK_W-1:0] line_bankb,
-  output logic  [LINEBUFF_ADDR_W-1:0] line_addrb,
-  output logic  [LINEBUFF_DATA_W-1:0] line_dinb,
+  output logic                       line_ena,
+  output logic                       line_wea,
+  output logic [LINEBUFF_ADDR_W-1:0] line_addra,
+  output logic [LINEBUFF_DATA_W-1:0] line_dina,
+  input  logic [LINEBUFF_DATA_W-1:0] line_douta,
+  output logic                       line_enb,
+  output logic                       line_web,
+  output logic [LINEBUFF_ADDR_W-1:0] line_addrb,
+  output logic [LINEBUFF_DATA_W-1:0] line_dinb,
   input  logic [LINEBUFF_DATA_W-1:0] line_doutb,
-  output logic         done
+  output logic        done
 );
 
 function logic [31:0] color_merge(logic [31:0] col_buf, logic [31:0] col_n);
@@ -726,30 +753,43 @@ function logic [31:0] color_merge(logic [31:0] col_buf, logic [31:0] col_n);
   logic [31:0] src;
   logic [ 7:0] src_a;
   dst = col_buf;
-  // for (int i=0; i<4; i++) begin
-    src = col_n;
-    src_a = src[31:24];
-    if (src_a == 0) begin
-      dst = dst;
-    end
-    else if (src_a == 255) begin
-      dst = src;
-    end
-    else begin
-      dst[ 7: 0] = ((dst[ 7: 0] * (255 - src_a) + src[ 7: 0] * src_a) / 256);
-      dst[15: 8] = ((dst[15: 8] * (255 - src_a) + src[15: 8] * src_a) / 256);
-      dst[23:16] = ((dst[23:16] * (255 - src_a) + src[23:16] * src_a) / 256);
-      dst[31:24] = (dst[31:24] + src[31:24]) / 2;
-     end
-  // end
+  src = col_n;
+  src_a = src[31:24];
+  if (src_a == 0) begin
+    dst = dst;
+  end
+  else if (src_a == 255) begin
+    dst = src;
+  end
+  else begin
+    dst[ 7: 0] = ((dst[ 7: 0] * (255 - src_a) + src[ 7: 0] * src_a) / 256);
+    dst[15: 8] = ((dst[15: 8] * (255 - src_a) + src[15: 8] * src_a) / 256);
+    dst[23:16] = ((dst[23:16] * (255 - src_a) + src[23:16] * src_a) / 256);
+    dst[31:24] = (dst[31:24] + src[31:24]) / 2;
+  end
   return dst;
 endfunction
 
-assign line_bankb = y[0]; // y & 1'b1;
-assign line_web = sp_enable & area_inA;
-assign line_addrb = x;
-assign line_dinb = color_merge(line_doutb, color_n);
+assign line_ena = sp_enable & area_inA;
+assign line_wea = sp_enable & area_inA;
+assign line_addra = x;
+// assign line_dina = color_merge(line_doutb, color_n);
+assign line_dina = color_n;
+
+assign line_enb = sp_enable & area_inA;
+assign line_web = 0;
+assign line_addrb = x + 1;
+assign line_dinb = 0;
 
 assign done = sp_enable & area_inA & (objx == tw-1);
+
+// always_ff @(posedge clk) begin
+//   line_web <= sp_enable & area_inA;
+//   line_addrb <= x;
+//   // line_dinb <= color_merge(line_doutb, color_n);
+//   line_dinb <= color_n;
+// 
+//   done <= sp_enable & area_inA & (objx == tw-1);
+// end
 
 endmodule

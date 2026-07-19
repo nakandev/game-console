@@ -195,8 +195,11 @@ proc create_root_design { parentCell } {
 
   # Create interface ports
   set BRAM_PORTA_0 [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:bram_rtl:1.0 BRAM_PORTA_0 ]
+  set_property -dict [ list \
+   CONFIG.READ_WRITE_MODE {READ_WRITE} \
+   ] $BRAM_PORTA_0
 
-  set BRAM_PORTA_1 [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:bram_rtl:1.0 BRAM_PORTA_1 ]
+  set BRAM_PORTB_0 [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:bram_rtl:1.0 BRAM_PORTB_0 ]
 
 
   # Create ports
@@ -204,26 +207,18 @@ proc create_root_design { parentCell } {
   # Create instance: blk_mem_gen_0, and set properties
   set blk_mem_gen_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:blk_mem_gen:8.4 blk_mem_gen_0 ]
   set_property -dict [list \
+    CONFIG.Memory_Type {True_Dual_Port_RAM} \
     CONFIG.Operating_Mode_A {READ_FIRST} \
     CONFIG.Register_PortA_Output_of_Memory_Primitives {false} \
+    CONFIG.Register_PortB_Output_of_Memory_Primitives {false} \
     CONFIG.Write_Depth_A {512} \
     CONFIG.use_bram_block {Stand_Alone} \
   ] $blk_mem_gen_0
 
 
-  # Create instance: blk_mem_gen_1, and set properties
-  set blk_mem_gen_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:blk_mem_gen:8.4 blk_mem_gen_1 ]
-  set_property -dict [list \
-    CONFIG.Operating_Mode_A {READ_FIRST} \
-    CONFIG.Register_PortA_Output_of_Memory_Primitives {false} \
-    CONFIG.Write_Depth_A {512} \
-    CONFIG.use_bram_block {Stand_Alone} \
-  ] $blk_mem_gen_1
-
-
   # Create interface connections
   connect_bd_intf_net -intf_net BRAM_PORTA_0_1 [get_bd_intf_ports BRAM_PORTA_0] [get_bd_intf_pins blk_mem_gen_0/BRAM_PORTA]
-  connect_bd_intf_net -intf_net BRAM_PORTA_1_1 [get_bd_intf_ports BRAM_PORTA_1] [get_bd_intf_pins blk_mem_gen_1/BRAM_PORTA]
+  connect_bd_intf_net -intf_net BRAM_PORTB_0_1 [get_bd_intf_ports BRAM_PORTB_0] [get_bd_intf_pins blk_mem_gen_0/BRAM_PORTB]
 
   # Create port connections
 

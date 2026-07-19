@@ -23,9 +23,10 @@ module vpu_bg
   output logic [PAL_ADDR_W-1:0]  pal_addr,
   input  logic [PAL_DATA_W-1:0]  pal_dout,
 
+  output logic [LINEBUFF_BANK_W-1:0] line_ena,
   output logic [LINEBUFF_BANK_W-1:0] line_wea,
   output logic [LINEBUFF_ADDR_W-1:0] line_addra,
-  output logic  [LINEBUFF_DATA_W-1:0] line_dina,
+  output logic [LINEBUFF_DATA_W-1:0] line_dina,
   input  logic [LINEBUFF_DATA_W-1:0] line_douta,
 
   // output logic                   bg_param,
@@ -105,6 +106,7 @@ vpu_bg_pipeline vpu_bg_pipeline (
   pal_en,
   pal_addr,
   pal_dout,
+  line_ena,
   line_wea,
   line_addra,
   line_dina,
@@ -262,9 +264,10 @@ module vpu_bg_pipeline
   output logic                 pal_en,
   output logic [PAL_ADDR_W-1:0]  pal_addr,
   input  logic [PAL_DATA_W-1:0]  pal_data,
+  output logic [LINEBUFF_BANK_W-1:0] line_ena,
   output logic [LINEBUFF_BANK_W-1:0] line_wea,
   output logic [LINEBUFF_ADDR_W-1:0] line_addra,
-  output logic  [LINEBUFF_DATA_W-1:0] line_dina,
+  output logic [LINEBUFF_DATA_W-1:0] line_dina,
   input  logic [LINEBUFF_DATA_W-1:0] line_douta,
   output logic [31:0] color,
   output logic        dummy
@@ -513,6 +516,7 @@ vpu_bg_pipeline4_color_merge bg_pipe4 (
   x_p34,
   layer_p34,
   color_n_p34,
+  line_ena,
   line_wea,
   line_addra,
   line_dina,
@@ -665,7 +669,6 @@ assign tile_addr = (tile_bank << TILE_INDX_W) +
   (((objy & (HW_TILEMAP_H-1)) & (HW_TILE_H-1)) * HW_TILE_W) +
   ((objx & (HW_TILEMAP_W-1)) & (HW_TILE_W-1)));
 
-
 always_ff @(posedge clk) begin
   bg_enable_prev <= bg_enable;
 end
@@ -730,8 +733,8 @@ module vpu_bg_pipeline4_color_merge
   input  logic [ 8:0] x,
   input  logic [ 1:0] layer,
   input  logic [31:0] color_n[4],
+  output logic [LINEBUFF_BANK_W-1:0] line_ena,
   output logic [LINEBUFF_BANK_W-1:0] line_wea,
-  // output logic [LINEBUFF_ADDR_W-1:0] line_addra,
   output logic [LINEBUFF_ADDR_W-1:0] line_addra,
   output logic [LINEBUFF_DATA_W-1:0] line_dina,
   input  logic [LINEBUFF_DATA_W-1:0] line_douta,
@@ -791,9 +794,11 @@ logic [31:0] colors[5];
 
 //-------- Trial A --------
 assign done = (layer == 3);
+assign line_ena = 1;
 assign line_wea = (layer == 3);  // read linebuffer pixel --> clear the pixel
 // assign line_wea = 0;  // diable clear linebuffer
 assign line_addra = x;
+// assign line_addra = x + 1;
 assign line_dina = 0;
 
 assign colors[0] = color_n[0];
@@ -810,6 +815,7 @@ assign colors[4] = line_douta;
 always_comb begin
   if (layer == 3) begin
     color_out = color_merge_all(colors);
+    // color_out = colors[4];
   end
 end
 

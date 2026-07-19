@@ -23,6 +23,7 @@ module arty_a7_35t_top
   output wire ddr3_sdram_we_n,
 
   input wire [3:0]btn_tri_i,
+  input wire [3:0]sw,
   output wire [3:0]led_tri_o,
 
   input wire usb_uart_rxd,
@@ -188,7 +189,8 @@ logic vdraw_vpu;
 //     vdelay[i] <= vdelay[i-1];
 //   end
 // assign lcd_reset = ~ck_rst;
-assign lcd_reset = btn_tri_i[0];
+// assign lcd_reset = btn_tri_i[0];
+assign lcd_reset = sw[0];
 assign lcd_write = hdraw_vpu && vdraw_vpu;
 
 vpu vpu(

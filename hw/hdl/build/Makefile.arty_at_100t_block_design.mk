@@ -35,6 +35,7 @@ export IP_REPOS = \
 export BD_TCLS = \
   ${HDL_ROOT}/platform/fpga/arty_a7_100t/srcs/bd/system.tcl \
   ${HDL_ROOT}/platform/fpga/arty_a7_100t/srcs/bd/vpu_ram.tcl \
+  ${HDL_ROOT}/platform/fpga/arty_a7_100t/srcs/bd/linebuffer.tcl \
 
 export SRCS_IP = \
 
@@ -98,6 +99,9 @@ write-bit: ${PROJ_DIR}/${PROJ_NAME}.bit
 write-flash: ${PROJ_DIR}/${PROJ_NAME}.mcs
 	cd ${PROJ_DIR}
 	vivado  -m64 -mode batch -source ${SCRIPT_DIR}/vivado/write_bitstream.tcl
+
+write-bit-elf:
+	xsct ${SCRIPT_DIR}/xsct/bit_elf.tcl ${ELF}
 
 sim:
 	cd ${PROJ_DIR}

@@ -48,7 +48,7 @@ reg  [MAP_DATA_W-1:0]  bg_map_ram_dout  ;
 
 wire                   bg_tile_ram_en   , sp_tile_ram_en   ;
 wire [            3:0] bg_tile_ram_we   , sp_tile_ram_we   ;
-wire [TILE_ADDR_W-1:0] bg_tile_ram_addr , sp_tile_ram_addr ;
+reg  [TILE_ADDR_W-1:0] bg_tile_ram_addr , sp_tile_ram_addr ;
 wire [TILE_DATA_W-1:0] bg_tile_ram_din  , sp_tile_ram_din  ;
 reg  [TILE_DATA_W-1:0] bg_tile_ram_dout , sp_tile_ram_dout ;
 
@@ -127,7 +127,7 @@ wire [31:0] cpu_sp_map_ram_dout  ;
 
 wire        cpu_sp_tile_ram_en   ;
 wire [ 3:0] cpu_sp_tile_ram_we   ;
-wire [14:0] cpu_sp_tile_ram_addr ;
+wire [13:0] cpu_sp_tile_ram_addr ;
 wire [31:0] cpu_sp_tile_ram_din  ;
 wire [31:0] cpu_sp_tile_ram_dout ;
 
@@ -148,23 +148,28 @@ end
 
 assign cpu_sp_map_ram_en     = !(hdraw && vdraw) ? cpu_map_ram_en   :  1'b0;
 assign cpu_sp_map_ram_we     = !(hdraw && vdraw) ? cpu_map_ram_we   :  4'b0;
-assign cpu_sp_map_ram_addr   = !(hdraw && vdraw) ? cpu_map_ram_addr : 10'b0;
+assign cpu_sp_map_ram_addr   = !(hdraw && vdraw) ? cpu_map_ram_addr : 11'b0;
 assign cpu_sp_map_ram_din    = !(hdraw && vdraw) ? cpu_map_ram_din  : 32'b0;
 always_comb begin
   cpu_map_ram_dout = cpu_sp_map_ram_dout;
 end
 
 assign cpu_sp_tile_ram_en    = !(hdraw && vdraw) ? cpu_tile_ram_en   : sp_tile_ram_en;
-assign cpu_sp_tile_ram_we    = !(hdraw && vdraw) ? cpu_tile_ram_we   : sp_tile_ram_addr[1:0];
+assign cpu_sp_tile_ram_we    = !(hdraw && vdraw) ? cpu_tile_ram_we   : sp_tile_ram_we;
 assign cpu_sp_tile_ram_addr  = !(hdraw && vdraw) ? cpu_tile_ram_addr : sp_tile_ram_addr[TILE_ADDR_W-1:2];
 assign cpu_sp_tile_ram_din   = !(hdraw && vdraw) ? cpu_tile_ram_din  : sp_tile_ram_din;
+reg [TILE_ADDR_W-1:0] sp_tile_ram_addr_delay1;
+always_ff @(posedge clk) begin
+  sp_tile_ram_addr_delay1 <= sp_tile_ram_addr;
+end
 always_comb begin
   cpu_tile_ram_dout = cpu_sp_tile_ram_dout;
-  case (sp_tile_ram_addr[1:0])
-    2'b00: sp_tile_ram_dout = cpu_sp_tile_ram_dout[ 7: 0];
-    2'b01: sp_tile_ram_dout = cpu_sp_tile_ram_dout[15: 8];
-    2'b10: sp_tile_ram_dout = cpu_sp_tile_ram_dout[23:16];
-    2'b11: sp_tile_ram_dout = cpu_sp_tile_ram_dout[31:24];
+  case (sp_tile_ram_addr_delay1[1:0])
+    2'd0: sp_tile_ram_dout = cpu_sp_tile_ram_dout[ 7: 0];
+    2'd1: sp_tile_ram_dout = cpu_sp_tile_ram_dout[15: 8];
+    2'd2: sp_tile_ram_dout = cpu_sp_tile_ram_dout[23:16];
+    2'd3: sp_tile_ram_dout = cpu_sp_tile_ram_dout[31:24];
+    default: sp_tile_ram_dout = 8'h00;
   endcase
 end
 
@@ -176,6 +181,27 @@ always_comb begin
   cpu_pal_ram_dout = cpu_sp_pal_ram_dout;
    sp_pal_ram_dout = cpu_sp_pal_ram_dout;
 end
+
+wire [ 9:0]BRAM_PORTB_0_addr;
+wire [31:0]BRAM_PORTB_0_din;
+wire [31:0]BRAM_PORTB_0_dout;
+wire       BRAM_PORTB_0_en;
+wire [ 3:0]BRAM_PORTB_0_we;
+wire [11:0]BRAM_PORTB_1_addr;
+wire [15:0]BRAM_PORTB_1_din;
+wire [15:0]BRAM_PORTB_1_dout;
+wire       BRAM_PORTB_1_en;
+wire [ 1:0]BRAM_PORTB_1_we;
+wire [15:0]BRAM_PORTB_2_addr;
+wire [ 7:0]BRAM_PORTB_2_din;
+wire [ 7:0]BRAM_PORTB_2_dout;
+wire       BRAM_PORTB_2_en;
+wire [ 0:0]BRAM_PORTB_2_we;
+wire [ 8:0]BRAM_PORTB_3_addr;
+wire [31:0]BRAM_PORTB_3_din;
+wire [31:0]BRAM_PORTB_3_dout;
+wire       BRAM_PORTB_3_en;
+wire [ 3:0]BRAM_PORTB_3_we;
 
 vpu_ram_wrapper vpu_ram_wrapper_0
 (

@@ -52,11 +52,35 @@ assign led = {1'b0, hdraw_vpu, vdraw_vpu, initialized};
 logic CLK200MHZ;
 logic locked;
 
-reg        mem_en;
-reg        mem_we;
-reg [31:0] mem_addr;
-reg [31:0] mem_din;
-reg [31:0] mem_dout;
+wire        mem_en;
+wire [ 3:0] mem_we;
+wire [31:0] mem_addr;
+wire [31:0] mem_din;  // write to mem
+wire [31:0] mem_dout;  // read from mem
+
+wire         cpu_param_ram_en  ;
+wire [ 3:0]  cpu_param_ram_we  ;
+wire [ 9:0]  cpu_param_ram_addr;
+wire [31:0]  cpu_param_ram_din ;
+wire [31:0]  cpu_param_ram_dout;
+
+wire         cpu_map_ram_en    ;
+wire [ 3:0]  cpu_map_ram_we    ;
+wire [10:0]  cpu_map_ram_addr  ;
+wire [31:0]  cpu_map_ram_din   ;
+wire [31:0]  cpu_map_ram_dout  ;
+
+wire         cpu_tile_ram_en   ;
+wire [ 3:0]  cpu_tile_ram_we   ;
+wire [14:0]  cpu_tile_ram_addr ;
+wire [31:0]  cpu_tile_ram_din  ;
+wire [31:0]  cpu_tile_ram_dout ;
+
+wire         cpu_pal_ram_en    ;
+wire [ 3:0]  cpu_pal_ram_we    ;
+wire [ 8:0]  cpu_pal_ram_addr  ;
+wire [31:0]  cpu_pal_ram_din   ;
+wire [31:0]  cpu_pal_ram_dout  ;
 
 logic dot_clk;
 logic [31:0] color;
@@ -122,7 +146,9 @@ cpu cpu(
   .clk     (clk10MHZ),
   .rst_n   (initialized),
   // .rst_n   (~reset),
+  .hdraw   (hdraw_vpu),  // [DEBUG]
   .vdraw   (vdraw_vpu),  // [DEBUG]
+
   .mem_en  (mem_en  ),
   .mem_we  (mem_we  ),
   .mem_addr(mem_addr),
@@ -130,15 +156,70 @@ cpu cpu(
   .mem_dout(mem_dout)
 );
 
+dummy_bus dummy_bus(
+  .clk     (clk10MHZ),
+  .rst_n   (initialized),
+
+  .mem_en  (mem_en  ),
+  .mem_we  (mem_we  ),
+  .mem_addr(mem_addr),
+  .mem_din (mem_din ),
+  .mem_dout(mem_dout),
+
+  .cpu_param_ram_en  (cpu_param_ram_en  ),
+  .cpu_param_ram_we  (cpu_param_ram_we  ),
+  .cpu_param_ram_addr(cpu_param_ram_addr),
+  .cpu_param_ram_din (cpu_param_ram_din ),
+  .cpu_param_ram_dout(cpu_param_ram_dout),
+
+  .cpu_map_ram_en    (cpu_map_ram_en    ),
+  .cpu_map_ram_we    (cpu_map_ram_we    ),
+  .cpu_map_ram_addr  (cpu_map_ram_addr  ),
+  .cpu_map_ram_din   (cpu_map_ram_din   ),
+  .cpu_map_ram_dout  (cpu_map_ram_dout  ),
+
+  .cpu_tile_ram_en   (cpu_tile_ram_en   ),
+  .cpu_tile_ram_we   (cpu_tile_ram_we   ),
+  .cpu_tile_ram_addr (cpu_tile_ram_addr ),
+  .cpu_tile_ram_din  (cpu_tile_ram_din  ),
+  .cpu_tile_ram_dout (cpu_tile_ram_dout ),
+
+  .cpu_pal_ram_en    (cpu_pal_ram_en    ),
+  .cpu_pal_ram_we    (cpu_pal_ram_we    ),
+  .cpu_pal_ram_addr  (cpu_pal_ram_addr  ),
+  .cpu_pal_ram_din   (cpu_pal_ram_din   ),
+  .cpu_pal_ram_dout  (cpu_pal_ram_dout  )
+);
+
 vpu vpu(
   .clk     (clk10MHZ   ),
   .rst_n   (initialized),
   // .rst_n   (~reset),
-  .mem_en  (mem_en     ),
-  .mem_we  (mem_we     ),
-  .mem_addr(mem_addr   ),
-  .mem_din (mem_din    ),
-  .mem_dout(mem_dout   ),
+  //
+  .cpu_param_ram_en  (cpu_param_ram_en  ),
+  .cpu_param_ram_we  (cpu_param_ram_we  ),
+  .cpu_param_ram_addr(cpu_param_ram_addr),
+  .cpu_param_ram_din (cpu_param_ram_din ),
+  .cpu_param_ram_dout(cpu_param_ram_dout),
+
+  .cpu_map_ram_en    (cpu_map_ram_en    ),
+  .cpu_map_ram_we    (cpu_map_ram_we    ),
+  .cpu_map_ram_addr  (cpu_map_ram_addr  ),
+  .cpu_map_ram_din   (cpu_map_ram_din   ),
+  .cpu_map_ram_dout  (cpu_map_ram_dout  ),
+
+  .cpu_tile_ram_en   (cpu_tile_ram_en   ),
+  .cpu_tile_ram_we   (cpu_tile_ram_we   ),
+  .cpu_tile_ram_addr (cpu_tile_ram_addr ),
+  .cpu_tile_ram_din  (cpu_tile_ram_din  ),
+  .cpu_tile_ram_dout (cpu_tile_ram_dout ),
+
+  .cpu_pal_ram_en    (cpu_pal_ram_en    ),
+  .cpu_pal_ram_we    (cpu_pal_ram_we    ),
+  .cpu_pal_ram_addr  (cpu_pal_ram_addr  ),
+  .cpu_pal_ram_din   (cpu_pal_ram_din   ),
+  .cpu_pal_ram_dout  (cpu_pal_ram_dout  ),
+
   .dot_clk (dot_clk    ),
   .color   (color      ),
   .hdraw   (hdraw_vpu  ),
